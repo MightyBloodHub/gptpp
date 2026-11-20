@@ -46,3 +46,23 @@ target/debug/gpp run --interpreter target/preview.gpp
 ```
 
 The preview prints `22`. For in-place application, capture the base with `gpp revision FILE` before drafting and supply that revision with `--expect` when applying. The optional proposal tool can generate such a fragment and validate public examples against the checked preview. [Authoring guide](../tools/README.md)
+
+## Preview an edit inside a function
+
+An editor can ask the compiler which expressions belong to a function. The listing includes the source revision, the function extent and each selectable expression's original text. All ranges are half-open UTF-8 byte offsets from the start of the file. Two occurrences of the same text have different ranges.
+
+```sh
+target/debug/gpp expressions examples/add.gpp --function add
+```
+
+For the checked-in example, `left + right` occupies bytes `73:85`. The following commands preview changing just that addition to a subtraction. The interpreter prints `-2`.
+
+```sh
+base_revision=$(target/debug/gpp revision examples/add.gpp)
+printf '%s\n' 'left - right' > target/subtract.expr
+target/debug/gpp edit examples/add.gpp --function add --at 73:85 \
+  --expr target/subtract.expr --expect "$base_revision" --stdout > target/subtract-preview.gpp
+target/debug/gpp run --interpreter target/subtract-preview.gpp
+```
+
+Use the range and revision from the same listing when integrating an editor. The compiler validates the fragment as one expression, adds grouping when needed, and checks the resulting module. An in-place edit requires `--expect`. The proposal tool can also select an expression from the original function text and check the result against caller examples. [Model-assisted expression edits](../tools/README.md#edit-an-expression-inside-the-target)

@@ -100,6 +100,17 @@ pub enum StmtKind {
 pub struct Expr {
     pub kind: ExprKind,
     pub span: Span,
+    pub site: ExprSite,
+}
+
+/// Where an expression can be replaced in concrete source.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ExprSite {
+    Ordinary,
+    /// An unbraced tail in `else if ...` needs a block for other replacements.
+    ElseIf,
+    /// Compound assignment introduces a read and a binary operation in the AST.
+    Synthetic,
 }
 
 #[derive(Clone, Debug)]
@@ -348,16 +359,15 @@ pub fn parse(source: &str) -> Result<Module, Diagnostic> {
     .module()
 }
 
-/// Parse exactly one expression. The end offset precedes any trailing comment,
-/// which is where a caller wrapping the expression in a return inserts its semicolon.
-pub fn expression_end(source: &str) -> Result<usize, Diagnostic> {
+/// Parse exactly one expression and return its byte extent, excluding exterior trivia.
+pub fn expression_span(source: &str) -> Result<Span, Diagnostic> {
     let mut parser = Parser {
         tokens: lex(source)?,
         at: 0,
     };
     let expr = parser.expression(0)?;
     parser.end()?;
-    Ok(expr.span.end)
+    Ok(expr.span)
 }
 
 /// Return the exact interior of a complete braced block or a list of statements.
@@ -615,10 +625,12 @@ impl<'a> Parser<'a> {
                     let local = Expr {
                         kind: ExprKind::Name(name.to_owned()),
                         span: token.span,
+                        site: ExprSite::Synthetic,
                     };
                     Expr {
                         kind: ExprKind::Binary(op, Box::new(local), Box::new(rhs.expr)),
                         span,
+                        site: ExprSite::Synthetic,
                     }
                 };
                 self.require(";")?;
@@ -684,6 +696,7 @@ impl<'a> Parser<'a> {
                 expr: Expr {
                     kind: ExprKind::Binary(op, Box::new(left.expr), Box::new(right.expr)),
                     span,
+                    site: ExprSite::Ordinary,
                 },
                 height,
             };
@@ -709,7 +722,9 @@ impl<'a> Parser<'a> {
                 let yes = self.braced_expression(depth + 1)?;
                 self.require("else")?;
                 let no = if self.peek().text == "if" {
-                    self.prefix(depth + 1)?
+                    let mut tail = self.prefix(depth + 1)?;
+                    tail.expr.site = ExprSite::ElseIf;
+                    tail
                 } else {
                     self.braced_expression(depth + 1)?
                 };
@@ -788,7 +803,11 @@ impl<'a> Parser<'a> {
         let span = self.span_from(token.span.start);
         check_depth(height, span)?;
         Ok(ParsedExpr {
-            expr: Expr { kind, span },
+            expr: Expr {
+                kind,
+                span,
+                site: ExprSite::Ordinary,
+            },
             height,
         })
     }

@@ -11,7 +11,7 @@ python3 tools/propose.py examples/add.gpp --function add \
   --model deepseek-coder:6.7b --expr -o target/larger.expr
 ```
 
-Use `--expr` for one return expression, `--body` for a list of statements, or `--maintenance` for the experimental native editing preset below. The output path must be new. The tool reads the target declaration and current body from the compiler's normalized AST. Ordinary native GPT++ generation also supplies the other function signatures in the module. It checks that the selected model is installed locally before sending this context to the loopback Ollama service. A rejected completion can receive one retry with a diagnostic. Successful proposals use the compiler's normalized GPT++ spelling. The preview reflects the exact fragment saved to disk.
+Use `--expr` for one return expression, `--body` for a list of statements, or `--maintenance` for the experimental native editing preset below. The output path must be new. The tool reads the target declaration and current body from the compiler's normalized AST. Ordinary native GPT++ generation also supplies the other function signatures in the module. It checks that the selected model is installed locally before sending this context to the loopback Ollama service. A rejected completion can receive one retry with a diagnostic. Whole-body and return-expression proposals use the compiler's normalized GPT++ spelling. A selected-expression edit saves the checked insertion for that range. The preview reflects the exact fragment saved to disk.
 
 Read the diff and the saved fragment. The terminal displays the base revision and the exact `gpp edit` command to apply the proposal. To verify behavior before applying, use the printed revision with a preview and the interpreter. For this example `main` calls the changed function with 20 and 22, so the expected result is 22.
 
@@ -48,6 +48,56 @@ Add `--prepend` to propose statements above the existing body. The original norm
 The preset uses a 2,048-token context, a limit of 240 generated tokens, seed 42 and greedy decoding. A retry uses seed 43 and temperature 0.25. Each request preserves the model's stop strings and adds a flush-left function closer. Models with a native `.Suffix` template receive separate prefix and suffix fields. The StarCoder2 3B digest measured in v7 also supports its raw prefix/suffix/middle transport and control-token stops. Choose it with `--model starcoder2:3b`. Other artifacts require a suffix-capable template.
 
 The command uses the v7 native full-body and prepend prompt layouts and sampling settings. The CLI normalizes the body through the compiler, exposes up to three supplied cases, verifies that a named function actually calls the target before retrying, and validates all supplied cases before publishing the fragment. The benchmark used three public cases per task and a separate withheld set. These settings are experimental. [v7 protocol](../bench/policy/protocol.md)
+
+### Edit an expression inside the target
+
+Add `--locate` to let the model select the expression. Its first call receives the change request, public examples and the exact source of the target function. The model copies an existing expression on one line. The tool resolves the text against the compiler's expression catalog for that revision. An absent or ambiguous selection ends the run. The compiler checks each proposed replacement and the CLI runs every supplied case.
+
+The default `--locate separate` takes a second call to fill the selected gap. Use `--locate combined` to request the old and new expressions together. The model completes a two-line change with a prefilled `-` before the old expression and a generated `+` before its replacement. The table counts generation calls when the selection succeeds. A caller-triggered retry fills the same gap in either mode.
+
+| Expression selection | Calls with `--attempts 1` | Maximum calls with caller retry |
+| --- | ---: | ---: |
+| `--locate` or `--locate separate` | 2 | 3 |
+| `--locate combined` | 1 | 2 |
+| `--at START:END --expect REV` | 1 | 2 |
+
+This command uses the `target/maintenance-cases.json` file from the preceding example.
+
+```sh
+python3 tools/propose.py examples/add.gpp --function add --maintenance --locate combined \
+  --task 'Return the larger of left and right.' --attempts 1 \
+  --cases target/maintenance-cases.json -o target/located.expr
+```
+
+To supply the exact location yourself, obtain the global UTF-8 byte range and revision from one compiler listing. In the checked-in example `left + right` occupies the half-open range `73:85`. When you use a different file or revision, read its range from its own listing.
+
+```sh
+target/debug/gpp expressions examples/add.gpp --function add > target/add-expressions.json
+selection_revision=$(python3 -c 'import json; print(json.load(open("target/add-expressions.json"))["revision"])')
+python3 tools/propose.py examples/add.gpp --function add --maintenance --at 73:85 \
+  --expect "$selection_revision" --task 'Return the larger of left and right.' \
+  --attempts 1 --cases target/maintenance-cases.json -o target/selected.expr
+```
+
+All three forms save the replacement expression and print a revision-guarded command to apply it. The compiler preserves source bytes outside the selected range and groups the replacement when needed to preserve how the surrounding expression parses.
+
+The benchmark includes an offline replay for these three CLI paths. It serves archived model responses over loopback, runs the real proposal command, compares its outgoing requests and selected ranges, and applies each published fragment in a temporary directory. It checks the patch hash and reruns the withheld cases. The replay reports any retry whose caller excerpts differ because the CLI displays the compiler's normalized source. Run it from the repository root with the benchmark Python environment and matching compiler build.
+
+```sh
+target/empirical-venv/bin/python -B bench/expression/replay_product.py bench/expression/results/expression.jsonl
+```
+
+### Pick a numbered expression
+
+The experimental catalog tool gives each selectable expression its own ID and line number. The local model returns an ID and replacement in one schema-constrained JSON response. This lets it distinguish repeated occurrences of the same expression. Every generated ID maps to a concrete span on the original source revision. The compiler checks the edited module and the tool runs every supplied case before saving the expression.
+
+```sh
+python3 tools/indexed_edit.py examples/add.gpp --function add \
+  --task 'Return the larger of left and right.' --cases target/maintenance-cases.json \
+  -o target/indexed.expr
+```
+
+This workflow makes one model call. The full expression list consumes prompt tokens, and a valid ID can still identify the wrong site. The benchmark measures the cost of that list and the number of edits that pass withheld tests. [Catalog study](../bench/expression/README.md)
 
 ## Check a proposal against examples
 

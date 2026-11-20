@@ -195,7 +195,10 @@ fn main() -> ExitCode {
         Compile(Options),
         Edit(edit::Request),
     }
-    let parsed = if args.peek().is_some_and(|s| s == "edit" || s == "revision") {
+    let parsed = if args
+        .peek()
+        .is_some_and(|s| s == "edit" || s == "revision" || s == "expressions")
+    {
         edit::parse(args).map(Invocation::Edit)
     } else {
         Options::parse(args).map(Invocation::Compile)

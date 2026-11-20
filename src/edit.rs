@@ -1,5 +1,6 @@
 //! Checked single-function edits against an exact source revision.
-use crate::{check, diagnostic, syntax};
+use crate::syntax::{Expr, ExprKind, ExprSite, Function, Module, Span, Stmt, StmtKind};
+use crate::{check, diagnostic, json_string, syntax};
 use std::ffi::OsString;
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, Write};
@@ -8,13 +9,15 @@ use std::process::{Command, Stdio};
 
 pub const USAGE: &str = "\
   gpp revision FILE
-  gpp edit FILE --function NAME (--expr|--body) FRAGMENT_FILE (--expect REVISION|--stdout [--expect REVISION])
+  gpp expressions FILE --function NAME
+  gpp edit FILE --function NAME ([--at START:END] --expr|--body) FRAGMENT_FILE (--expect REVISION|--stdout [--expect REVISION])
 
 Use gpp revision FILE to obtain the sha256:... token for an in-place edit.
 --stdout writes the checked candidate to stdout and leaves FILE untouched.";
 
 pub enum Request {
     Revision(PathBuf),
+    Expressions(PathBuf, String),
     Replace(Edit),
 }
 
@@ -23,6 +26,7 @@ pub struct Edit {
     function: String,
     fragment: PathBuf,
     kind: FragmentKind,
+    at: Option<Span>,
     expected: Option<String>,
     preview: bool,
 }
@@ -35,14 +39,28 @@ enum FragmentKind {
 
 pub fn parse(args: impl IntoIterator<Item = OsString>) -> Result<Request, String> {
     let mut args = args.into_iter();
-    let revision = args.next().as_deref() == Some("revision".as_ref());
+    let command = args.next().ok_or(USAGE)?;
     let file = PathBuf::from(args.next().ok_or(USAGE)?);
-    if revision {
+    if command == "revision" {
         if args.next().is_some() {
             return Err(USAGE.into());
         }
         return Ok(Request::Revision(file));
     }
+    if command == "expressions" {
+        if args.next().as_deref() != Some("--function".as_ref()) {
+            return Err(USAGE.into());
+        }
+        let name = args
+            .next()
+            .and_then(|s| s.into_string().ok())
+            .ok_or(USAGE)?;
+        if args.next().is_some() {
+            return Err(USAGE.into());
+        }
+        return Ok(Request::Expressions(file, name));
+    }
+    let mut at = None;
     let mut function = None;
     let mut fragment = None;
     let mut expected = None;
@@ -63,6 +81,13 @@ pub fn parse(args: impl IntoIterator<Item = OsString>) -> Result<Request, String
                     FragmentKind::Body
                 };
                 fragment = Some((kind, PathBuf::from(args.next().ok_or(USAGE)?)));
+            }
+            Some("--at") if at.is_none() => {
+                let raw = args
+                    .next()
+                    .and_then(|s| s.into_string().ok())
+                    .ok_or(USAGE)?;
+                at = Some(parse_span(&raw).ok_or("--at requires a nonempty START:END byte range")?);
             }
             Some("--expect") if expected.is_none() => {
                 let rev = args
@@ -87,14 +112,30 @@ pub fn parse(args: impl IntoIterator<Item = OsString>) -> Result<Request, String
         );
     }
     let (kind, fragment) = fragment.ok_or(USAGE)?;
+    if at.is_some() && matches!(kind, FragmentKind::Body) {
+        return Err("--at selects an expression and requires --expr".into());
+    }
     Ok(Request::Replace(Edit {
         file,
         function: function.ok_or(USAGE)?,
         fragment,
         kind,
+        at,
         expected,
         preview,
     }))
+}
+
+fn parse_span(raw: &str) -> Option<Span> {
+    let (start, end) = raw.split_once(':')?;
+    if !start.bytes().chain(end.bytes()).all(|c| c.is_ascii_digit()) {
+        return None;
+    }
+    let span = Span {
+        start: start.parse().ok()?,
+        end: end.parse().ok()?,
+    };
+    (span.start < span.end).then_some(span)
 }
 
 fn valid_digest(value: &str) -> bool {
@@ -139,14 +180,161 @@ fn revision(bytes: &[u8]) -> Result<String, String> {
     Err("computing revisions requires sha256sum or shasum on PATH".into())
 }
 
-fn candidate(edit: &Edit, source: &str, fragment: &str) -> Result<String, String> {
-    let module = syntax::parse(source).map_err(|e| diagnostic(&edit.file, source, e, false))?;
-    let mut matches = module.functions.iter().filter(|f| f.name == edit.function);
+fn target<'a>(module: &'a Module, name: &str) -> Result<&'a Function, String> {
+    let mut matches = module.functions.iter().filter(|f| f.name == name);
     let function = matches
         .next()
-        .ok_or_else(|| format!("unknown function '{}'", edit.function))?;
+        .ok_or_else(|| format!("unknown function '{name}'"))?;
     if matches.next().is_some() {
-        return Err(format!("ambiguous function '{}'", edit.function));
+        return Err(format!("ambiguous function '{name}'"));
+    }
+    Ok(function)
+}
+
+fn expressions(function: &Function) -> Vec<&Expr> {
+    fn walk_expr<'a>(expr: &'a Expr, nodes: &mut Vec<&'a Expr>) {
+        if expr.site != ExprSite::Synthetic {
+            nodes.push(expr);
+        }
+        match &expr.kind {
+            ExprKind::If { cond, yes, no } => {
+                for child in [cond, yes, no] {
+                    walk_expr(child, nodes);
+                }
+            }
+            ExprKind::Binary(_, lhs, rhs) => {
+                walk_expr(lhs, nodes);
+                walk_expr(rhs, nodes);
+            }
+            ExprKind::Unary(_, arg) => walk_expr(arg, nodes),
+            ExprKind::Call(_, args) => {
+                for arg in args {
+                    walk_expr(arg, nodes);
+                }
+            }
+            ExprKind::Int(_) | ExprKind::Bool(_) | ExprKind::Name(_) | ExprKind::Unit => {}
+        }
+    }
+
+    fn walk_body<'a>(stmts: &'a [Stmt], nodes: &mut Vec<&'a Expr>) {
+        for stmt in stmts {
+            match &stmt.kind {
+                StmtKind::Bind { value, .. }
+                | StmtKind::Assign { value, .. }
+                | StmtKind::Expr(value)
+                | StmtKind::Return(value) => walk_expr(value, nodes),
+                StmtKind::If {
+                    cond,
+                    then_body,
+                    else_body,
+                } => {
+                    walk_expr(cond, nodes);
+                    walk_body(then_body, nodes);
+                    walk_body(else_body, nodes);
+                }
+                StmtKind::While { cond, body } => {
+                    walk_expr(cond, nodes);
+                    walk_body(body, nodes);
+                }
+            }
+        }
+    }
+
+    let mut nodes = Vec::new();
+    walk_body(&function.body, &mut nodes);
+    nodes
+}
+
+fn list_expressions(path: &Path, name: &str) -> Result<(), String> {
+    let source = fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
+    let report = |err| diagnostic(path, &source, err, false);
+    let module = syntax::parse(&source).map_err(report)?;
+    let function = target(&module, name)?;
+    check::check(&module).map_err(report)?;
+    let nodes = expressions(function);
+    let revision = revision(source.as_bytes())?;
+    let stdout = io::stdout();
+    let mut out = io::BufWriter::new(stdout.lock());
+    let mut emit = || -> io::Result<()> {
+        write!(
+            out,
+            "{{\"schema\":\"gpp.expressions/1\",\"revision\":{},\"function\":{},\"start_byte\":{},\"end_byte\":{},\"expressions\":[",
+            json_string(&revision),
+            json_string(name),
+            function.span.start,
+            function.span.end
+        )?;
+        for (i, expr) in nodes.iter().enumerate() {
+            if i != 0 {
+                write!(out, ",")?;
+            }
+            let Span { start, end } = expr.span;
+            write!(
+                out,
+                "{{\"start_byte\":{start},\"end_byte\":{end},\"text\":{}}}",
+                json_string(&source[start..end])
+            )?;
+        }
+        writeln!(out, "]}}")?;
+        out.flush()
+    };
+    emit().map_err(|err| err.to_string())
+}
+
+fn replace_node(
+    edit: &Edit,
+    source: &str,
+    function: &Function,
+    span: Span,
+    fragment: &str,
+) -> Result<String, String> {
+    let selected = expressions(function)
+        .into_iter()
+        .find(|expr| expr.span == span)
+        .ok_or_else(|| {
+            format!(
+                "range {}:{} does not select an expression in '{}'",
+                span.start, span.end, function.name
+            )
+        })?;
+    let frag = syntax::expression_span(fragment)
+        .map_err(|err| diagnostic(&edit.fragment, fragment, err, false))?;
+    let text = &fragment[frag.start..frag.end];
+    let splice = |value: &str| {
+        let mut result = source.to_owned();
+        result.replace_range(span.start..span.end, value);
+        result
+    };
+
+    // Preserve the author's spelling when the inserted bytes still form exactly
+    // one AST node. This detects both precedence changes and merged tokens.
+    let bare = splice(text);
+    if let Ok(module) = syntax::parse(&bare) {
+        let replacement = Span {
+            start: span.start,
+            end: span.start + text.len(),
+        };
+        if expressions(target(&module, &function.name)?)
+            .iter()
+            .any(|node| node.span == replacement)
+        {
+            check::check(&module).map_err(|err| diagnostic(&edit.file, &bare, err, false))?;
+            return Ok(bare);
+        }
+    }
+    let grouped = if selected.site == ExprSite::ElseIf {
+        format!("{{{text}}}")
+    } else {
+        format!("({text})")
+    };
+    check_candidate(edit, splice(&grouped))
+}
+
+fn candidate(edit: &Edit, source: &str, fragment: &str) -> Result<String, String> {
+    let module = syntax::parse(source).map_err(|e| diagnostic(&edit.file, source, e, false))?;
+    let function = target(&module, &edit.function)?;
+    if let Some(span) = edit.at {
+        return replace_node(edit, source, function, span, fragment);
     }
     let fragment_error = |e| diagnostic(&edit.fragment, fragment, e, false);
     let newline = if source.contains("\r\n") {
@@ -156,7 +344,9 @@ fn candidate(edit: &Edit, source: &str, fragment: &str) -> Result<String, String
     };
     let contents = match edit.kind {
         FragmentKind::Expression => {
-            let end = syntax::expression_end(fragment).map_err(fragment_error)?;
+            let end = syntax::expression_span(fragment)
+                .map_err(fragment_error)?
+                .end;
             // A trailing line comment must not consume the return's semicolon.
             format!("    return {};{}", &fragment[..end], &fragment[end..])
         }
@@ -176,6 +366,10 @@ fn candidate(edit: &Edit, source: &str, fragment: &str) -> Result<String, String
         result.push_str(newline);
     }
     result.push_str(&source[span.end - 1..]);
+    check_candidate(edit, result)
+}
+
+fn check_candidate(edit: &Edit, result: String) -> Result<String, String> {
     let report = |e| diagnostic(&edit.file, &result, e, false);
     let checked = syntax::parse(&result).map_err(report)?;
     check::check(&checked).map_err(report)?;
@@ -189,6 +383,7 @@ pub fn execute(request: Request) -> Result<(), String> {
             println!("{}", revision(&bytes)?);
             Ok(())
         }
+        Request::Expressions(path, name) => list_expressions(&path, &name),
         Request::Replace(edit) => replace(edit),
     }
 }

@@ -183,8 +183,82 @@ def python_declaration(fn):
     return f"def {fn['name']}({annotated}) -> {SCALAR_TYPES[fn['result']]}:", params
 
 
-def maintenance_context(fn, task, cases, prepend, failure=()):
-    parts = [task, "Examples", *(f"{c.call()} = {c.expected}" for c in cases[:3]), *failure]
+@dataclass(frozen=True)
+class ExpressionGap:
+    prefix: str
+    old: str
+    suffix: str
+
+
+def expression_catalog(binary, snapshot, target, revision):
+    catalog = json.loads(checked(binary, "expressions", snapshot, "--function", target))
+    if catalog["schema"] != "gpp.expressions/1" or catalog["revision"] != revision or catalog["function"] != target:
+        raise ProposalError("Unexpected compiler expression catalog for the selected source.")
+    return catalog
+
+
+def expression_gap(catalog, source, at):
+    begin, end = map(int, at.split(":"))
+    for row in catalog["expressions"]:
+        if (row["start_byte"], row["end_byte"]) == (begin, end):
+            return ExpressionGap(source[catalog["start_byte"]:begin].decode(), row["text"],
+                                 source[end:catalog["end_byte"]].decode() + "\n")
+    raise ProposalError(f"{at} is not a listed expression in {catalog['function']}. Use gpp expressions on this revision.")
+
+
+def expression_context(task, examples, old, failure=()):
+    """Render the instruction and assertions above a native FIM expression gap."""
+    return "\n".join([task, "Examples", *examples[:3], *failure, "Replace this expression", old])
+
+
+def selection_prompt(task, examples, function_source, comment, instruction, prefill):
+    parts = [task, "Examples", *examples[:3], instruction]
+    instructions = "".join(f"{comment} {line}\n" for part in parts for line in part.splitlines())
+    return (instructions + function_source.rstrip("\r\n") + "\n" + prefill,
+            f"\n{comment} End selection\n")
+
+
+def location_prompt(task, examples, function_source, comment):
+    """Return a target-only FIM request that asks the model to locate its next edit."""
+    return selection_prompt(task, examples, function_source, comment,
+                            "Copy the exact existing expression to replace. Use one line.",
+                            f"{comment} Selected expression: ")
+
+
+def combined_prompt(task, examples, function_source, comment):
+    """Return a FIM request for a two-line edit with the first minus prefilled."""
+    return selection_prompt(task, examples, function_source, comment,
+                            "Edit one expression. On the - line copy the exact old expression. "
+                            "On the + line write its replacement. Use exactly two lines.", "-")
+
+
+def parse_change(raw):
+    """Parse the continuation after a fixed '-' into single-line old/new expressions."""
+    lines = raw.splitlines()
+    if len(lines) != 2 or not lines[1].startswith("+"):
+        raise ProposalError("Expected one old expression followed by a + replacement line.")
+    old, new = lines[0].strip(), lines[1][1:].strip()
+    if not old or not new:
+        raise ProposalError("Both the selected expression and its replacement must be nonempty.")
+    return old, new
+
+
+def unique_expression(catalog, raw):
+    selected = raw.strip()
+    if len(selected.splitlines()) != 1:
+        raise ProposalError("Location failed: copy one existing expression on one line.")
+    matches = [row for row in catalog["expressions"] if row["text"] == selected]
+    if len(matches) != 1:
+        raise ProposalError(f"Location failed: {selected!r} matched {len(matches)} compiler expressions. "
+                            "Use a unique expression or select a range with --at.")
+    return f"{matches[0]['start_byte']}:{matches[0]['end_byte']}"
+
+
+def maintenance_context(fn, task, cases, prepend, failure=(), gap=None):
+    examples = [f"{c.call()} = {c.expected}" for c in cases[:3]]
+    if gap is not None:
+        return expression_context(task, examples, gap.old, failure)
+    parts = [task, "Examples", *examples, *failure]
     if prepend:
         parts.append("Insert early returns for changed cases above the existing body.")
     else:
@@ -193,9 +267,10 @@ def maintenance_context(fn, task, cases, prepend, failure=()):
     return "\n".join(line for part in parts for line in part.splitlines())
 
 
-def generation_context(fn, other, args, cases):
+def generation_context(fn, other, args, cases, gap=None):
     if args.maintenance:
-        return maintenance_context(fn, args.task, cases, args.prepend), fn["header"] + " {\n    ", []
+        prefix = gap.prefix if gap is not None else fn["header"] + " {\n    "
+        return maintenance_context(fn, args.task, cases, args.prepend, gap=gap), prefix, []
     prompt = args.task + "\nCurrent GPT++ implementation:\n" + fn.group(0)
     if args.surface == "policy":
         prompt += ("\nWrite one row per changed case: when <condition> => <value>. First match wins."
@@ -224,7 +299,7 @@ def generation_context(fn, other, args, cases):
     return prompt, prefix, params
 
 
-def complete(model, template, prefix, context, args, stops, retry, raw_fim=False, protected_body=None):
+def complete(model, template, prefix, context, args, stops, retry, raw_fim=False, native_suffix=None):
     options = {"seed": 43 if retry else 42, "temperature": 0.25 if retry else 0, "num_predict": 240}
     request = {"model": model, "stream": False, "keep_alive": "2m", "options": options}
     if args.maintenance:
@@ -237,8 +312,8 @@ def complete(model, template, prefix, context, args, stops, retry, raw_fim=False
         request["prompt"] = "".join(f"{comment} {line}\n" for line in context.splitlines()) + prefix
         suffix = {"policy": POLICY_SUFFIX, "python": "\n\n# End of function\n",
                   "gpp": (";" if args.form == "expr" else "") + "\n}\n"}
-        if protected_body is not None:
-            suffix["gpp"] = "\n" + protected_body + "\n}\n"
+        if native_suffix is not None:
+            suffix["gpp"] = native_suffix
         if raw_fim:
             request.update(raw=True, prompt="<fim_prefix>" + request["prompt"]
                            + "<fim_suffix>" + suffix[args.surface] + "<fim_middle>")
@@ -400,7 +475,7 @@ def check_cases(binary, preview, work, cases):
                               f"{case.call()} returned {actual}. Expected {expected}.")
 
 
-def checked_proposal(binary, apply, base, form, function, content, work):
+def checked_proposal(binary, apply, base, form, function, content, work, selected_expression=False):
     draft = work / "draft.gpp"
     draft.write_text(content, encoding="utf-8")
     preview = compiler(*apply, draft, "--expect", base, "--stdout")
@@ -409,6 +484,10 @@ def checked_proposal(binary, apply, base, form, function, content, work):
         if "error[GPP-" in error:
             raise ValueError(error)
         raise ProposalError(error)
+    if selected_expression:
+        # The selected node can be nested inside any statement. Its checked
+        # fragment is the exact expression the editor used to create this preview.
+        return content, preview.stdout
     canonical = canonical_fragment(binary, preview.stdout, work, function, form)
     if canonical != content:
         draft.write_text(canonical, encoding="utf-8")
@@ -443,18 +522,24 @@ def propose(args):
         snapshot = Path(scratch) / "base.gpp"
         snapshot.write_bytes(source)
         base = checked(binary, "revision", snapshot).strip()
+        if args.expect and args.expect != base:
+            raise ProposalError(f"stale revision: expected {args.expect}, found {base}")
         checked(binary, "check", snapshot)
         dump = checked(binary, "ast", snapshot)
         fn, other = target_context(dump, args.function)
         declarations = {f["name"]: f for f in FUNCTION.finditer(dump)}
         cases = load_cases(args.cases, args.function, declarations)
-        protected_body = textwrap.indent(textwrap.dedent(fn["body"]).strip(), "    ") if args.prepend else None
+        at = args.at
+        catalog = expression_catalog(binary, snapshot, args.function, base) if at or args.locate else None
+        gap = expression_gap(catalog, source, at) if at else None
         available = [] if args.caller_context_on_failure else other
-        original, prefix, params = generation_context(fn, available, args, cases)
-        if args.caller_context:
-            original += caller_section(declarations, args.function)
-        if cases and not args.maintenance:
-            original += "\nExamples:\n" + "\n".join(f"{c.named} gives {c.expected}." for c in cases[:3])
+        if args.locate:
+            target_source = source[catalog["start_byte"]:catalog["end_byte"]].decode()
+            examples = [f"{c.call()} = {c.expected}" for c in cases[:3]]
+            renderer = combined_prompt if args.locate == "combined" else location_prompt
+            selection_prefix, selection_suffix = renderer(args.task, examples, target_source, "//")
+        else:
+            original, prefix, params = generation_context(fn, available, args, cases, gap)
         model, template, model_parameters, digest = local_model(args.model, args.port, args.maintenance)
         raw_fim = args.maintenance and digest == STAR_FIM_DIGEST
         if args.infill and not raw_fim and not re.search(r"\{\{[^{}]*\.Suffix\b[^{}]*\}\}", template):
@@ -462,14 +547,43 @@ def propose(args):
             raise ProposalError(f"Model {model!r} has no .Suffix infill template." + hint)
         stops = generation_stops(model_parameters, args.surface, STAR_STOPS if raw_fim else ()) if (
             args.stop_at_boundary or (args.surface == "policy" and args.infill)) else None
+        initial_replacement = None
+        if args.locate:
+            selection_stops = stops if args.locate == "combined" else list(dict.fromkeys([*stops, "\n"]))
+            selected = complete(model, template, selection_prefix, "", args, selection_stops,
+                                retry=False, raw_fim=raw_fim, native_suffix=selection_suffix)
+            if args.locate == "combined":
+                selected, initial_replacement = parse_change(selected)
+            at = unique_expression(catalog, selected)
+            if checked(binary, "revision", args.file).strip() != base:
+                raise ProposalError("stale revision: source changed during expression selection")
+            gap = expression_gap(catalog, source, at)
+            print(f"Selected expression {at}: {gap.old}")
+            original, prefix, params = generation_context(fn, available, args, cases, gap)
+        protected_body = textwrap.indent(textwrap.dedent(fn["body"]).strip(), "    ") if args.prepend else None
+        native_suffix = gap.suffix if gap is not None else None
+        if protected_body is not None:
+            native_suffix = "\n" + protected_body + "\n}\n"
+        if args.caller_context:
+            original += caller_section(declarations, args.function)
+        if cases and not args.maintenance:
+            original += "\nExamples:\n" + "\n".join(f"{c.named} gives {c.expected}." for c in cases[:3])
         prompt = original
-        apply = [binary, "edit", str(args.file), "--function", args.function, "--" + args.form]
+        apply = [binary, "edit", str(args.file), "--function", args.function]
+        if at:
+            apply += ["--at", at]
+        apply.append("--" + args.form)
         max_attempts = 1 if args.attempts == "1" else 2
         for attempt in range(max_attempts):
-            raw = complete(model, template, prefix, prompt, args, stops, retry=bool(attempt),
-                           raw_fim=raw_fim, protected_body=protected_body)
+            if attempt == 0 and initial_replacement is not None:
+                raw = initial_replacement
+            else:
+                raw = complete(model, template, prefix, prompt, args, stops, retry=bool(attempt),
+                               raw_fim=raw_fim, native_suffix=native_suffix)
             try:
-                if args.surface == "policy":
+                if gap is not None:
+                    content = raw.strip() + "\n"
+                elif args.surface == "policy":
                     rules = POLICY_PREFIX + raw + POLICY_SUFFIX if args.infill else raw
                     content = lower_policy(rules, params, SCALAR_TYPES[fn["result"]], original_body=fn["body"]) + "\n"
                 elif args.surface == "python":
@@ -478,7 +592,8 @@ def propose(args):
                     content = fragment(raw if protected_body is None else raw.rstrip() + "\n" + protected_body,
                                        args.form)
                 canonical, preview = checked_proposal(
-                    binary, apply, base, args.form, args.function, content, Path(scratch)
+                    binary, apply, base, args.form, args.function, content, Path(scratch),
+                    selected_expression=gap is not None
                 )
                 # A trailing "else" can consume the first protected "if" and still
                 # make a valid module. Require the canonical top-level statements
@@ -503,7 +618,7 @@ def propose(args):
                              else caller_section(declarations, args.function))
                 if args.maintenance:
                     prompt = maintenance_context(fn, args.task, cases, args.prepend, [
-                        "Previous insertion", raw, exc.compact[:600], extra.strip()])
+                        "Previous insertion", raw, exc.compact[:600], extra.strip()], gap)
                 else:
                     prompt = original + extra + "\nPrevious completion:\n" + raw + "\nValidation feedback:\n" \
                         + feedback[:600] + "\nComplete the function again."
@@ -534,8 +649,15 @@ def main():
                       help="replace the statement list")
     form.add_argument("--maintenance", dest="form", action="store_const", const="maintenance",
                       help="experimental native full-body infill with public cases and a caller-triggered retry")
-    parser.add_argument("--prepend", action="store_true",
-                        help="with --maintenance, insert statements above the protected original body")
+    selection = parser.add_mutually_exclusive_group()
+    selection.add_argument("--prepend", action="store_true",
+                           help="with --maintenance, insert statements above the protected original body")
+    selection.add_argument("--at", metavar="START:END",
+                           help="with --maintenance, replace a checked expression listed by gpp expressions")
+    selection.add_argument("--locate", nargs="?", choices=("separate", "combined"), const="separate",
+                           help="with --maintenance, select and edit one expression in separate calls "
+                                "(default) or in a combined two-line change")
+    parser.add_argument("--expect", metavar="REVISION", help="require this source revision (required with --at)")
     context = parser.add_mutually_exclusive_group()
     context.add_argument("--caller-context", action="store_true", help="include bounded excerpts of checked callers")
     context.add_argument("--caller-context-on-failure", action="store_true",
@@ -556,17 +678,21 @@ def main():
     parser.add_argument("--port", type=int, default=11434, help="local Ollama port (default 11434)")
     args = parser.parse_args()
     args.maintenance = args.form == "maintenance"
+    if args.at is not None and (not args.maintenance or not args.expect or not re.fullmatch(r"[0-9]+:[0-9]+", args.at)):
+        parser.error("--at requires --maintenance, a START:END byte range, and its --expect revision")
     if args.maintenance:
         if not args.cases:
             parser.error("--maintenance requires --cases FILE with at least one public example")
         if args.surface != "gpp" or args.caller_context:
             parser.error("--maintenance uses native GPT++ and a target-only first prompt")
-        args.form, args.infill, args.stop_at_boundary = "body", True, True
+        args.form, args.infill, args.stop_at_boundary = "expr" if args.at or args.locate else "body", True, True
         args.model = args.model or MAINTENANCE_MODEL
         args.attempts = "1" if args.attempts == "1" else "caller"
     else:
         if args.prepend:
             parser.error("--prepend requires --maintenance")
+        if args.locate:
+            parser.error("--locate requires --maintenance")
         if not args.model:
             parser.error("the following arguments are required: --model")
         args.attempts = args.attempts or "2"

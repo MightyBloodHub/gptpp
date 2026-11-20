@@ -241,3 +241,160 @@ fn a_symlink_preserves_its_target_and_file_permissions() {
             .contains("return 100;")
     );
 }
+
+fn span_at(source: &str, text: &str) -> String {
+    let start = source.find(text).unwrap();
+    format!("{start}:{}", start + text.len())
+}
+
+#[test]
+fn catalog_is_revision_bound_and_lists_only_source_expressions() {
+    let fixture = Fixture::new();
+    let source = format!("{PREFIX} var total = 3; total += x*2; return total; {SUFFIX}");
+    fs::write(&fixture.source, &source).unwrap();
+    let list = cli()
+        .arg("expressions")
+        .arg(&fixture.source)
+        .args(["--function", "solve"])
+        .output()
+        .unwrap();
+    let expected_nodes: Vec<_> = ["3", "x*2", "x", "2", "total"]
+        .iter()
+        .zip([
+            source.find('3').unwrap(),
+            source.find("x*2").unwrap(),
+            source.find("x*2").unwrap(),
+            source.find("x*2").unwrap() + 2,
+            source.find("return total").unwrap() + 7,
+        ])
+        .map(|(text, start)| {
+            format!(
+                "{{\"start_byte\":{start},\"end_byte\":{},\"text\":\"{text}\"}}",
+                start + text.len()
+            )
+        })
+        .collect();
+    assert_eq!(
+        success(&list),
+        format!(
+            "{{\"schema\":\"gpp.expressions/1\",\"revision\":\"{}\",\"function\":\"solve\",\"start_byte\":{},\"end_byte\":{},\"expressions\":[{}]}}\n",
+            fixture.revision(),
+            source.find("fn solve").unwrap(),
+            source.find("} // end").unwrap() + 1,
+            expected_nodes.join(",")
+        )
+    );
+    fs::write(
+        &fixture.source,
+        format!("{PREFIX} return missing; {SUFFIX}"),
+    )
+    .unwrap();
+    let invalid = cli()
+        .arg("expressions")
+        .arg(&fixture.source)
+        .args(["--function", "solve"])
+        .output()
+        .unwrap();
+    assert!(!invalid.status.success());
+    assert!(invalid.stdout.is_empty());
+}
+
+#[test]
+fn selected_edit_preserves_bytes_grouping_and_revision() {
+    let fixture = Fixture::new();
+    let source = format!("{PREFIX}\r\n    return x * // α {{}}\r\n        x;\r\n{SUFFIX}");
+    fs::write(&fixture.source, &source).unwrap();
+    let last_x = source.find("x;\r\n").unwrap();
+    let span = format!("{last_x}:{}", last_x + 1);
+    let rev = fixture.revision();
+    fs::write(&fixture.fragment, " // note\nx + 1 // trailing").unwrap();
+    let cmd = || {
+        let mut cmd = fixture.edit("--expr", &fixture.fragment);
+        cmd.args(["--expect", &rev, "--at", &span]);
+        cmd
+    };
+    let expected = format!("{}(x + 1){}", &source[..last_x], &source[last_x + 1..]);
+    assert_eq!(success(&cmd().arg("--stdout").output().unwrap()), expected);
+    assert_eq!(fs::read_to_string(&fixture.source).unwrap(), source);
+    success(&cmd().output().unwrap());
+    assert_eq!(fs::read_to_string(&fixture.source).unwrap(), expected);
+    let evaluated = cli()
+        .args(["run", "--interpreter"])
+        .arg(&fixture.source)
+        .output()
+        .unwrap();
+    assert_eq!(success(&evaluated), "6\n");
+    let stale = cmd().output().unwrap();
+    assert!(String::from_utf8_lossy(&stale.stderr).contains("stale revision"));
+}
+
+#[test]
+fn source_context_drives_grouping_and_else_if_blocks() {
+    let fixture = Fixture::new();
+    for (body, old, raw, inserted) in [
+        ("return x * 100;", "100", "3", "3"),
+        ("return x - 100;", "100", "x - 1", "(x - 1)"),
+        ("return(x);", "(x)", "x + 1", "(x + 1)"),
+        (
+            "return if x < 0 { 0 } else if x == 2 { 4 } else { 1 };",
+            "if x == 2 { 4 } else { 1 }",
+            "x + 1",
+            "{x + 1}",
+        ),
+        (
+            "return if x < 0 { 0 } else { if x == 2 { 4 } else { 1 } };",
+            "if x == 2 { 4 } else { 1 }",
+            "x + 1",
+            "x + 1",
+        ),
+        ("var n = 2; n += x*3; return n;", "x*3", "x + 1", "x + 1"),
+        ("return 100 + (x + 4);", "(x + 4)", "x + 1", "(x + 1)"),
+    ] {
+        let source = format!("{PREFIX} {body} {SUFFIX}");
+        let span = span_at(&source, old);
+        fs::write(&fixture.source, &source).unwrap();
+        fs::write(&fixture.fragment, raw).unwrap();
+        let output = fixture
+            .edit("--expr", &fixture.fragment)
+            .args(["--at", &span, "--stdout"])
+            .output()
+            .unwrap();
+        assert_eq!(
+            success(&output),
+            source.replacen(old, inserted, 1),
+            "{body}"
+        );
+    }
+}
+
+#[test]
+fn arbitrary_ranges_cross_function_edits_and_invalid_fragments_are_rejected() {
+    let fixture = Fixture::new();
+    let source = format!("{PREFIX} var n = x; n += x + 1; return n; {SUFFIX}");
+    fs::write(&fixture.source, &source).unwrap();
+    let valid = span_at(&source, "x + 1");
+    let utf8 = source.find('λ').unwrap() + 1;
+    let lhs = source.find("n +=").unwrap();
+    for (at, fragment, flag) in [
+        (span_at(&source, "x +"), "x", "--expr"),
+        (span_at(&source, "solve(2)"), "2", "--expr"),
+        (span_at(&source, "n += x + 1"), "3", "--expr"),
+        (format!("{lhs}:{}", lhs + 1), "x", "--expr"),
+        (format!("{utf8}:{}", utf8 + 1), "0", "--expr"),
+        ("9:9".into(), "0", "--expr"),
+        ("3:2".into(), "0", "--expr"),
+        (valid.clone(), "true", "--expr"),
+        (valid.clone(), "0; return 42", "--expr"),
+        (valid, "return 4;", "--body"),
+    ] {
+        fs::write(&fixture.fragment, fragment).unwrap();
+        let rejected = fixture
+            .edit(flag, &fixture.fragment)
+            .args(["--at", &at, "--expect", &fixture.revision()])
+            .output()
+            .unwrap();
+        assert!(!rejected.status.success(), "{at} {fragment}");
+        assert!(rejected.stdout.is_empty());
+        assert_eq!(fs::read_to_string(&fixture.source).unwrap(), source);
+    }
+}

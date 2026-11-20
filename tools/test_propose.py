@@ -194,6 +194,142 @@ class ProposeTests(unittest.TestCase):
             self.assertIn("qwen2.5-coder:7b", no_fim.stderr)
             self.assertFalse(any(endpoint == "/api/generate" for endpoint, _ in calls))
 
+    def test_expression_range_uses_exact_target_bytes_and_caller_only_retry(self):
+        source = SOURCE.replace("module demo;", "// café\r\nmodule demo;").replace(
+            "return x;", "let scaled = x * 2 + 1;\n    return scaled;")
+        self.file.write_bytes(source.encode())
+        self.cases.write_text('[{"function":"main","args":[],"expected":17}]')
+        catalog = json.loads(subprocess.check_output([GPP, "expressions", self.file, "--function", "target"]))
+        old = next(row for row in catalog["expressions"] if row["text"] == "x * 2")
+        at = f'{old["start_byte"]}:{old["end_byte"]}'
+        with mock_ollama(["x * 2", "x * 4"], infill=True) as (port, calls):
+            result = self.invoke(port, "maintenance", "--at", at, "--expect", catalog["revision"],
+                                 "--cases", self.cases)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        first, retry = [r for endpoint, r in calls if endpoint == "/api/generate"]
+        self.assertIn("// Replace this expression\n// x * 2\nfn target(", first["prompt"])
+        self.assertTrue(first["prompt"].endswith("let scaled = "))
+        self.assertEqual(first["suffix"], " + 1;\n    return scaled;\n}\n")
+        self.assertNotIn("123456", first["prompt"])
+        self.assertNotIn("pub fn main()", first["prompt"])
+        self.assertIn("pub fn main()", retry["prompt"])
+        self.assertIn("main() returned 9. Expected 17.", retry["prompt"])
+        self.assertEqual(first["suffix"], retry["suffix"])
+        self.assertEqual(self.output.read_text(), "x * 4\n")
+        self.assertEqual(self.file.read_bytes(), source.encode())
+        self.assertIn("--at " + at, result.stdout)
+        subprocess.run([GPP, "edit", self.file, "--function", "target", "--at", at, "--expr", self.output,
+                        "--expect", catalog["revision"]], check=True)
+        self.assertTrue(self.file.read_bytes().startswith(source.encode()[:old["start_byte"]]))
+        self.assertTrue(self.file.read_bytes().endswith(source.encode()[old["end_byte"]:]))
+        self.assertEqual(subprocess.check_output([GPP, "run", "--interpreter", self.file]), b"17\n")
+
+    def test_expression_range_rejects_stale_or_invalid_selection_before_inference(self):
+        base = subprocess.check_output([GPP, "revision", self.file], text=True).strip()
+        self.cases.write_text('[{"args":[4],"expected":4}]')
+        for extras, message in [([], "--expect"), (["--expect", base], "not a listed expression"),
+                                (["--expect", "sha256:" + "0" * 64], "stale revision")]:
+            with self.subTest(extras=extras), mock_ollama(infill=True) as (port, calls):
+                result = self.invoke(port, "maintenance", "--at", "0:2", "--cases", self.cases, *extras)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(message, result.stderr)
+                self.assertFalse(calls)
+                self.assertFalse(self.output.exists())
+
+    def test_location_uses_one_call_then_one_edit_with_strict_source_boundaries(self):
+        self.cases.write_text('[{"args":[3],"expected":4}]')
+        for raw, success in [("x + 1", True), ("x + 1; return 99;", False), ("true", False)]:
+            with self.subTest(raw=raw), mock_ollama(["x", raw], infill=True) as (port, calls):
+                result = self.invoke(port, "maintenance", "--locate", "--attempts", "1", "--cases", self.cases)
+                self.assertEqual(result.returncode == 0, success, result.stderr)
+                where, edit = [r for endpoint, r in calls if endpoint == "/api/generate"]
+                self.assertTrue(where["prompt"].endswith("return x;\n}\n// Selected expression: "))
+                self.assertEqual(where["suffix"], "\n// End selection\n")
+                self.assertIn("\n", where["options"]["stop"])
+                self.assertNotIn("pub fn main()", where["prompt"])
+                self.assertTrue(edit["prompt"].endswith("    return "))
+                self.assertEqual(edit["suffix"], ";\n}\n")
+                self.assertNotIn("\n", edit["options"]["stop"])
+                self.assertEqual(self.output.exists(), success)
+                if success:
+                    self.assertEqual(self.output.read_text(), "x + 1\n")
+                    self.output.unlink()
+
+    def test_locator_refuses_ambiguous_absent_and_stale_source_before_edit(self):
+        self.cases.write_text('[{"args":[3],"expected":4}]')
+        for raw, mutate, reason in [("x", False, "matched 2"), ("y", False, "matched 0"),
+                                     ("x\ny", False, "one line"), ("x + x", True, "stale revision")]:
+            source = SOURCE.replace("return x;", "return x + x;")
+            self.file.write_text(source)
+            update = (lambda: self.file.write_text(source + "// changed during location\n")) if mutate else None
+            with self.subTest(raw=raw), mock_ollama([raw], infill=True, on_generate=update) as (port, calls):
+                result = self.invoke(port, "maintenance", "--locate", "--cases", self.cases)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(reason, result.stderr)
+                self.assertEqual(sum(e == "/api/generate" for e, _ in calls), 1)
+                self.assertFalse(self.output.exists())
+
+    def test_combined_location_publishes_a_checked_change_in_one_call(self):
+        self.cases.write_text('[{"args":[3],"expected":4}]')
+        with mock_ollama(["x\r\n+x + 1\r\n"], infill=True, parameters='stop "<end>"') as (port, calls):
+            result = self.invoke(port, "maintenance", "--locate", "combined", "--attempts", "1",
+                                 "--cases", self.cases)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        request, = [r for endpoint, r in calls if endpoint == "/api/generate"]
+        self.assertTrue(request["prompt"].endswith("return x;\n}\n-"))
+        self.assertEqual(request["suffix"], "\n// End selection\n")
+        self.assertEqual(request["options"], dict(seed=42, temperature=0, num_predict=240,
+                                                  num_ctx=2048, stop=["<end>", "\n}"]))
+        self.assertNotIn("123456", request["prompt"])
+        self.assertNotIn("pub fn main()", request["prompt"])
+        self.assertEqual(self.file.read_text(), SOURCE)
+        self.assertEqual(self.output.read_text(), "x + 1\n")
+        base = subprocess.check_output([GPP, "revision", self.file], text=True).strip()
+        self.assertIn("--at " + str(SOURCE.index("return x;") + len("return ")) + ":", result.stdout)
+        self.assertIn("--expect " + base, result.stdout)
+
+    def test_combined_location_retries_only_the_selected_gap_on_caller_mismatch(self):
+        self.cases.write_text('[{"function":"main","args":[],"expected":5}]')
+        with mock_ollama(["x\n+x * 2", "x + 1"], infill=True) as (port, calls):
+            result = self.invoke(port, "maintenance", "--locate", "combined", "--cases", self.cases)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        first, retry = [r for endpoint, r in calls if endpoint == "/api/generate"]
+        self.assertTrue(first["prompt"].endswith("\n-"))
+        self.assertTrue(retry["prompt"].endswith("    return "))
+        self.assertIn("// Previous insertion\n// x * 2\n// main() returned 8. Expected 5.", retry["prompt"])
+        self.assertIn("pub fn main()", retry["prompt"])
+        self.assertEqual(retry["suffix"], ";\n}\n")
+        self.assertEqual(retry["options"]["seed"], 43)
+        self.assertEqual(self.output.read_text(), "x + 1\n")
+        self.assertEqual(self.file.read_text(), SOURCE)
+
+    def test_combined_location_refuses_invalid_changes_without_retry(self):
+        self.file.write_text(SOURCE.replace("return x;", "return x + x;"))
+        self.cases.write_text('[{"args":[3],"expected":4}]')
+        for raw, reason in [("x + x", "+ replacement"), ("x + x\n+   ", "nonempty"),
+                            ("x + x\n+x + 1\nmore", "+ replacement"), ("x\n+x + 1", "matched 2"),
+                            ("y\n+x + 1", "matched 0"), ("x + x\n+true", "GPP-TYPE"),
+                            ("x + x\n+x; return 99;", "GPP-")]:
+            with self.subTest(raw=raw), mock_ollama([raw], infill=True) as (port, calls):
+                result = self.invoke(port, "maintenance", "--locate", "combined", "--cases", self.cases)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(reason, result.stderr)
+                self.assertEqual(sum(e == "/api/generate" for e, _ in calls), 1)
+                self.assertFalse(self.output.exists())
+
+    def test_combined_location_checks_snapshot_and_caller_retry_budget(self):
+        self.cases.write_text('[{"function":"main","args":[],"expected":5}]')
+        for mutate, reply, reason in [(False, "x\n+x * 2", "main() returned 8"),
+                                      (True, "x\n+x + 1", "stale revision")]:
+            update = (lambda: self.file.write_text(SOURCE + "// changed during selection\n")) if mutate else None
+            with self.subTest(mutate=mutate), mock_ollama([reply], on_generate=update, infill=True) as (port, calls):
+                result = self.invoke(port, "maintenance", "--locate", "combined", "--attempts", "1",
+                                     "--cases", self.cases)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(reason, result.stderr)
+                self.assertEqual(sum(e == "/api/generate" for e, _ in calls), 1)
+                self.assertFalse(self.output.exists())
+
     def test_maintenance_starcoder_raw_transport_uses_verified_digest(self):
         self.cases.write_text('[{"args":[3],"expected":4}]')
         model = "starcoder2:3b"

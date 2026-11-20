@@ -1,20 +1,25 @@
 # GPT++ roadmap
 
-GPT++ is a working scalar compiler and an experiment in reducing the cost of correct software changes. The next milestone focuses on changing a small part of an existing function and measuring the effect on accepted edits. [Project overview](README.md) · [Detailed design](docs/design.md)
+GPT++ is a working scalar compiler and an experiment in reducing the cost of correct software changes. The project measures all model tokens spent per edit that passes independent behavior tests. [Project overview](README.md) · [Detailed design](docs/design.md)
 
 ## Available today
 
 - A parser and type checker, a reference interpreter, and an LLVM native backend for a single-module profile with checked scalar arithmetic. [Scalar language guide](docs/scalar-language.md) · [Grammar](spec/grammar.ebnf)
-- Revision-guarded function edits, previews, public example checks and a local-model proposal tool. The maintenance preset starts with the target and can retry once after a failed caller check. [Editing guide](tools/README.md)
-- Paired authoring benchmarks with published protocols, completions and replay tools. The upstream transfer study found a 0.09% cost difference between the cheapest observed Qwen GPT++ and typed Python workflows, each with one accepted change on a different task. The 20% target remains open. [Maintenance evidence](bench/policy/README.md)
+- Compiler-checked edits to entire functions or individual expressions. Editors can list the exact source ranges against a revision, preview a replacement, and apply it with a stale-source guard. Surrounding bytes and operator grouping are preserved. [Expression editor](docs/scalar-language.md#preview-an-edit-inside-a-function)
+- Local-model proposals with public example checks. The maintenance preset starts with the target and can add caller excerpts after a failing public caller test. The experimental catalog method exposes each expression as a numbered choice and checks a single structured model response. [Authoring tools](tools/README.md)
+- Matched benchmarks in GPT++, typed Python and Rust, with historical sources, raw model responses and replay programs. [Study index](bench/README.md)
 
-## Next milestone — Edit one existing expression
+## What the expression milestone established
 
-In the Godot transfer case, a whole-body GPT++ rewrite kept the inclusive comparison responsible for the defect. A scoped operation would let the model edit the comparison directly. The current `gpp edit --expr` operation replaces a function body with a return expression. This milestone introduces selection of a single existing expression inside that body. [Upstream cases](bench/policy/upstream-sources.md) · [Transfer results](bench/policy/results/transfer.md)
+The earlier Godot trial motivated editing a single expression inside a function. The compiler now supports that operation, including nested conditions, repeated expressions and revision-bound positions. The v9 study tested it on three new historical changes in Redis, FastLED and Go. Free-text selection produced zero accepted GPT++ repairs with either model. Supplying the correct location let StarCoder2 repair Redis for 908 tokens per accepted edit across the three tasks. Rust repaired the same case for 897 tokens per accepted edit. [Expression results](bench/expression/README.md) · [Historical tasks](bench/expression/sources.md)
 
-1. **Build a compiler-checked edit.** Identify an expression in a specific source revision, preview the replacement, and type-check the edited module before applying it. Confirm byte preservation outside the selected span and cover stale revisions, ambiguous targets, type errors and caller regressions. Expression addressing and the CLI syntax are open design decisions.
-2. **Compare equivalent workflows.** Give GPT++, typed Python and Rust the same expression-level edit scope, public feedback, model settings and resource budgets. Include the existing whole-body workflow as a control. Record first-attempt results separately from workflows that can retry.
-3. **Test transfer on fresh changes.** Use unseen project families with independently checked acceptance tests and identifiable callers. Freeze the task set, strongest comparator and analysis before qualification. Publish all attempts, failure categories, replay inputs and any limits of extracted tasks. [Evaluation protocol](docs/design.md#19-evaluation-and-success-criteria)
+The numbered catalog then produced valid selections on all 18 follow-up calls across the three languages. None of the edits passed the full behavior checks. The next development cycle will measure whether information from executing the public examples helps the model choose a useful site and compute the intended value. [Catalog results](bench/expression/results/catalog.md)
+
+## Next milestone — Use failing examples to guide the edit
+
+1. **Localize the discrepancy.** Run the starter on passing and failing public examples and record which expressions executed, their types, and their observed values. Try giving the model a short ranked list with those observations. Count the tokens needed for that evidence and the time spent collecting it.
+2. **Constrain replacement generation.** Expose in-scope values and the selected expression's expected type. Test stopping at the end of one valid expression. Measure invalid fragments, well-typed behavior failures, successful repairs and complete workflow cost separately.
+3. **Test on new project families.** First isolate each change on development data, including its Python and Rust equivalents and a one-shot body baseline. Freeze the best baseline and retry policy before running a disjoint, larger study. Keep a supplied-location control and measure localization cost when the model must choose.
 
 ## Evidence gates
 

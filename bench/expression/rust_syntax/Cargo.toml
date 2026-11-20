@@ -1,0 +1,12 @@
+[package]
+name = "expression-bench-rust-syntax"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# Independent analysis helper for the Rust comparator.
+[workspace]
+
+[dependencies]
+proc-macro2 = { version = "=1.0.107", features = ["span-locations"] }
+syn = { version = "=2.0.119", features = ["full", "visit"] }

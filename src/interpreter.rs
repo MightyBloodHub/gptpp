@@ -69,6 +69,10 @@ pub trait Observer<'a> {
     type Visit;
     fn enter(&mut self, expr: &Expr, scopes: &[Scope<'a>]) -> Self::Visit;
     fn leave(&mut self, visit: Self::Visit, result: &Result<Value, Fault>);
+    /// Only completion experiments supply a value for an unfinished expression.
+    fn hole_value(&mut self, _: &[Scope<'a>]) -> Result<Value, Fault> {
+        Err(Fault::InvalidCheckedProgram)
+    }
 }
 
 impl Observer<'_> for () {
@@ -303,7 +307,7 @@ impl<'a, 'o, O: Observer<'a>> Interpreter<'a, 'o, O> {
             ExprKind::Int(n) => Ok(Value::Int(*n)),
             ExprKind::Bool(b) => Ok(Value::Bool(*b)),
             ExprKind::Unit => Ok(Value::Unit),
-            ExprKind::Hole(..) => Err(Fault::InvalidCheckedProgram),
+            ExprKind::Hole(..) => self.observer.hole_value(frame),
             ExprKind::Variant(name, variant) => {
                 Ok(Value::Enum(Rc::new((name.clone(), variant.clone()))))
             }

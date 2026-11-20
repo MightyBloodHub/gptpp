@@ -1,6 +1,7 @@
 mod check;
 mod complete;
 mod edit;
+mod guided_search;
 mod holes;
 mod interpreter;
 mod ir;
@@ -25,7 +26,7 @@ Usage:
   gpp run --interpreter [--fuel N] FILE
   gpp build [-O0|-O2] [-o EXECUTABLE] FILE
   gpp holes FILE [--function NAME] [--format=json]
-  gpp complete FILE --hole NAME [--fill EXPRESSION_FILE] [--limit N] [--budget N] [--expect REVISION] [--stdout]
+  gpp complete FILE --hole NAME [--fill EXPRESSION_FILE] [--search hybrid|grammar] [--limit N] [--budget N] [--expect REVISION] [--stdout]
   gpp prove FILE [--contract NAME] [--timeout-ms N]
   gpp library FILE (-o OUTPUT|--header) [-O0|-O2]
   gpp ast FILE

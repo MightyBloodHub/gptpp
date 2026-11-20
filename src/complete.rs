@@ -2,17 +2,19 @@
 //! grammar reads the hole's lexical scope; the verifier independently checks
 //! the complete program, including callers and multi-step properties.
 use crate::check::{self, Hole};
+#[path = "completion_grammar.rs"]
+mod completion_grammar;
 use crate::interpreter::{self, Fault, Value};
 use crate::syntax::{self, Function, Module, Type, TypeKind};
 use crate::{diagnostic, edit, json_string, trace, verify};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::ffi::OsString;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
-const USAGE: &str = "gpp complete FILE --hole NAME [--fill EXPRESSION_FILE] [--limit N] [--budget N] [--expect REVISION] [--stdout]";
+const USAGE: &str = "gpp complete FILE --hole NAME [--fill EXPRESSION_FILE] [--search hybrid|grammar] [--limit N] [--budget N] [--expect REVISION] [--stdout]";
 const PROBE_LIMIT: usize = 64;
 
 struct Options {
@@ -23,6 +25,7 @@ struct Options {
     budget: u64,
     expected: Option<String>,
     stdout: bool,
+    guidance: bool,
 }
 
 impl Options {
@@ -31,6 +34,7 @@ impl Options {
         let (mut name, mut fragment, mut limit, mut budget, mut expected) =
             (None, None, None, None, None);
         let mut stdout = false;
+        let mut guidance = None;
         while let Some(flag) = args.next() {
             match flag.to_str() {
                 Some("--hole") if name.is_none() => {
@@ -58,6 +62,13 @@ impl Options {
                             .ok_or("--budget requires a nonnegative assignment count")?,
                     )
                 }
+                Some("--search") if guidance.is_none() => {
+                    guidance = Some(match args.next().as_deref().and_then(|s| s.to_str()) {
+                        Some("hybrid") => true,
+                        Some("grammar") => false,
+                        _ => return Err("--search requires hybrid or grammar".into()),
+                    });
+                }
                 Some("--expect") if expected.is_none() => {
                     expected = Some(
                         args.next()
@@ -77,176 +88,9 @@ impl Options {
             budget: budget.unwrap_or(verify::DEFAULT_BUDGET),
             expected,
             stdout,
+            guidance: guidance.unwrap_or(true),
         })
     }
-}
-
-fn add_leaves(
-    module: &Module,
-    items: &mut Vec<(String, Type)>,
-    name: String,
-    ty: Type,
-    depth: usize,
-) {
-    if items.len() >= 48 {
-        return;
-    }
-    items.push((name.clone(), ty));
-    if depth > 0
-        && let Type::Named(id) = ty
-        && let TypeKind::Record(fields) = &module.types[id].kind
-    {
-        for field in fields {
-            add_leaves(
-                module,
-                items,
-                format!("{name}.{}", field.name),
-                field.ty,
-                depth - 1,
-            );
-        }
-    }
-}
-
-fn grammar(module: &Module, hole: &Hole, limit: usize) -> Vec<String> {
-    let mut leaves = Vec::new();
-    for (name, ty) in &hole.locals {
-        add_leaves(module, &mut leaves, name.clone(), *ty, 2);
-    }
-    for (i, decl) in module.types.iter().enumerate() {
-        if let TypeKind::Enum(variants) = &decl.kind {
-            for variant in variants.iter().take(16) {
-                if leaves.len() >= 80 {
-                    break;
-                }
-                leaves.push((format!("{}::{variant}", decl.name), Type::Named(i)));
-            }
-        }
-    }
-    let atoms = |ty| {
-        leaves
-            .iter()
-            .filter(|(_, t)| *t == ty)
-            .map(|(s, _)| s.as_str())
-            .collect::<Vec<_>>()
-    };
-    let mut ints = atoms(Type::I64);
-    let flags = atoms(Type::Bool);
-    let names = ints.clone();
-    ints.extend(["0", "1", "-1", "2"]);
-    let mut result = Vec::new();
-    let mut seen = HashSet::new();
-    // One extra item tells the caller whether the candidate cap truncated the grammar.
-    macro_rules! emit {
-        ($e:expr) => {{
-            let value: String = $e;
-            if seen.insert(value.clone()) {
-                result.push(value);
-                if result.len() > limit {
-                    return result;
-                }
-            }
-        }};
-    }
-    for a in atoms(hole.ty) {
-        emit!(a.to_owned());
-    }
-    match hole.ty {
-        Type::Bool => {
-            for a in ["false", "true"] {
-                emit!(a.to_owned());
-            }
-            for f in &flags {
-                emit!(format!("!{f}"));
-            }
-            for (a, t) in &leaves {
-                if matches!(t,Type::Named(i) if matches!(&module.types[*i].kind,TypeKind::Enum(_)))
-                    && !a.contains("::")
-                {
-                    for b in atoms(*t) {
-                        if a != b {
-                            emit!(format!("{a} == {b}"));
-                            emit!(format!("{a} != {b}"));
-                        }
-                    }
-                }
-            }
-            for a in &flags {
-                for b in &flags {
-                    if a < b {
-                        emit!(format!("{a} && {b}"));
-                        emit!(format!("{a} || {b}"));
-                    }
-                }
-            }
-            for a in names {
-                for b in &ints {
-                    if a != *b {
-                        for op in ["==", "!=", "<", "<=", ">", ">="] {
-                            emit!(format!("{a} {op} {b}"));
-                        }
-                    }
-                }
-            }
-        }
-        Type::I64 => {
-            for a in &ints {
-                emit!((*a).to_owned());
-            }
-            for a in &flags {
-                emit!(format!("{a} as I64"));
-            }
-            for a in &names {
-                for op in ["+", "-"] {
-                    emit!(format!("{a} {op} 1"));
-                }
-            }
-            for a in &names {
-                for b in &flags {
-                    for op in ["+", "-"] {
-                        emit!(format!("{a} {op} ({b} as I64)"));
-                    }
-                }
-            }
-            for a in &names {
-                for b in &ints {
-                    for op in ["+", "-", "*", "/", "%"] {
-                        emit!(format!("{a} {op} {b}"));
-                    }
-                }
-            }
-            for a in &names {
-                for b in &ints {
-                    for op in ["min", "max"] {
-                        emit!(format!("{op}({a}, {b})"));
-                    }
-                }
-            }
-            for f in &flags {
-                for a in &ints {
-                    for b in &ints {
-                        if a != b {
-                            emit!(format!("if {f} {{ {a} }} else {{ {b} }}"));
-                        }
-                    }
-                }
-            }
-        }
-        Type::Named(_) => {
-            let choices = atoms(hole.ty);
-            for f in flags {
-                for a in &choices {
-                    for b in &choices {
-                        if a != b {
-                            emit!(format!("if {f} {{ {a} }} else {{ {b} }}"));
-                        }
-                    }
-                }
-            }
-        }
-        Type::Unit => emit!("()".to_owned()),
-    }
-    result
 }
 
 fn fill(
@@ -425,7 +269,13 @@ pub fn run(args: impl Iterator<Item = OsString>) -> Result<u8, String> {
     }
     let fail = |d| diagnostic(&opts.file, &source, d, true);
     let module = syntax::parse(&source).map_err(fail)?;
-    let holes = check::holes(&module).map_err(fail)?;
+    let mut types = HashMap::new();
+    let holes = check::holes_with_types(&module, |expr, ty| {
+        if expr.site != syntax::ExprSite::Synthetic {
+            types.insert(expr.span, ty);
+        }
+    })
+    .map_err(fail)?;
     let [hole] = holes.as_slice() else {
         return Err("completion requires exactly one typed hole in the module".into());
     };
@@ -437,9 +287,14 @@ pub fn run(args: impl Iterator<Item = OsString>) -> Result<u8, String> {
     let candidates = if let Some(file) = &opts.fragment {
         vec![fs::read_to_string(file).map_err(|e| e.to_string())?]
     } else {
-        grammar(&module, hole, opts.limit)
+        completion_grammar::candidates(&module, function, hole, &types, opts.limit)
     };
-    let truncated = candidates.len() > opts.limit;
+    let mut truncated = candidates.len() > opts.limit;
+    let mut queue: VecDeque<_> = candidates.into();
+    let mut attempted = HashSet::new();
+    let mut guide_after =
+        (opts.guidance && !manual && opts.limit >= 8).then_some((opts.limit / 2).min(queue.len()));
+    let mut guidance = crate::guided_search::Search::default();
     let calls = if manual || function.params.len() > 16 {
         vec![]
     } else {
@@ -463,7 +318,24 @@ pub fn run(args: impl Iterator<Item = OsString>) -> Result<u8, String> {
     let mut detail = String::new();
     let mut ambiguous = false;
     if !incomplete {
-        for expr in candidates.into_iter().take(opts.limit) {
+        while tested < opts.limit {
+            if guide_after == Some(tested) {
+                guide_after = None;
+                if survivors == 0 {
+                    guidance = crate::guided_search::suggest(&module, hole, opts.budget);
+                    // Prefer guided suggestions at this point. Moving a duplicate
+                    // forward preserves the number of distinct full candidates.
+                    for item in guidance.expressions.iter().rev() {
+                        if !attempted.contains(item) {
+                            queue.retain(|other| other != item);
+                            queue.push_front(item.clone());
+                        }
+                    }
+                    truncated |= tested + queue.len() > opts.limit;
+                }
+            }
+            let Some(expr) = queue.pop_front() else { break };
+            attempted.insert(expr.clone());
             tested += 1;
             let (text, candidate) = match fill(&opts, &source, function, hole, &expr) {
                 Ok(v) => v,
@@ -569,13 +441,24 @@ pub fn run(args: impl Iterator<Item = OsString>) -> Result<u8, String> {
             w.report
         );
     }
+    if ambiguous && let Some(w) = &winner {
+        detail.push_str(&format!(
+            ",\"first_passing\":{}",
+            json_string(&w.expression)
+        ));
+    }
     let report = format!(
-        "{{\"schema\":\"gpp.complete/1\",\"revision\":{},\"hole\":{},\"status\":{},\"tested\":{tested},\"witnesses\":{},\"passing_candidates_seen\":{survivors},\"candidate_limit\":{},\"grammar_truncated\":{truncated},\"probe_calls_per_passing_candidate\":{}{} }}",
+        "{{\"schema\":\"gpp.complete/1\",\"revision\":{},\"hole\":{},\"status\":{},\"tested\":{tested},\"witnesses\":{},\"passing_candidates_seen\":{survivors},\"candidate_limit\":{},\"grammar_truncated\":{truncated},\"guidance\":{{\"contract_runs\":{},\"examples\":{},\"value_vectors\":{},\"branch_joins\":{},\"proposals\":{}}},\"probe_calls_per_passing_candidate\":{}{} }}",
         json_string(&revision),
         json_string(&hole.name),
         json_string(status),
         witnesses.len(),
         opts.limit,
+        guidance.runs,
+        guidance.rows,
+        guidance.vectors,
+        guidance.joins,
+        guidance.expressions.len(),
         calls.len(),
         detail
     );

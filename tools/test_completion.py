@@ -41,6 +41,7 @@ class CompletionTests(unittest.TestCase):
         self.assertFalse(p.stdout)
         report = json.loads(p.stderr)
         self.assertEqual(report["status"], "ambiguous")
+        self.assertIsInstance(report["first_passing"], str)
         q = report["question"]
         self.assertNotEqual(q["inputs"]["x"], 0)
         self.assertNotEqual(q["alternatives"][0]["outcome"], q["alternatives"][1]["outcome"])
@@ -63,6 +64,39 @@ contract public_case() { pick(0)==0 }
         self.assertEqual(report["status"], "ambiguous")
         a, b = report["question"]["alternatives"]
         self.assertNotEqual(a["outcome"]["result"], b["outcome"]["result"])
+
+    def test_guidance_infers_two_integer_coefficients_under_the_same_candidate_cap(self):
+        self.module("""
+fn adjust(x:I64,y:I64)->I64 !{} { return ?v:I64; }
+contract measured(x:I64 in -2..=2,y:I64 in -2..=2){adjust(x,y)==7*x+3*y-4}
+""")
+        args = ("--hole", "v", "--limit", "32")
+        grammar = json.loads(self.gpp("complete", *args, "--search", "grammar").stdout)
+        self.assertEqual(grammar["status"], "incomplete")
+        self.assertEqual(grammar["guidance"]["contract_runs"], 0)
+        p = self.gpp("complete", *args)
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        report = json.loads(p.stdout)
+        self.assertEqual(report["verification"]["checked"], 25)
+        self.assertEqual(report["guidance"]["examples"], 25)
+        self.assertGreater(report["guidance"]["proposals"], 0)
+        self.assertLessEqual(report["tested"], 32)
+        completed = self.gpp("complete", *args, "--stdout").stdout
+        self.src.write_text(completed + "\ncontract exclude_samples(){adjust(71,-13)==454}")
+        self.assertEqual(self.gpp("verify").returncode, 0)
+
+    def test_guidance_rechecks_public_constraints_outside_its_sample(self):
+        self.module("""
+fn adjust(x:I64)->I64 !{} { return ?v:I64; }
+contract trend(x:I64 in 0..=49){adjust(x)==17*x+5}
+contract incompatible(){adjust(40)==0}
+""")
+        r = self.gpp("complete", "--hole", "v", "--limit", "32", "--stdout")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertFalse(r.stdout)
+        report = json.loads(r.stderr)
+        self.assertGreater(report["guidance"]["contract_runs"], 0)
+        self.assertEqual(report["passing_candidates_seen"], 0)
 
     def test_no_contract_budget_and_multiple_holes(self):
         self.module("fn pick(x: I64) -> I64 !{} {return ?v: I64;}")

@@ -248,7 +248,7 @@ impl BinOp {
         })
     }
 
-    fn precedence(self) -> u8 {
+    pub(crate) fn precedence(self) -> u8 {
         match self {
             Self::Or => 1,
             Self::And => 2,
@@ -1242,7 +1242,7 @@ fn print_block(module: &Module, body: &[Stmt], indent: usize, text: &mut String)
     text.push('}');
 }
 
-fn print_expr(module: &Module, expr: &Expr, minimum: u8, text: &mut String) {
+pub(crate) fn print_expr(module: &Module, expr: &Expr, minimum: u8, text: &mut String) {
     match &expr.kind {
         ExprKind::If { cond, yes, no } => {
             text.push_str("if ");

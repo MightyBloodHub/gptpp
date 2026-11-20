@@ -19,8 +19,15 @@ pub struct Hole {
 
 /// Typecheck the surrounding program while collecting every explicit hole.
 pub fn holes(module: &syntax::Module) -> Result<Vec<Hole>> {
+    holes_with_types(module, |_, _| {})
+}
+
+pub fn holes_with_types(
+    module: &syntax::Module,
+    visit: impl FnMut(&Expr, Type),
+) -> Result<Vec<Hole>> {
     let mut found = Vec::new();
-    lower(module, |_, _| {}, Some(&mut found))?;
+    lower(module, visit, Some(&mut found))?;
     Ok(found)
 }
 

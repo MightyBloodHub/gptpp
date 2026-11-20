@@ -2,9 +2,13 @@
 
 The benchmark suite measures how much model work GPT++, typed Python, and Rust require to produce an accepted change. An accepted change passes the language checker, public examples, and withheld cases. Tokens per accepted edit includes input and output tokens from every attempt, including failures and retries. Reports include acceptance counts, timings, and paired uncertainty where available.
 
-## Start with the expression-edit study
+## Start with example-filtered repair
 
-The latest study compares checked expression edits with whole-function edits in GPT++, typed Python and Rust. It measures the cost of finding the edit inside a known function and separately measures editing when the caller supplies a location. Each task extracts one historical fix and two consumer paths from Redis, FastLED or Go. A follow-up tests numbered syntax nodes with schema-constrained output. [Expression study and conclusions](expression/README.md) · [Upstream source audit](expression/sources.md)
+The repair study tests a different division of work. The compiler traces the supplied calls and the tool tests bounded expression edits. A local model chooses from the edits that satisfy the public examples. The same independent scorer then checks that choice and a deterministic first-choice control on withheld cases. [Repair results](expression/results/repair.md) · [Study protocol](expression/repair-protocol.md)
+
+## Earlier expression-edit study
+
+The v9 study compares checked expression edits with whole-function edits in GPT++, typed Python and Rust. It measures the cost of finding the edit inside a known function and separately measures editing when the caller supplies a location. Each task extracts one historical fix and two consumer paths from Redis, FastLED or Go. A follow-up tests numbered syntax nodes with schema-constrained output. [Expression study and conclusions](expression/README.md) · [Upstream source audit](expression/sources.md)
 
 ## Earlier maintenance results
 
@@ -26,6 +30,8 @@ The eight-task policy study found lower token costs for Qwen's native GPT++ body
 | [Caller-retry comparison](policy/retry-obligations-protocol.md) | What happens when a retry gets a derived target result in place of caller excerpts? | [Report](policy/results/retry-obligations.md) | [JSONL](policy/results/retry-obligations.jsonl) |
 | [Expression edits (v9)](expression/protocol.md) | Can a model locate and replace one expression more cheaply? | [Report](expression/results/expression.md) | [JSONL](expression/results/expression.jsonl) |
 | [Compiler-listed selections](expression/catalog-protocol.md) | What changes when the decoder requires an existing site ID? | [Report](expression/results/catalog.md) | [JSONL](expression/results/catalog.jsonl) |
+| [Example-filtered repair](expression/repair-protocol.md) | What changes when the model chooses from tested replacement expressions? | [Report](expression/results/repair.md) | [JSONL](expression/results/repair.jsonl) |
+| [Choosing a distinguishing input](expression/distinguish-protocol.md) | How many new answers from a specification oracle isolate a patch? | [Report](expression/results/distinguish.md) | [JSONL](expression/results/distinguish.jsonl) |
 
 ## Reproduce the results
 
@@ -36,6 +42,7 @@ The v1 report and raw trials describe an earlier compiler revision. Its manifest
 Regenerate the expression-study tables without inference.
 
 ```sh
+python3 -B bench/expression/repair_study.py --report bench/expression/results/repair.jsonl
 python3 -B bench/expression/report_expression.py bench/expression/results/expression.jsonl
 python3 -B bench/expression/catalog_study.py --report bench/expression/results/catalog.jsonl
 ```

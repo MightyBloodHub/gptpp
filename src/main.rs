@@ -4,6 +4,7 @@ mod interpreter;
 mod ir;
 mod native;
 mod syntax;
+mod trace;
 
 use std::env;
 use std::ffi::OsString;
@@ -18,7 +19,8 @@ Usage:
   gpp run --interpreter [--fuel N] FILE
   gpp build [-O0|-O2] [-o EXECUTABLE] FILE
   gpp ast FILE
-  gpp emit-llvm FILE";
+  gpp emit-llvm FILE
+  gpp trace FILE --function TARGET --call ENTRY [ARG ...] [--fuel N]";
 
 #[derive(PartialEq)]
 enum Action {
@@ -193,9 +195,13 @@ fn main() -> ExitCode {
     }
     enum Invocation {
         Compile(Options),
+        Trace(trace::Request),
         Edit(edit::Request),
     }
-    let parsed = if args
+    let parsed = if args.peek().is_some_and(|s| s == "trace") {
+        args.next();
+        trace::Request::parse(args).map(Invocation::Trace)
+    } else if args
         .peek()
         .is_some_and(|s| s == "edit" || s == "revision" || s == "expressions")
     {
@@ -212,6 +218,7 @@ fn main() -> ExitCode {
     };
     let result = match command {
         Invocation::Compile(options) => execute(options),
+        Invocation::Trace(request) => request.execute(),
         Invocation::Edit(request) => edit::execute(request),
     };
     match result {

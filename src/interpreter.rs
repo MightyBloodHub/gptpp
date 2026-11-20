@@ -9,7 +9,7 @@ pub const DEFAULT_FUEL: u64 = 1_000_000;
 const MAX_NESTING: usize = 128;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-enum Value {
+pub enum Value {
     Int(i64),
     Bool(bool),
     Unit,
@@ -45,16 +45,41 @@ impl Value {
     }
 }
 
-struct Interpreter<'a> {
+struct Interpreter<'a, 'o, O> {
+    observer: &'o mut O,
     functions: HashMap<&'a str, &'a Function>,
     fuel: u64,
 }
 
-type Scope<'a> = HashMap<&'a str, Value>;
+pub type Scope<'a> = HashMap<&'a str, Value>;
 type Frame<'a> = Vec<Scope<'a>>;
 
+/// An observation spans the evaluation of one expression, including nested calls.
+pub trait Observer<'a> {
+    type Visit;
+    fn enter(&mut self, expr: &Expr, scopes: &[Scope<'a>]) -> Self::Visit;
+    fn leave(&mut self, visit: Self::Visit, result: Result<Value, Fault>);
+}
+
+impl Observer<'_> for () {
+    type Visit = ();
+    fn enter(&mut self, _: &Expr, _: &[Scope<'_>]) {}
+    fn leave(&mut self, _: (), _: Result<Value, Fault>) {}
+}
+
 pub fn run(module: &Module, fuel: u64) -> Result<i64, Fault> {
+    invoke(module, "main", vec![], fuel, &mut ())?.int()
+}
+
+pub fn invoke<'a>(
+    module: &'a Module,
+    entry: &str,
+    args: Vec<Value>,
+    fuel: u64,
+    observer: &mut impl Observer<'a>,
+) -> Result<Value, Fault> {
     let mut interpreter = Interpreter {
+        observer,
         functions: module
             .functions
             .iter()
@@ -62,10 +87,10 @@ pub fn run(module: &Module, fuel: u64) -> Result<i64, Fault> {
             .collect(),
         fuel,
     };
-    interpreter.call("main", vec![], 0)?.int()
+    interpreter.call(entry, args, 0)
 }
 
-impl<'a> Interpreter<'a> {
+impl<'a, O: Observer<'a>> Interpreter<'a, '_, O> {
     fn step(&mut self, depth: usize) -> Result<(), Fault> {
         if depth > MAX_NESTING || self.fuel == 0 {
             return Err(Fault::ResourceLimit);
@@ -164,6 +189,13 @@ impl<'a> Interpreter<'a> {
     }
 
     fn expr(&mut self, expr: &'a Expr, frame: &Frame<'a>, depth: usize) -> Result<Value, Fault> {
+        let visit = self.observer.enter(expr, frame);
+        let result = self.eval(expr, frame, depth);
+        self.observer.leave(visit, result);
+        result
+    }
+
+    fn eval(&mut self, expr: &'a Expr, frame: &Frame<'a>, depth: usize) -> Result<Value, Fault> {
         self.step(depth)?;
         match &expr.kind {
             ExprKind::If { cond, yes, no } => {

@@ -9,4 +9,6 @@ sh website/build.sh
 python3 -m http.server 8080 --bind 127.0.0.1 --directory target/website
 ```
 
-Open [the local preview](http://127.0.0.1:8080/). To publish an update, stage the contents of `target/website` in a new release under `/opt/gptpp/releases/` on the Sandoog host. Verify the release files, switch the `/opt/gptpp/current` symlink to the new release, and check the public URL. The previous release directory can be used for rollback.
+Open [the local preview](http://127.0.0.1:8080/). The Trace tab illustrates `target/debug/gpp trace examples/add.gpp --function add --call main`. Run it from the repository root to inspect the full JSON.
+
+To publish, build from the Git revision being released. Connect to the origin serving `gptpp.sandoog.co` and confirm that `/opt/gptpp/current` points to the previous website release. Stage the contents of `target/website` in `/opt/gptpp/releases/<release>/website`, verify their checksums, then atomically switch `/opt/gptpp/current` to that directory. Check the public HTML and assets against the build. The previous release directory remains available for rollback.

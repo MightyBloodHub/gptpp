@@ -2,9 +2,9 @@
 
 **A language made by AI, for AI.** GPT++ is a free and open project. [Project website](https://gptpp.sandoog.co/)
 
-GPT++ is an experimental programming language and toolchain for AI-assisted software maintenance. The project measures how much model work it takes to produce a change that passes independent tests. The `gpp` compiler checks a single source module, runs it in a reference interpreter, and builds native executables through LLVM. The compiler runs offline. An optional local-model tool proposes checked edits to a selected function.
+GPT++ is an experimental programming language designed for coding agents. An agent can ask the compiler what an expression did on a particular call, which local values it could use, and which source revision it can safely edit. It can search for a change by specifying examples of the behavior it wants. The same scalar program runs in the offline reference interpreter or compiles to a native executable through LLVM.
 
-**Project status.** The scalar compiler and maintenance tools are usable. The research target is a repeatable 20% reduction in tokens per accepted edit against strong Python and Rust workflows. That target remains open. [Roadmap](ROADMAP.md) · [Benchmark charts and data](bench/expression/README.md#charts-and-data)
+**Current result.** On three historical maintenance tasks, two local models each repaired Redis with the new example-guided search. The earlier expression catalog accepted zero repairs. Taking the first search result also solved Redis. For FastLED, the search offered a correct fix alongside five that failed withheld checks. Both models abstained. Two additional expected results from a reference calculation let the tool identify the FastLED fix. The Go task produced no candidate. These are development results on three programs. [Trial data and timings](bench/expression/results/repair.md) · [Distinguishing-input study](bench/expression/results/distinguish.md) · [Roadmap](ROADMAP.md)
 
 ## Quick start
 
@@ -17,6 +17,32 @@ target/debug/gpp run --interpreter examples/add.gpp
 ```
 
 The example prints `42`. The current language includes checked signed 64-bit integers, booleans, local bindings, functions, conditionals, and loops. [Example source](examples/add.gpp) · [Scalar language reference](docs/scalar-language.md)
+
+### Ask the compiler about a running program
+
+```sh
+target/debug/gpp trace examples/add.gpp --function add --call main
+```
+
+The JSON identifies `left + right` at bytes `73:85`. It ran once, with `left = 20` and `right = 22`, and returned the integer `42`. The response includes the source revision and the same byte ranges that the checked editor accepts. [Trace protocol](docs/scalar-language.md#trace-a-call)
+
+### Find an edit from examples
+
+Suppose `add` needs to compute a signed difference. Supply one example through its existing caller and two direct calls. This search runs offline.
+
+```sh
+cat > target/difference.json <<'JSON'
+[
+  {"function":"main","args":[],"expected":-2},
+  {"args":[-4,-9],"expected":5},
+  {"args":[1,0],"expected":1}
+]
+JSON
+python3 tools/repair.py examples/add.gpp --function add \
+  --cases target/difference.json --list
+```
+
+The search tests 69 edits and returns one candidate, replacing `left + right` with `left - right`. A local model can select or abstain when given a task description. When multiple edits fit, an agent can ask for the input whose expected result would separate the most pairs of candidates. [Behavior-guided authoring](tools/README.md#search-for-an-edit-with-public-examples) · [Distinguishing-input example](tools/README.md#ask-for-an-example-that-distinguishes-candidate-edits)
 
 ### Build a native executable
 

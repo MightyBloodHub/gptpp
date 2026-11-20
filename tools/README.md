@@ -23,6 +23,38 @@ target/debug/gpp run --interpreter target/larger-preview.gpp
 
 Compiler validation covers parsing, types and checked IR. Run your behavioral tests against the proposed module. An edit using an outdated base revision fails if the source changed during generation or after review.
 
+## Search for an edit with public examples
+
+`repair.py` accepts the same cases file as the other authoring tools. Give it the target function and any checked examples, including calls to other functions in the module. The [quick start](../README.md#find-an-edit-from-examples) creates `target/difference.json`. Save an offline menu or let a local model choose from it.
+
+```sh
+python3 tools/repair.py examples/add.gpp --function add \
+  --cases target/difference.json --list > target/difference-menu.json
+python3 tools/repair.py examples/add.gpp --function add \
+  --task 'Return left minus right for every pair.' --cases target/difference.json \
+  --model qwen2.5-coder:7b -o target/difference.expr
+```
+
+Each example runs through the reference interpreter. The search considers integer and Boolean sites reached on **every** failing example, including visits reached through callers. It orders sites by how many passing examples visited them, then tries one replacement per site per round. It tries local names, small constants, neighboring operators, integer increments and decrements (optionally gated by a Boolean), and arithmetic and comparisons among visible locals. The grammar generates single-expression edits and uses no language model. The compiler checks each preview and runs the public examples. A fault on any case eliminates the candidate. The defaults limit the search to 512 tested edits and a menu of 12 passing candidates. `--budget N` changes the work limit.
+
+The `gpp.repair/1` JSON includes the original observations, revision, list of edits, number tested and `stop_reason`. Each edit contains the exact old text, source byte range and replacement. `--list` returns `listed`, `already_passes` or `no_candidates`. A one-based selection from a model returns `selected`, writes a new fragment file and gives an `apply` argument array for the checked editor. A model can return zero and the tool reports `abstained`. For an agent integration, inspect the selected edit and pass the argument array directly to a subprocess when ready to apply it. Every candidate in the menu passed the supplied examples. Withheld tests can still reject it. [Development comparison](../bench/expression/results/repair.md)
+
+### Ask for an example that distinguishes candidate edits
+
+A single example can describe several different programs. Suppose the only known requirement is that `add(3, 3)` should return zero. The search finds nine edits that satisfy it. Give the following command a small pool of valid, **unlabeled** calls. It checks every candidate against the source revision and runs the previews locally.
+
+```sh
+printf '%s\n' '[{"args":[3,3],"expected":0}]' > target/one-example.json
+printf '%s\n' '[{"args":[2,5]},{"args":[0,3]},{"function":"main","args":[]}]' > target/probes.json
+python3 tools/repair.py examples/add.gpp --function add \
+  --cases target/one-example.json --list > target/menu.json
+python3 tools/distinguish.py examples/add.gpp --menu target/menu.json --probes target/probes.json
+```
+
+The tool asks what `add(2, 5)` should return. That input separates 26 of the 36 candidate pairs. An expected result of `-3` selects only candidate 1, `left - right`. An expected result of `3` selects only candidate 5, `right - left`. Obtain the answer from someone who knows the requirement or from an independent implementation. If no predicted outcome matches, the current menu cannot satisfy the answer.
+
+In the `gpp.distinguish/1` response, `question.outcomes` groups original one-based candidate IDs by observed result or fault. When several IDs match the answer, pass them to `--candidates` as a comma-separated list and ask again. Tie scores keep the first probe. A status of `indistinguishable` means no supplied call separates the remaining IDs. Larger domains can contain other distinguishing inputs.
+
 ## Experimental native maintenance preset
 
 Use `--maintenance --cases FILE` for a compact full-body edit. The first request shows the task, up to three public assertions in file order, the current target body, a GPT++ syntax reminder and the declaration. Every supplied assertion runs after the compiler accepts the edit. A failed example in a direct or transitive caller triggers one retry with the previous completion, the mismatch or runtime fault, and bounded excerpts of the checked callers. A failed target assertion, unrelated assertion or compiler check ends the run. Pass `--attempts 1` for a single call.

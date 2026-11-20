@@ -7,6 +7,14 @@ use crate::syntax::{self, BinOp, Diagnostic, Expr, ExprKind, Span, Stmt, StmtKin
 type Result<T> = std::result::Result<T, Diagnostic>;
 
 pub fn check(module: &syntax::Module) -> Result<ir::Program> {
+    check_with_types(module, |_, _| {})
+}
+
+/// Visit each typed source expression, including unreachable branches.
+pub fn check_with_types(
+    module: &syntax::Module,
+    mut record_type: impl FnMut(&Expr, Type),
+) -> Result<ir::Program> {
     let mut names = HashMap::new();
     for (id, function) in module.functions.iter().enumerate() {
         if names.insert(function.name.as_str(), id).is_some() {
@@ -32,7 +40,7 @@ pub fn check(module: &syntax::Module) -> Result<ir::Program> {
 
     let mut functions = Vec::with_capacity(module.functions.len());
     for function in &module.functions {
-        functions.push(Builder::new(module, &names, function).lower()?);
+        functions.push(Builder::new(module, &names, function, &mut record_type).lower()?);
     }
     let program = ir::Program { entry, functions };
     ir::validate(&program)
@@ -71,7 +79,8 @@ struct OpenBlock {
     term: Option<Term>,
 }
 
-struct Builder<'a> {
+struct Builder<'a, 't, F> {
+    record_type: &'t mut F,
     module: &'a syntax::Module,
     names: &'a HashMap<&'a str, usize>,
     source: &'a syntax::Function,
@@ -82,13 +91,15 @@ struct Builder<'a> {
     current: Option<usize>,
 }
 
-impl<'a> Builder<'a> {
+impl<'a, 't, F: FnMut(&Expr, Type)> Builder<'a, 't, F> {
     fn new(
         module: &'a syntax::Module,
         names: &'a HashMap<&'a str, usize>,
         source: &'a syntax::Function,
+        record_type: &'t mut F,
     ) -> Self {
         Self {
+            record_type,
             module,
             names,
             source,
@@ -364,13 +375,13 @@ impl<'a> Builder<'a> {
     }
 
     fn expr(&mut self, expr: &Expr) -> Result<usize> {
-        Ok(match &expr.kind {
+        let slot = match &expr.kind {
             ExprKind::Int(number) => self.value(Type::I64, Op::Int(*number)),
             ExprKind::Bool(boolean) => self.value(Type::Bool, Op::Bool(*boolean)),
             ExprKind::Unit => self.value(Type::Unit, Op::Unit),
             ExprKind::Name(name) => self.resolve(name, expr.span)?.slot,
-            ExprKind::Call(name, arguments) => return self.call(name, arguments, expr.span),
-            ExprKind::If { cond, yes, no } => return self.conditional_value(cond, yes, no),
+            ExprKind::Call(name, arguments) => self.call(name, arguments, expr.span)?,
+            ExprKind::If { cond, yes, no } => self.conditional_value(cond, yes, no)?,
             ExprKind::Unary(op, operand) => {
                 let slot = self.expr(operand)?;
                 let (expected, result) = ir::unary_types(*op);
@@ -378,7 +389,7 @@ impl<'a> Builder<'a> {
                 self.value(result, Op::Unary(*op, slot))
             }
             ExprKind::Binary(op @ (BinOp::And | BinOp::Or), left, right) => {
-                return self.logical(*op, left, right);
+                self.logical(*op, left, right)?
             }
             ExprKind::Binary(op, left, right) => {
                 let a = self.expr(left)?;
@@ -394,7 +405,9 @@ impl<'a> Builder<'a> {
                 })?;
                 self.value(result, Op::Binary(*op, a, b))
             }
-        })
+        };
+        (self.record_type)(expr, self.slots[slot]);
+        Ok(slot)
     }
 
     fn call(&mut self, name: &str, arguments: &[Expr], span: Span) -> Result<usize> {

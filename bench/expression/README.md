@@ -4,6 +4,14 @@ The compiler can replace a single expression while keeping its callers and surro
 
 The main experiment used three historical changes from Redis, FastLED and Go, two caller paths per change, three languages and two local models. Each language received the same public examples, edit scope and retry rule. The target function was supplied. There were **72 assigned trials and 92 model calls**. A follow-up generated **18 more calls** on those same tasks. [Frozen protocol](protocol.md) · [Upstream revisions, test domains and callers](sources.md)
 
+## Example-filtered repair
+
+A later development study used the same fixtures to test the new repair CLI. Both models selected a Redis fix that passed the withheld checks. Both abstained on FastLED and received an empty menu for Go. Taking the first candidate with no model also solved Redis, but would have published a wrong FastLED fix. After the choices were frozen, scoring every candidate showed that the search had found one correct FastLED fix among the six options. [Results](results/repair.md) · [Full menu audit](results/repair-menu.md) · [Protocol](repair-protocol.md) · [Raw product trials](results/repair.jsonl)
+
+### Selecting a patch with additional behavior examples
+
+A separate follow-up gave the tool a pool of unlabeled inputs and access to an independent specification oracle. On FastLED, two answers to questions selected by the tool isolated a patch that passed every withheld check. The Redis candidates agreed on the entire probe pool, and taking the first candidate passed the tests. Go still had no candidate. This assisted workflow accepted two of the three tasks with two additional oracle labels and zero model calls. [Question and answer log](results/distinguish.md) · [Frozen pools and answer rules](distinguish-protocol.md) · [Raw partition and timing records](results/distinguish.jsonl)
+
 ## Charts and data
 
 ![Accepted changes by workflow and language. GPT++ and Rust each accepted one of six edits at a supplied location. Rust also accepted one of six whole-body edits with a caller-triggered retry.](community/acceptance.png)
@@ -57,7 +65,7 @@ python3 -B bench/expression/catalog_study.py --report bench/expression/results/c
 
 To regenerate the PNGs and CSV, install Matplotlib 3.9.0 and run `python3 -B bench/expression/community.py`. Pass `--output` to write to a different directory.
 
-For behavioral replay, use the pinned macOS, Rust and Python setup from the earlier maintenance studies. The standalone Rust syntax helper uses a locked Cargo dependency tree. On a machine with an empty Cargo cache, fetch it once. Archived replay checks executable and source hashes. Rust debug builds can vary with checkout path, toolchain and platform. The saved reports can be regenerated independently of those binaries. [Baseline environment](../empirical/README.md#reproduce)
+For behavioral replay of the original expression and catalog studies, use a separate checkout of commit `3656727` with the archived compiler sources. Use the pinned macOS, Rust and Python setup from the earlier maintenance studies. The standalone Rust syntax helper uses a locked Cargo dependency tree. On a machine with an empty Cargo cache, fetch it once. Archived replay checks executable and source hashes. Rust debug builds can vary with checkout path, toolchain and platform. The saved reports can be regenerated independently of those binaries. [Baseline environment](../empirical/README.md#reproduce)
 
 ```sh
 cargo build --locked --offline
@@ -75,3 +83,16 @@ For new generations, use local Ollama with the two archived model digests. The f
 target/empirical-venv/bin/python -B bench/expression/run_expression.py target/expression-new.jsonl
 target/empirical-venv/bin/python -B bench/expression/catalog_study.py target/catalog-new.jsonl
 ```
+
+To replay the example-filtered repair study, build the current compiler. The runner invokes the ordinary GPT++ CLI and independently checks the recorded selections with the macOS benchmark evaluator. Offline replay uses the saved local-model replies. A fresh run requires Ollama with the two model digests recorded in the archive and a new output path.
+
+```sh
+cargo build --locked --offline
+python3 -B bench/expression/repair_study.py --report bench/expression/results/repair.jsonl
+target/empirical-venv/bin/python -B bench/expression/repair_study.py --replay bench/expression/results/repair.jsonl
+target/empirical-venv/bin/python -B bench/expression/audit_repair_menu.py bench/expression/results/repair.jsonl
+target/empirical-venv/bin/python -B bench/expression/repair_study.py target/repair-new.jsonl
+target/empirical-venv/bin/python -B bench/expression/distinguish_study.py --replay bench/expression/results/distinguish.jsonl
+```
+
+The repair archive’s `capture_provenance` field preserves the original capture manifest, its complete archive hash and the hash of the six trial rows. A subsequent metadata correction enumerated the specific dependencies and removed the unrelated old catalog frontend from the source check. The captured runner and its revised manifest-checking version have distinct fingerprints. The recorded product code, model requests, responses, trial rows and scores were retained. To reconstruct the original bytes, serialize `capture_provenance.original_manifest` with Python’s default `json.dumps`, append a newline, then append the six original JSONL lines verbatim.

@@ -72,6 +72,84 @@ class Bootstrap(unittest.TestCase):
                 self.assertIn(kind, ("fault", "result"))
                 self.assert_engines(source, kind, expected)
 
+    def trace(self, target, entry, *args):
+        process = invoke(GPP, "trace", self.source, "--function", target, "--call", entry, *args)
+        self.assert_ok(process)
+        return json.loads(process.stdout)
+
+    def test_trace_tracks_scope_catalog_skips_and_faults(self):
+        source = module("return tally(4, true, ());", """// λ
+fn tally(n: I64, safe: Bool, u: Unit) -> I64 !{} {
+    var i = 0;
+    while i < n { let n = i + 1; i += 1; n; }
+    if safe || 1 / (n - n) > 0 { return i; }
+    return -1;
+}""")
+        self.source.write_bytes(source.replace("\n", "\r\n").encode())
+        trace = self.trace("tally", "main")
+        self.assertEqual(trace["schema"], "gpp.trace/1")
+        self.assertEqual(trace["result"], 4)
+        self.assertNotIn("fault", trace)
+        catalog = json.loads(invoke(GPP, "expressions", self.source, "--function", "tally").stdout)
+        for key in ("revision", "function", "start_byte", "end_byte"):
+            self.assertEqual(trace[key], catalog[key])
+        self.assertEqual(catalog["expressions"], [
+            {k: row[k] for k in ("text", "start_byte", "end_byte")} for row in trace["expressions"]
+        ])
+        rows = trace["expressions"]
+        shadow = next(r for r in rows if r["text"] == "n" and r["hits"] == 4)
+        self.assertEqual([o["value"] for o in shadow["observations"]], [1, 2, 3])
+        self.assertEqual(shadow["observations"][0]["locals"], {"i": 1, "n": 1, "safe": True, "u": None})
+        first = next(r for r in rows if r["text"] == "i + 1")["observations"][0]
+        self.assertEqual((first["locals"]["n"], first["locals"]["i"], first["value"]), (4, 0, 1))
+        skipped = next(r for r in rows if r["text"] == "1 / (n - n)")
+        self.assertEqual((skipped["hits"], skipped["observations"], skipped["type"]), (0, [], "I64"))
+        condition = next(r for r in rows if r["text"].startswith("safe ||"))
+        self.assertEqual(condition["type"], "Bool")
+        self.assertIs(condition["observations"][0]["value"], True)
+
+        bad = self.trace("tally", "tally", "-2", "false", "()")
+        self.assertEqual(bad["args"], [-2, False, None])
+        self.assertEqual(bad["fault"], "DivisionByZero")
+        self.assertNotIn("result", bad)
+        obs = next(r for r in bad["expressions"] if r["text"] == skipped["text"])["observations"]
+        self.assertEqual(obs, [{"locals": {"n": -2, "safe": False, "u": None, "i": 0},
+                                "fault": "DivisionByZero"}])
+        untouched = self.trace("main", "tally", "4", "true", "()")
+        self.assertTrue(all(r["hits"] == 0 for r in untouched["expressions"]))
+        for invalid in [(("2", "1", "()"), "expected Bool"), ((), "expects 3 arguments"),
+                        (("9223372036854775808", "true", "()"), "expected I64")]:
+            args, error = invalid
+            p = invoke(GPP, "trace", self.source, "--function", "tally", "--call", "tally", *args)
+            self.assertNotEqual(p.returncode, 0)
+            self.assertEqual(p.stdout, "")
+            self.assertIn(error, p.stderr)
+        self.assertEqual(self.source.read_bytes(), source.replace("\n", "\r\n").encode())
+
+    def test_trace_recursion_limits_and_unit(self):
+        self.source.write_text(module("return sum_down(4);", """
+fn sum_down(n: I64) -> I64 !{} {
+    if n == 0 { return 1; }
+    return n + sum_down(n - 1);
+}
+fn empty() -> Unit !{} { return (); }"""))
+        trace = self.trace("sum_down", "main")
+        nested = next(r for r in trace["expressions"] if r["text"].startswith("n +"))
+        self.assertEqual(nested["hits"], 4)
+        self.assertEqual([(o["locals"]["n"], o["value"]) for o in nested["observations"]],
+                         [(4, 11), (3, 7), (2, 4)])
+        unit = self.trace("empty", "empty")
+        self.assertIsNone(unit["result"])
+        self.assertEqual(unit["expressions"][0]["type"], "Unit")
+        self.assertEqual(unit["expressions"][0]["observations"], [{"locals": {}, "value": None}])
+        for fuel in ("0", "10", "40", "100"):
+            trace = self.trace("sum_down", "main", "--fuel", fuel)
+            run = invoke(GPP, "run", "--interpreter", "--fuel", fuel, self.source)
+            if run.returncode:
+                self.assertEqual(run.stderr, f"fault: {trace['fault']}\n")
+            else:
+                self.assertEqual(int(run.stdout), trace["result"])
+
     def test_arithmetic(self):
         hi, lo = "9223372036854775807", "-9223372036854775808"
         cases = [

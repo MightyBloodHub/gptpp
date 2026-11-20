@@ -1,7 +1,7 @@
 //! Syntax of the scalar bootstrap profile. All spans are half-open UTF-8 byte offsets.
 use std::fmt::{self, Write};
 
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Hash)]
 pub struct Span {
     pub start: usize,
     pub end: usize,

@@ -2,11 +2,11 @@
 ## A general-purpose programming language and compiler optimized for AI-authored software
 
 **Document:** `docs/design.md`<br>
-**Design revision:** 0.3<br>
+**Design revision:** 0.4<br>
 **Date:** 20 November 2026<br>
-**Status:** The scalar compiler, native backend and checked maintenance editor are implemented. The current design decision is based on measured model edits and cross-language caller tests. The 20% general efficiency goal remains open. [Build instructions](../README.md) · [Maintenance evidence](../bench/policy/README.md)
+**Status:** The scalar compiler and checked editor now share revision-bound expression addresses with a typed execution trace. Authoring tools search those expressions against examples and can identify a call on which proposed edits disagree. [Build instructions](../README.md) · [Measured repair outcomes](../bench/expression/results/repair.md)
 
-> **Mission:** Minimize the total cost of producing, checking, modifying, and maintaining correct software with AI—without making execution depend on an AI model.
+> **Mission:** Give AI agents the language and compiler operations they need to construct, understand and revise correct programs. Compiled programs run independently of a model.
 
 GPT++ is a working project name. It does not imply C++ compatibility, affiliation with a model vendor, or dependence on a particular model. Name, command, extension, and package-registry availability must be checked before public distribution.
 
@@ -59,9 +59,15 @@ The project consists of three separately testable layers:
 
 The proposed implementation is a Rust compiler frontend, a GPT++-owned typed intermediate representation, an executable reference interpreter, and an LLVM native backend. Reusing LLVM does not make GPT++ a transpiler: GPT++ owns its grammar, type rules, semantics, diagnostics, runtime interface, and lowering. LLVM supplies machine-code infrastructure, as illustrated by its language-frontend documentation. [R1]
 
-**The product to optimize is a correct change to an existing program.** Start with a working multi-caller program, make the requested change, and count every model token spent until the change passes public and withheld behavioral checks. Cost per accepted change is the primary metric. A cheaper workflow that drops necessary behavior fails the acceptance gate in Section 19.7.
+**Make an expression addressable by behavior as well as by source.** A caller's wrong result is often the only clue an agent gets. In the scalar profile, the compiler can follow that call, identify the expressions it visited and report their types, visible bindings and observed results. An agent can submit a checked edit at the same revision and byte range. The authoring tool can search a bounded expression grammar and offer only changes that satisfy supplied examples. If several changes fit, it can identify a call for which an additional expected result would disambiguate them. These operations also work offline.
 
-### Current engineering priorities
+Evaluate each operation by what an agent can correctly accomplish with it. For repair, measure accepted changes, unanswered cases, tool time, model usage and any additional expected results supplied. The comparative cost target in Section 19.7 governs claims about savings. [Trace reference](scalar-language.md#trace-a-call) · [Authoring interface](../tools/README.md#search-for-an-edit-with-public-examples) · [Development evidence](../bench/expression/results/repair.md)
+
+### What the execution-guided study established
+
+On Redis, the search generated a change that passed independent caller tests. A deterministic first choice and both models selected it. On FastLED, six alternatives matched the original examples. Two additional expected values from a reference calculation uniquely identified the passing edit. On Go, the bounded search produced no candidate for the Gregorian year boundary. This separates two practical authoring problems. More information can resolve a choice between available edits. Generating a missing edit requires a different search space or a model-authored proposal. [Autonomous repair trials](../bench/expression/results/repair.md) · [Oracle-assisted follow-up](../bench/expression/results/distinguish.md)
+
+### Earlier maintenance priorities
 
 | Priority | Evidence | Engineering decision |
 |---|---|---|
@@ -1303,7 +1309,7 @@ The scalar compiler, interpreter, native backend and scoped editor already run. 
 3. An ablation on all 15 eligible caller retries found that substituting a derived target result reduced retry tokens by 24–26%. Both variants recovered zero edits. Spend further effort on the initial edit and distinguishing boundary conditions. [Matched alternate retries](../bench/policy/results/retry-obligations.md)
 4. Test transfer using actual historical code changes and identifiable consumers. Track the work lost in extracting or porting each case and report any gap to full-repository maintenance. Expand beyond scalar decisions before a general language claim.
 5. Select each language's strongest combination of edit surface **and retry policy** on development data before the next qualification run. Compare against a one-shot baseline whenever retries recover few or zero edits. On the Qwen policy tasks the same five Rust edits cost 465 tokens each with one call and 783.40 with caller-triggered retries. This choice reverses the observed GPT++ versus Rust ordering.
-6. Promote a workflow only after it meets the correctness and 20% cost gates on fresh work. If a familiar native baseline wins, keep it as the engineering reference. Introduce the next language feature only once an observed failure identifies the missing information or operation.
+6. Ship operations with reproducible correctness evidence and state their limits. For a comparative cost claim, evaluate against a frozen baseline on fresh work and apply the thresholds in Section 19.7. Use observed authoring failures to decide which information or operation the language should expose next.
 
 ### Phase 0 — Establish the experiment and semantic contract
 

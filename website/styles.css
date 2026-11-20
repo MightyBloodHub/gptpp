@@ -415,6 +415,36 @@ section[id] { scroll-margin-block-start: 1.5rem; }
 }
 .output code { color: var(--gpp-signal); }
 
+.trace-example table {
+  width: calc(100% - 2rem);
+  margin: 1.1rem 1rem 0;
+  border-collapse: collapse;
+  text-align: start;
+  font-size: .9rem;
+}
+
+.trace-example caption {
+  padding-bottom: .5rem;
+  color: var(--gpp-paper);
+  text-align: start;
+}
+
+.trace-example th,
+.trace-example td {
+  padding: .35rem .5rem .35rem 0;
+  border-top: 1px solid #485166;
+  text-align: start;
+}
+
+.trace-example th,
+.trace-range { color: var(--gpp-mist); }
+.trace-example td:last-child { color: var(--gpp-signal); }
+
+.trace-range {
+  margin: .8rem 1rem 0;
+  font-size: .9rem;
+}
+
 .research-inner { align-items: center; }
 
 .research-link {
@@ -437,6 +467,65 @@ section[id] { scroll-margin-block-start: 1.5rem; }
 }
 
 .research-link:hover { color: var(--gpp-signal); }
+
+.repair-result {
+  display: grid;
+  grid-template-columns: minmax(0, .89fr) minmax(0, 1.11fr);
+  gap: clamp(2rem, 7vw, 6.5rem);
+  padding-block: clamp(2rem, 4vw, 4rem) clamp(3.5rem, 7vw, 6rem);
+  border-top: 1px solid var(--dark-rule);
+}
+
+.repair-copy h3 {
+  margin-bottom: 1rem;
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  line-height: 1.05;
+  letter-spacing: -.035em;
+}
+
+.repair-copy > p:not(.eyebrow),
+.repair-evidence p { color: var(--gpp-mist); }
+
+.repair-diff {
+  margin-top: 1.3rem;
+  padding-inline: 1rem;
+  background: var(--gpp-graphite);
+}
+
+.repair-diff div { padding-block: .65rem; }
+.repair-diff div + div { border-top: 1px solid var(--dark-rule); }
+.repair-diff dt { color: var(--gpp-mist); font-size: .875rem; }
+.repair-diff dd { overflow-wrap: anywhere; }
+.repair-diff div:last-child dd { color: var(--gpp-signal); }
+
+.repair-evidence table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: clamp(.875rem, 1.2vw, 1rem);
+}
+
+.repair-evidence caption {
+  margin-bottom: .8rem;
+  text-align: start;
+  font-weight: 680;
+}
+
+.repair-evidence th,
+.repair-evidence td {
+  padding: .55rem .5rem .55rem 0;
+  border-top: 1px solid var(--dark-rule);
+  text-align: start;
+}
+
+.repair-evidence thead { color: var(--gpp-mist); }
+.repair-evidence tbody th { font-weight: 500; }
+.repair-evidence td {
+  white-space: nowrap;
+  font-family: var(--gpp-font-mono);
+}
+
+.repair-evidence p { margin-block: 1rem .6rem; }
+.repair-evidence .text-link { margin-inline-end: .75rem; }
 
 .benchmarks {
   color-scheme: light;
@@ -542,6 +631,7 @@ section[id] { scroll-margin-block-start: 1.5rem; }
   .language-grid,
   .quickstart-grid,
   .research-inner,
+  .repair-result,
   .benchmark-heading,
   .benchmark-pair,
   .benchmark-notes {
@@ -570,6 +660,8 @@ section[id] { scroll-margin-block-start: 1.5rem; }
   }
 
   .hero { padding-block: 3.4rem; }
+  .tabs button { padding-inline: .65rem; }
+  .copy-button { min-width: 4.3rem; }
 }
 
 @media (max-width: 22em) {

@@ -34,6 +34,19 @@ The interpreter evaluates checked source. The native backend lowers the program 
 
 The native driver searches `GPP_LLVM_BIN`, `PATH`, and the Apple Silicon and Intel Homebrew LLVM locations. On macOS it uses `SDKROOT` when set and otherwise asks `xcrun` for the SDK.
 
+## Trace a call
+
+```sh
+target/debug/gpp trace examples/add.gpp --function add --call main
+target/debug/gpp trace examples/add.gpp --function add --call add -4 -9 --fuel 1000
+```
+
+`--call` names the function to execute. `--function` names the function whose expressions to observe. They can be the same function or a caller can reach the target multiple times. Supply one argument per parameter in declaration order. The CLI accepts signed decimal integers, `true`, `false` and `'()'` for Unit. The interpreter uses the ordinary fuel and nesting limits.
+
+A `gpp.trace/1` response contains the checked source revision, the entry function and arguments, the target function and its source extent, and either `result` or `fault`. Each selectable expression has the same byte range and text as in `gpp expressions`, with a static `type`, a count of visits (`hits`), and observations from its first three visits. Each observation contains the visible bindings on entry and either the resulting `value` or the propagated `fault`. A skipped branch has zero visits and an empty observation list. Integers and booleans use JSON scalars. Unit is JSON `null`. Consumers must preserve signed 64-bit integer precision when decoding JSON.
+
+For the first command, the expression `left + right` ran once with `{"left":20,"right":22}` and returned `42`. Its half-open UTF-8 range is `73:85`. Use that range and the returned revision with `gpp edit` to preview a change to the expression. Tracing is read-only. A runtime fault is a successful observation reported in the JSON response. An invalid program, unknown function or ill-typed invocation exits with an error.
+
 ## Preview a function edit
 
 The checked editor accepts a replacement body or a single return expression. It preserves the declaration and source outside the selected function body. This example previews making `add` return the larger argument, then runs the preview.

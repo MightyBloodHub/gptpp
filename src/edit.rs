@@ -147,7 +147,7 @@ fn valid_digest(value: &str) -> bool {
 
 // Use the host's SHA-256 implementation. Hash the bytes that were actually
 // parsed rather than having the utility re-open a possibly changed file.
-fn revision(bytes: &[u8]) -> Result<String, String> {
+pub(crate) fn revision(bytes: &[u8]) -> Result<String, String> {
     for (program, args) in [("sha256sum", &[][..]), ("shasum", &["-a", "256"][..])] {
         let mut child = match Command::new(program)
             .args(args)
@@ -180,7 +180,7 @@ fn revision(bytes: &[u8]) -> Result<String, String> {
     Err("computing revisions requires sha256sum or shasum on PATH".into())
 }
 
-fn target<'a>(module: &'a Module, name: &str) -> Result<&'a Function, String> {
+pub(crate) fn target<'a>(module: &'a Module, name: &str) -> Result<&'a Function, String> {
     let mut matches = module.functions.iter().filter(|f| f.name == name);
     let function = matches
         .next()
@@ -191,7 +191,7 @@ fn target<'a>(module: &'a Module, name: &str) -> Result<&'a Function, String> {
     Ok(function)
 }
 
-fn expressions(function: &Function) -> Vec<&Expr> {
+pub(crate) fn expressions(function: &Function) -> Vec<&Expr> {
     fn walk_expr<'a>(expr: &'a Expr, nodes: &mut Vec<&'a Expr>) {
         if expr.site != ExprSite::Synthetic {
             nodes.push(expr);

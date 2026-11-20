@@ -1,0 +1,42 @@
+/* GPT++ digital theme. Set data-theme on <html> to override the system preference. */
+:root {
+  color-scheme: light dark;
+
+  --gpp-ink: #12151f;
+  --gpp-graphite: #1d2331;
+  --gpp-paper: #f5f2e9;
+  --gpp-signal: #d9f56a;
+  --gpp-lavender: #b8abff;
+  --gpp-deep-violet: #513a9c;
+  --gpp-mist: #a9b2c3;
+  --gpp-slate: #505a69;
+
+  --gpp-bg: light-dark(var(--gpp-paper), var(--gpp-ink));
+  --gpp-surface: light-dark(#fff, var(--gpp-graphite));
+  --gpp-text: light-dark(var(--gpp-ink), var(--gpp-paper));
+  --gpp-muted: light-dark(var(--gpp-slate), var(--gpp-mist));
+  --gpp-link: light-dark(var(--gpp-deep-violet), var(--gpp-lavender));
+  --gpp-border: var(--gpp-muted);
+  --gpp-focus: var(--gpp-link);
+  --gpp-primary: light-dark(var(--gpp-deep-violet), var(--gpp-signal));
+  --gpp-on-primary: light-dark(var(--gpp-paper), var(--gpp-ink));
+
+  --gpp-syntax-keyword: var(--gpp-link);
+  --gpp-syntax-type: light-dark(#126350, #8dded1);
+  --gpp-syntax-function: light-dark(var(--gpp-ink), var(--gpp-signal));
+  --gpp-syntax-string: var(--gpp-syntax-type);
+  --gpp-syntax-number: light-dark(#9a3a55, #ffb8cb);
+  --gpp-syntax-comment: var(--gpp-muted);
+  --gpp-syntax-operator: var(--gpp-text);
+
+  --gpp-font-sans: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --gpp-font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}

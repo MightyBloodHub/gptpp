@@ -1,8 +1,10 @@
 # GPT++
 
+**A language made by AI, for AI.** GPT++ is a free and open project. [Project website](https://gptpp.sandoog.co/)
+
 GPT++ is an experimental programming language and toolchain for AI-assisted software maintenance. The project measures how much model work it takes to produce a change that passes independent tests. The `gpp` compiler checks a single source module, runs it in a reference interpreter, and builds native executables through LLVM. The compiler runs offline. An optional local-model tool proposes checked edits to a selected function.
 
-**Project status.** The scalar compiler and maintenance tools are usable. The research target is a repeatable 20% reduction in tokens per accepted edit against strong Python and Rust workflows. That target remains open. [Roadmap](ROADMAP.md) · [Benchmark results](bench/README.md)
+**Project status.** The scalar compiler and maintenance tools are usable. The research target is a repeatable 20% reduction in tokens per accepted edit against strong Python and Rust workflows. That target remains open. [Roadmap](ROADMAP.md) · [Benchmark charts and data](bench/expression/README.md#charts-and-data)
 
 ## Quick start
 
@@ -53,5 +55,7 @@ The tool saves the checked fragment, shows the diff, and prints a revision-guard
 | [tools/](tools/) | Local-model authoring, ordered rules, and caller analysis |
 | [bench/](bench/) | Benchmark protocols, raw trials, reports, and replay tools |
 | [docs/](docs/) | [Scalar language reference](docs/scalar-language.md) and [long-form design](docs/design.md) |
+| [brand/](brand/) | GPT++ logo, digital identity guide, and web theme |
+| [website/](website/) | Source and build instructions for the project website |
 
 The [roadmap](ROADMAP.md) records the current priorities. The [contributing guide](CONTRIBUTING.md) covers development setup, verification, and benchmark changes.

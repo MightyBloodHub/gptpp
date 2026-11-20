@@ -14,7 +14,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
-const USAGE: &str = "gpp complete FILE --hole NAME [--fill EXPRESSION_FILE] [--search hybrid|grammar|minimum] [--limit N] [--budget N] [--expect REVISION] [--stdout]";
+const USAGE: &str = "gpp complete FILE --hole NAME [--fill EXPRESSION_FILE] [--search hybrid|grammar|minimum|piecewise] [--limit N] [--budget N] [--expect REVISION] [--stdout]";
 const PROBE_LIMIT: usize = 64;
 
 #[derive(Clone, Copy, Eq, PartialEq)]
@@ -22,6 +22,7 @@ enum SearchMode {
     Hybrid,
     Grammar,
     Minimum,
+    Piecewise,
 }
 
 struct Options {
@@ -74,7 +75,12 @@ impl Options {
                         Some("hybrid") => SearchMode::Hybrid,
                         Some("grammar") => SearchMode::Grammar,
                         Some("minimum") => SearchMode::Minimum,
-                        _ => return Err("--search requires hybrid, grammar or minimum".into()),
+                        Some("piecewise") => SearchMode::Piecewise,
+                        _ => {
+                            return Err(
+                                "--search requires hybrid, grammar, minimum or piecewise".into()
+                            );
+                        }
                     });
                 }
                 Some("--expect") if expected.is_none() => {
@@ -314,16 +320,23 @@ pub fn run(args: impl Iterator<Item = OsString>) -> Result<u8, String> {
     let mut truncated = candidates.len() > opts.limit;
     let mut queue: VecDeque<_> = candidates.into();
     let mut attempted = HashSet::new();
-    let minimum = opts.mode == SearchMode::Minimum && !manual;
+    let piecewise = opts.mode == SearchMode::Piecewise;
+    let minimum = (opts.mode == SearchMode::Minimum || piecewise) && !manual;
     let mut guide_after = (opts.mode == SearchMode::Hybrid && !manual && opts.limit >= 8)
         .then_some((opts.limit / 2).min(queue.len()));
     let mut guidance = crate::guided_search::Search::default();
     let mut minimum_vectors = 0;
     let mut numeric_tests = 0;
+    let mut partitions = 0;
+    let mut residuals = 0;
     let mut costs = HashMap::new();
     if minimum && !module.contracts.is_empty() {
-        (guidance, minimum_vectors, numeric_tests) =
-            crate::guided_search::minimum(&module, hole, opts.budget);
+        let (found, work) = crate::guided_search::minimum(&module, hole, opts.budget, piecewise);
+        guidance = found;
+        minimum_vectors = work.vectors;
+        numeric_tests = work.numeric;
+        partitions = work.partitions;
+        residuals = work.residuals;
         let mut unique = HashSet::new();
         let mut batch: Vec<_> = guidance
             .expressions
@@ -513,6 +526,9 @@ pub fn run(args: impl Iterator<Item = OsString>) -> Result<u8, String> {
             .map(|v| v.to_string())
             .unwrap_or_else(|| "null".into());
         detail.push_str(&format!(",\"selection\":{{\"policy\":\"minimum_ast_cost\",\"cost\":{cost},\"value_vectors\":{minimum_vectors},\"numeric_hypotheses\":{numeric_tests},\"longer_passing\":{longer_passing},\"longer_disagreement\":{}}}",longer_question.as_deref().unwrap_or("null")));
+    }
+    if piecewise && !manual {
+        detail.push_str(&format!(",\"piecewise\":{{\"subset_operations\":{partitions},\"residual_operations\":{residuals}}}"));
     }
     let report = format!(
         "{{\"schema\":\"gpp.complete/1\",\"revision\":{},\"hole\":{},\"status\":{},\"tested\":{tested},\"witnesses\":{},\"passing_candidates_seen\":{survivors},\"candidate_limit\":{},\"grammar_truncated\":{truncated},\"guidance\":{{\"contract_runs\":{},\"examples\":{},\"value_vectors\":{},\"branch_joins\":{},\"proposals\":{}}},\"probe_calls_per_passing_candidate\":{}{} }}",

@@ -35,6 +35,8 @@ Candidate cost is the number of syntax-tree nodes. A variable, a signed integer 
 target/debug/gpp complete examples/calibration/sketch.gpp --hole rule --limit 32 --search minimum
 ```
 
+Use `--search piecewise` for decisions with several branches. This mode also divides observed inputs into subsets and looks for expressions that fit each branch. It can combine integer terms by matching the difference between a partial sum and the observed result. It submits the proposals to the same whole-program checks and minimum-cost selection described above. The `piecewise` report counts the additional subset operations and residual operations. Their limits are 110,000 and 40,000 respectively. Search order, the candidate cap and the variety of examples affect which programs it can find.
+
 ## Prove a contract across a full integer range
 
 `gpp prove` translates checked expressions to Z3 bit vectors and nominal datatypes and asks whether the contract can return false or raise a semantic fault. Install Z3 on the command search path to use this optional command. Its supported fragment includes checked signed arithmetic, branches, immutable locals, records, enums and acyclic function calls. It models short-circuit evaluation, signed overflow, truncating division, signed remainder and faults in discarded eager arguments. It reports unsupported loops, writes or recursion explicitly. A proof covers the declared input range under the source semantics. Native ABI, host storage and interpreter resource limits have separate tests.

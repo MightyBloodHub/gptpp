@@ -123,6 +123,24 @@ contract unit(){pick(1,1)==1}
         self.assertIsNotNone(row["selection"]["longer_disagreement"])
         self.assertEqual(row["verification"]["checked"], 3)
 
+    def test_piecewise_joins_regions_and_checks_the_emitted_program(self):
+        self.module("""
+fn adjust(x:I64)->I64 !{} {return ?rule:I64;}
+contract c(x:I64 in -8..=8){adjust(x)==(if x < -2 {7} else if x<=2 {-4} else {11})}
+""")
+        args=("--hole","rule","--search","piecewise")
+        p=self.gpp("complete",*args)
+        self.assertEqual(p.returncode,0,p.stdout+p.stderr)
+        row=json.loads(p.stdout)
+        self.assertEqual(row["verification"]["checked"],17)
+        self.assertGreater(row["piecewise"]["subset_operations"],0)
+        self.assertLessEqual(row["piecewise"]["subset_operations"],110000)
+        self.assertLessEqual(row["piecewise"]["residual_operations"],40000)
+        filled=self.gpp("complete",*args,"--stdout")
+        self.assertEqual(filled.returncode,0)
+        self.src.write_text(filled.stdout)
+        self.assertEqual(self.gpp("verify").returncode,0)
+
     def test_no_contract_budget_and_multiple_holes(self):
         self.module("fn pick(x: I64) -> I64 !{} {return ?v: I64;}")
         p = self.gpp("complete", "--hole", "v")

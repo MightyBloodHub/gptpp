@@ -7,6 +7,8 @@ use std::collections::HashSet;
 
 #[path = "parameter_search.rs"]
 mod parameter_search;
+#[path = "residual_search.rs"]
+mod residual_search;
 
 const MAX_ROWS: usize = 32;
 const MAX_RUNS: usize = 768;
@@ -601,10 +603,22 @@ pub fn suggest(module: &Module, hole: &Hole, budget: u64) -> Search {
 
 /// Seed the minimum-cost engine and the hybrid synthesizer with the same
 /// contract observations. Only full candidate verification can accept a fill.
-pub fn minimum(module: &Module, hole: &Hole, budget: u64) -> (Search, usize, usize) {
+pub struct Work {
+    pub vectors: usize,
+    pub numeric: usize,
+    pub partitions: usize,
+    pub residuals: usize,
+}
+pub fn minimum(module: &Module, hole: &Hole, budget: u64, piecewise: bool) -> (Search, Work) {
+    let mut work = Work {
+        vectors: 0,
+        numeric: 0,
+        partitions: 0,
+        residuals: 0,
+    };
     let mut stats = Search::default();
     if !matches!(hole.ty, Type::Bool | Type::I64) || hole.locals.len() > MAX_COLUMNS {
-        return (stats, 0, 0);
+        return (stats, work);
     }
     let rows = examples(
         module,
@@ -615,15 +629,27 @@ pub fn minimum(module: &Module, hole: &Hole, budget: u64) -> (Search, usize, usi
     solve(hole, module, &rows, &mut stats);
     let pool = crate::minimal_search::candidates(hole, &rows);
     let (parameterized, numeric_tests) = parameter_search::candidates(module, hole, &rows);
+    let mut extra = Vec::new();
+    if piecewise {
+        let trees = crate::piecewise_search::candidates(hole, &rows);
+        work.partitions = trees.work;
+        let (residuals, work_done) = residual_search::candidates(module, hole, &rows);
+        work.residuals = work_done;
+        extra = trees.expressions;
+        extra.extend(residuals);
+    }
     let mut unique = HashSet::new();
     stats.expressions = pool
         .expressions
         .into_iter()
         .chain(parameterized)
+        .chain(extra)
         .chain(stats.expressions)
         .filter(|s| unique.insert(s.clone()))
         .collect();
-    (stats, pool.vectors, numeric_tests)
+    work.vectors = pool.vectors;
+    work.numeric = numeric_tests;
+    (stats, work)
 }
 
 fn solve(hole: &Hole, module: &Module, rows: &[Example], stats: &mut Search) {

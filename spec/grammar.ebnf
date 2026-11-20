@@ -1,0 +1,85 @@
+(* GPT++ scalar bootstrap profile, revision 2.
+   Input is one UTF-8 source file. A successful parse consumes the entire file.
+   Double quotes enclose terminals. Square brackets indicate an optional part,
+   braces indicate repetition, and a comma denotes concatenation. *)
+
+module          = "module", path, ";", { function } ;
+path            = identifier, { ".", identifier } ;
+function        = [ "pub" ], "fn", identifier, "(", [ parameters ], ")",
+                  "->", scalar_type, "!", "{", "}", block ;
+parameters      = parameter, { ",", parameter }, [ "," ] ;
+parameter       = identifier, ":", scalar_type ;
+scalar_type     = "I64" | "Bool" | "Unit" ;
+
+block           = "{", { statement }, "}" ;
+statement       = binding | assignment | return_stmt | if_stmt | while_stmt
+                | expression, ";" ;
+binding         = ( "let" | "var" ), identifier, [ ":", scalar_type ],
+                  "=", expression, ";" ;
+assignment      = identifier, ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" ), expression, ";" ;
+return_stmt     = "return", expression, ";" ;
+if_stmt         = "if", expression, block, [ "else", ( block | if_stmt ) ] ;
+while_stmt      = "while", expression, block ;
+
+(* Each binary precedence group folds to the left. Unary operators nest to the right. *)
+expression      = logical_or ;
+logical_or      = logical_and, { "||", logical_and } ;
+logical_and     = equality, { "&&", equality } ;
+equality        = comparison, { ( "==" | "!=" ), comparison } ;
+comparison      = sum, { ( "<" | "<=" | ">" | ">=" ), sum } ;
+sum             = product, { ( "+" | "-" ), product } ;
+product         = unary, { ( "*" | "/" | "%" ), unary } ;
+unary           = ( "!" | "-" ), unary | primary ;
+primary         = decimal | "true" | "false" | "(", [ expression ], ")"
+                | identifier, [ "(", [ arguments ], ")" ] | if_value ;
+if_value        = "if", expression, "{", expression, "}", "else",
+                  ( "{", expression, "}" | if_value ) ;
+arguments       = expression, { ",", expression }, [ "," ] ;
+
+(* Lexical productions have no intervening trivia. Identifiers and decimal
+   digits are scanned to maximal length. A reserved word must match the entire
+   identifier token. The two-character operators are scanned before their
+   single-character prefixes. Annotation type names also work as identifiers
+   wherever the grammar expects an identifier. *)
+identifier      = identifier_word - reserved ;
+identifier_word = ( letter | "_" ), { letter | "_" | digit } ;
+letter          = ? ASCII A through Z or a through z ? ;
+digit           = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+decimal         = digit, { digit } ;
+reserved        = "module" | "pub" | "fn" | "let" | "var" | "return" | "if"
+                | "else" | "while" | "true" | "false" | "use" | "record"
+                | "enum" | "const" | "test" | "requires" | "ensures" | "for"
+                | "in" | "match" | "break" | "continue" | "assert" ;
+
+(* Any number of whitespace characters or line comments may appear between
+   tokens, before the first token and after the last. A comment ends at CR,
+   LF or end of input. Unicode is permitted inside comments, subject to the
+   source-wide control restriction below. *)
+trivia          = whitespace | line_comment ;
+whitespace      = ? ASCII space, horizontal tab, LF, form feed or CR ? ;
+line_comment    = "//", { ? Unicode scalar other than CR or LF ? } ;
+
+(* Lexical and parsing constraints
+   - Reject U+061C, U+200E, U+200F, U+202A..U+202E and U+2066..U+2069 anywhere
+     in a scalar source file. Diagnostics use half-open UTF-8 byte spans.
+   - Decimal literals may contain leading zeros. The largest unsigned spelling
+     admitted as a primary is 9223372036854775807. The magnitude 9223372036854775808
+     is accepted only immediately after a prefix minus token. This pair forms
+     the I64 minimum literal. Trivia may occur between those two tokens.
+   - The parser bounds recursive nesting at 64. Each nested branch/loop block
+     or else-if, grouped expression, call argument, prefix operand and descent
+     into the right operand of a binary operator consumes one nesting level.
+     The outer function body starts at level zero. Each expression tree also
+     has maximum height 64, counting a leaf as one and ignoring grouping.
+     Exceeding either bound produces GPP-PARSE-004.
+   - Empty parentheses as a primary denote Unit. Return statements always
+     carry an expression. A Unit function may also fall through its body.
+   - At the start of a statement, "if" introduces a statement. In value
+     position each braced arm contains one expression. Both arms typecheck
+     to the same type. Only the arm selected by the Bool condition executes.
+   - A compound update "x op= rhs;" checks and executes as "x = x op (rhs);".
+     The AST printer expands it to this form. The target must be mutable.
+   - Name resolution, typing and the required entry function are checked after
+     parsing. Thus, for example, a module containing no functions parses.
+   - The AST inspection command prints normalized syntax. It discards comments
+     and redundant grouping and expands else-if into nested if statements. *)

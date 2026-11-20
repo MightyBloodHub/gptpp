@@ -1,0 +1,23 @@
+// result 126
+module fixtures.control;
+
+// Call a later declaration and keep a value captured before reassignment.
+pub fn main() -> I64 !{} {
+    var n = 5;
+    let original = n;
+    var count: I64 = 0;
+    while n > 0 {
+        let saved = n;
+        if saved % 2 != 0 {
+            let n = saved * 2;
+            if n > 0 { count = count + 2; }
+        }
+        n = n - 1;
+    }
+    return factorial(original) + count;
+}
+
+fn factorial(n: I64) -> I64 !{} {
+    if n <= 1 { return 1; }
+    return n * factorial(n - 1);
+}

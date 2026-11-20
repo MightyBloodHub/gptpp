@@ -1,0 +1,1001 @@
+{
+  "study": "Post-hoc projection of final v3 Python-syntax completions",
+  "method": "Use the exact final reply from every assigned python_fim and gpp_projected trial. Use the archived candidate extraction, compiler, and oracles. For each projection, run both test groups once when the candidate checks. Keep every failure. The extended arm changes only the scalar lowerer. No model calls or cost estimates.",
+  "input_sha256": "2c3bc073686e5774b183f6c1c9ac4a06bd7f2508efcb48216e0659156c6fa348",
+  "replay_script_sha256": "ec6a2861fe3f3dbe3b5c5a3509808846ef3c81c45d413842ae53b0de1b8ee6a9",
+  "gpp_sha256": "c245a91b44a5f5dd77c41b72d414915fc0a82ed69e501118f24317c286c8760c",
+  "frozen_file_sha256": {
+    "src/edit.rs": "a566bc789b34e46b49c4548ea69803e0d0d000d30a58baddc03f1e2f158782dc",
+    "src/native.rs": "ee2b9321832d5c976a672cdd733b78ac96d739848c330bf3ab7a38c7edeedae1",
+    "src/ir.rs": "b9c5d31a906c792d7776d4f19f2d221f4067cb7a6112178032f8bd0cbcd569f9",
+    "src/check.rs": "5ad8138f1d98e24a2631da93e36e73761e303d908d4296084293a062979b5aa0",
+    "src/main.rs": "d479497c791715283de3a51d96ead235c283cda6c1315751e51ea16217f7f297",
+    "src/syntax.rs": "5dc8890bfa46ea93821ba768e18dc11122cb9e323acc8569adde4f341151afde",
+    "src/bootstrap.c": "a60588c92702b06c842b7d51436d56402ab994af0ce513655ff45e6f5b31e30e",
+    "src/interpreter.rs": "6addf7a341f7038e8315545f8774913ed57be842fba03f3b82ae7b5ae5b58fae",
+    "spec/grammar.ebnf": "5b8f6517636dd31c984b36ab79a73fe8dc46e6059d235b64b43a0c6706b4a766",
+    "bench/empirical/run.py": "7f441572bf5413b79bba02e6fca0a9cde4672cddd245727c06d5c1d2bef264ff",
+    "bench/empirical/evaluate.py": "83d9e4a1ea2095240a496dec937fb528c3a218c21870fc676ed221343b8640a7",
+    "tools/scalar_fragment.py": "2d8b02800a2f27cf129134c01f585b2015e07efacca408f4c895649620c9f8bb",
+    "bench/iterate/replication_tasks.py": "ff084c76d1872eea920153dbe6a56b07ec1261c037b7f6c7238cb3f7ca42a0d9",
+    "bench/iterate/fragments.py": "ad4cc591156cacf02c264f6fcdfc22d49c906d1d764d925c966bc4ac53483aba",
+    "bench/iterate/run_study.py": "6fec3d51a2594e88895850e2e59818229464ea3086c45b530af838200b47c860",
+    "bench/iterate/run_infill.py": "283a04017f26af02997d2f88d67da7dc7d89c645b756ca256416eb89abcb4a8a",
+    "bench/iterate/infill-protocol.md": "ab91d26557a0ad4f84e2087ad5a13190aa837193ff177dd2e0578aade4937662"
+  },
+  "extended_file_sha256": {
+    "tools/scalar_builtins.py": "8b56895fefe179d1d5f1caf5e734b88e25cc5a629e8cb8a267e04abd7f3e76d4",
+    "tools/scalar_fragment.py": "2d8b02800a2f27cf129134c01f585b2015e07efacca408f4c895649620c9f8bb"
+  },
+  "totals": {
+    "python_fim": {
+      "frozen_v3": {
+        "total": 8,
+        "original_accepted": 4,
+        "projected_checked": 2,
+        "projected_accepted": 1,
+        "accepted_by_both": 1,
+        "only_original": 3,
+        "only_projection": 0,
+        "accepted_by_neither": 4,
+        "first_failure_counts": {
+          "heldout": 1,
+          "lowering": 4,
+          "python_fragment": 2
+        }
+      },
+      "posthoc_scalar_builtins": {
+        "total": 8,
+        "original_accepted": 4,
+        "projected_checked": 3,
+        "projected_accepted": 2,
+        "accepted_by_both": 2,
+        "only_original": 2,
+        "only_projection": 0,
+        "accepted_by_neither": 4,
+        "first_failure_counts": {
+          "heldout": 1,
+          "lowering": 3,
+          "python_fragment": 2
+        }
+      }
+    },
+    "gpp_projected": {
+      "frozen_v3": {
+        "total": 8,
+        "original_accepted": 0,
+        "projected_checked": 3,
+        "projected_accepted": 0,
+        "accepted_by_both": 0,
+        "only_original": 0,
+        "only_projection": 0,
+        "accepted_by_neither": 8,
+        "first_failure_counts": {
+          "lowering": 3,
+          "public": 3,
+          "python_fragment": 2
+        }
+      },
+      "posthoc_scalar_builtins": {
+        "total": 8,
+        "original_accepted": 0,
+        "projected_checked": 5,
+        "projected_accepted": 1,
+        "accepted_by_both": 0,
+        "only_original": 0,
+        "only_projection": 1,
+        "accepted_by_neither": 7,
+        "first_failure_counts": {
+          "lowering": 1,
+          "public": 4,
+          "python_fragment": 2
+        }
+      }
+    }
+  },
+  "frozen_gpp_projected_acceptance_disagreements": [],
+  "results": [
+    {
+      "source_condition": "python_fim",
+      "task": "fade_level",
+      "model": "qwen2.5-coder:7b",
+      "seed": 42,
+      "final_attempt_number": 1,
+      "raw_response_sha256": "7050efae5ce6bd769ba29d4f9ecf0a8d5954e8d69e973a81475f7775264c355d",
+      "original": {
+        "accepted": true,
+        "terminal_outcome": "accepted",
+        "public_outcome": "pass",
+        "public_detail": "",
+        "heldout_detail": ""
+      },
+      "frozen_v3": {
+        "checked": false,
+        "accepted": false,
+        "materialization": {
+          "outcome": "check_error",
+          "detail": "line 1, byte 1: unsupported expression Call"
+        },
+        "public": {
+          "outcome": "not_run"
+        },
+        "heldout": {
+          "outcome": "not_run"
+        },
+        "source_sha256": {
+          "python_fragment_source_sha256": "4ec9a6738e8be44d8ede8accac6adbcd74ceeeb7ae59566ae7ac29f31f01f32f",
+          "normalized_fragment_sha256": "7050efae5ce6bd769ba29d4f9ecf0a8d5954e8d69e973a81475f7775264c355d"
+        },
+        "first_failure": "lowering"
+      },
+      "posthoc_scalar_builtins": {
+        "checked": false,
+        "accepted": false,
+        "materialization": {
+          "outcome": "check_error",
+          "detail": "line 1, byte 1: only the scalar builtins abs, min and max can be called"
+        },
+        "public": {
+          "outcome": "not_run"
+        },
+        "heldout": {
+          "outcome": "not_run"
+        },
+        "source_sha256": {
+          "python_fragment_source_sha256": "4ec9a6738e8be44d8ede8accac6adbcd74ceeeb7ae59566ae7ac29f31f01f32f",
+          "normalized_fragment_sha256": "7050efae5ce6bd769ba29d4f9ecf0a8d5954e8d69e973a81475f7775264c355d"
+        },
+        "first_failure": "lowering"
+      }
+    },
+    {
+      "source_condition": "python_fim",
+      "task": "nearest_station",
+      "model": "qwen2.5-coder:7b",
+      "seed": 42,
+      "final_attempt_number": 1,
+      "raw_response_sha256": "044a9372edd7b4c8edec10102ae3e319094ea4e95b762b9bbdfacb86540cbb6a",
+      "original": {
+        "accepted": true,
+        "terminal_outcome": "accepted",
+        "public_outcome": "pass",
+        "public_detail": "",
+        "heldout_detail": ""
+      },
+      "frozen_v3": {
+        "checked": false,
+        "accepted": false,
+        "materialization": {
+          "outcome": "check_error",
+          "detail": "line 1, byte 9: unsupported expression Call"
+        },
+        "public": {
+          "outcome": "not_run"
+        },
+        "heldout": {
+          "outcome": "not_run"
+        },
+        "source_sha256": {
+          "python_fragment_source_sha256": "5eba2df902e749b0b7e1484db70574b990290686fb8154f43e7c27b7e693cadf",
+          "normalized_fragment_sha256": "044a9372edd7b4c8edec10102ae3e319094ea4e95b762b9bbdfacb86540cbb6a"
+        },
+        "first_failure": "lowering"
+      },
+      "posthoc_scalar_builtins": {
+        "checked": true,
+        "accepted": true,
+        "materialization": {
+          "outcome": "pass",
+          "detail": ""
+        },
+        "public": {
+          "outcome": "pass",
+          "detail": "",
+          "cases": 3
+        },
+        "heldout": {
+          "outcome": "pass",
+          "detail": "",
+          "cases": 26
+        },
+        "source_sha256": {
+          "python_fragment_source_sha256": "5eba2df902e749b0b7e1484db70574b990290686fb8154f43e7c27b7e693cadf",
+          "normalized_fragment_sha256": "044a9372edd7b4c8edec10102ae3e319094ea4e95b762b9bbdfacb86540cbb6a",
+          "lowered_fragment_sha256": "80e5817335c2f372fb3337023cfb370226f07b40713b0ce2954e700dcf81170c",
+          "gpp_edit_source_sha256": "fcc61a4b5f8d4e1c79ef706725c705e074ac9c82376f493dd91a36d90d2cac70"
+        },
+        "first_failure": null
+      }
+    },
+    {
+      "source_condition": "python_fim",
+      "task": "parcel_check_digit",
+      "model": "qwen2.5-coder:7b",
+      "seed": 42,
+      "final_attempt_number": 2,
+      "raw_response_sha256": "3d7737a4afd30ae8b829ff45ded7f734ba69beb00b607fc95db2b59884c8b372",
+      "original": {
+        "accepted": false,
+        "terminal_outcome": "check_error",
+        "public_outcome": "check_error",
+        "public_detail": "'(' was never closed (<unknown>, line 20)",
+        "heldout_detail": ""
+      },
+      "frozen_v3": {
+        "checked": false,
+        "accepted": false,
+        "materialization": {
+          "outcome": "check_error",
+          "detail": "'(' was never closed (<unknown>, line 20)"
+        },
+        "public": {
+          "outcome": "not_run"
+        },
+        "heldout": {
+          "outcome": "not_run"
+        },
+        "source_sha256": {},
+        "first_failure": "python_fragment"
+      },
+      "posthoc_scalar_builtins": {
+        "checked": false,
+        "accepted": false,
+        "materialization": {
+          "outcome": "check_error",
+          "detail": "'(' was never closed (<unknown>, line 20)"
+        },
+        "public": {
+          "outcome": "not_run"
+        },
+        "heldout": {
+          "outcome": "not_run"
+        },
+        "source_sha256": {},
+        "first_failure": "python_fragment"
+      }
+    },
+    {
+      "source_condition": "python_fim",
+      "task": "identical_repair_kits",
+      "model": "qwen2.5-coder:7b",
+      "seed": 42,
+      "final_attempt_number": 2,
+      "raw_response_sha256": "f91ae784a4f3c4ccccc947b596c91b4c138190fc9832c5a0bde315a891f4505a",
+      "original": {
+        "accepted": false,
+        "terminal_outcome": "check_error",
+        "public_outcome": "check_error",
+        "public_detail": "Completion contains code outside the fixed function.",
+        "heldout_detail": ""
+      },
+      "frozen_v3": {
+        "checked": false,
+        "accepted": false,
+        "materialization": {
+          "outcome": "check_error",
+          "detail": "Completion contains code outside the fixed function."
+        },
+        "public": {
+          "outcome": "not_run"
+        },
+        "heldout": {
+          "outcome": "not_run"
+        },
+        "source_sha256": {},
+        "first_failure": "python_fragment"
+      },
+      "posthoc_scalar_builtins": {
+        "checked": false,
+        "accepted": false,
+        "materialization": {
+          "outcome": "check_error",
+          "detail": "Completion contains code outside the fixed function."
+        },
+        "public": {
+          "outcome": "not_run"
+        },
+        "heldout": {
+          "outcome": "not_run"
+        },
+        "source_sha256": {},
+        "first_failure": "python_fragment"
+      }
+    },
+    {
+      "source_condition": "python_fim",
+      "task": "panel_color_order",
+      "model": "qwen2.5-coder:7b",
+      "seed": 42,
+      "final_attempt_number": 1,
+      "raw_response_sha256": "9747447d9a6ab1f1bf33709bcf0510add56806adef933d302bf267e0d099e945",
+      "original": {
+        "accepted": true,
+        "terminal_outcome": "accepted",
+        "public_outcome": "pass",
+        "public_detail": "",
+        "heldout_detail": ""
+      },
+      "frozen_v3": {
+        "checked": true,
+        "accepted": true,
+        "materialization": {
+          "outcome": "pass",
+          "detail": ""
+        },
+        "public": {
+          "outcome": "pass",
+          "detail": "",
+          "cases": 3
+        },
+        "heldout": {
+          "outcome": "pass",
+          "detail": "",
+          "cases": 21
+        },
+        "source_sha256": {
+          "python_fragment_source_sha256": "7d83ee5f7eb2f4440ad3942a05607d64766047dc866b061f25cebb5bcf129161",
+          "normalized_fragment_sha256": "8f2a1f3a75265a2c6453270a048b4b0811f50aa23ef4dda02cc8e9a7fbefb7e0",
+          "lowered_fragment_sha256": "56be41be36b1a8a920221a35fa903693b4889e95faed983a91c0290000b6f2c5",
+          "gpp_edit_source_sha256": "610ec9b5248ce01f48fd79f48b5b8b677378c29f7d1b37b58bd5eb1f8b90d315"
+        },
+        "first_failure": null
+      },
+      "posthoc_scalar_builtins": {
+        "checked": true,
+        "accepted": true,
+        "materialization": {
+          "outcome": "pass",
+          "detail": ""
+        },
+        "public": {
+          "outcome": "pass",
+          "detail": "",
+          "cases": 3
+        },
+        "heldout": {
+          "outcome": "pass",
+          "detail": "",
+          "cases": 21
+        },
+        "source_sha256": {
+          "python_fragment_source_sha256": "7d83ee5f7eb2f4440ad3942a05607d64766047dc866b061f25cebb5bcf129161",
+          "normalized_fragment_sha256": "8f2a1f3a75265a2c6453270a048b4b0811f50aa23ef4dda02cc8e9a7fbefb7e0",
+          "lowered_fragment_sha256": "56be41be36b1a8a920221a35fa903693b4889e95faed983a91c0290000b6f2c5",
+          "gpp_edit_source_sha256": "610ec9b5248ce01f48fd79f48b5b8b677378c29f7d1b37b58bd5eb1f8b90d315"
+        },
+        "first_failure": null
+      }
+    },
+    {
+      "source_condition": "python_fim",
+      "task": "actuator_downrate",
+      "model": "qwen2.5-coder:7b",
+      "seed": 42,
+      "final_attempt_number": 2,
+      "raw_response_sha256": "a0deaa8ef3961c83661b3b8af612d0d4ac20e487843e1e182d131439dba2e71a",
+      "original": {
+        "accepted": false,
+        "terminal_outcome": "wrong_answer",
+        "public_outcome": "wrong_answer",
+        "public_detail": "solve(30, 15, 4) returned 26; expected 22.",
+        "heldout_detail": ""
+      },
+      "frozen_v3": {
+        "checked": false,
+        "accepted": false,
+        "materialization": {
+          "outcome": "check_error",
+          "detail": "line 1, byte 1: unsupported expression Call"
+        },
+        "public": {
+          "outcome": "not_run"
+        },
+        "heldout": {
+          "outcome": "not_run"
+        },
+        "source_sha256": {
+          "python_fragment_source_sha256": "2a3ffd25fdb91eb2a8e4525dde48bd9235b94d9a95a8fda2596aa7283a9ff1f7",
+          "normalized_fragment_sha256": "a0deaa8ef3961c83661b3b8af612d0d4ac20e487843e1e182d131439dba2e71a"
+        },
+        "first_failure": "lowering"
+      },
+      "posthoc_scalar_builtins": {
+        "checked": false,
+        "accepted": false,
+        "materialization": {
+          "outcome": "check_error",
+          "detail": "line 1, byte 59: expected int, found bool"
+        },
+        "public": {
+          "outcome": "not_run"
+        },
+        "heldout": {
+          "outcome": "not_run"
+        },
+        "source_sha256": {
+          "python_fragment_source_sha256": "2a3ffd25fdb91eb2a8e4525dde48bd9235b94d9a95a8fda2596aa7283a9ff1f7",
+          "normalized_fragment_sha256": "a0deaa8ef3961c83661b3b8af612d0d4ac20e487843e1e182d131439dba2e71a"
+        },
+        "first_failure": "lowering"
+      }
+    },
+    {
+      "source_condition": "python_fim",
+      "task": "interest_after_payment",
+      "model": "qwen2.5-coder:7b",
+      "seed": 42,
+      "final_attempt_number": 1,
+      "raw_response_sha256": "968c47395ae2f87cfc398eacc103e6a72e67fbe5b9e0ba2d042fd2fe849d478e",
+      "original": {
+        "accepted": true,
+        "terminal_outcome": "accepted",
+        "public_outcome": "pass",
+        "public_detail": "",
+        "heldout_detail": ""
+      },
+      "frozen_v3": {
+        "checked": false,
+        "accepted": false,
+        "materialization": {
+          "outcome": "check_error",
+          "detail": "line 2, byte 1: unsupported statement For"
+        },
+        "public": {
+          "outcome": "not_run"
+        },
+        "heldout": {
+          "outcome": "not_run"
+        },
+        "source_sha256": {
+          "python_fragment_source_sha256": "80cfe8b346645acedd98ea3d04fa61910b459af6b7c17fc16a59f0223b6a2cb9",
+          "normalized_fragment_sha256": "d166ad690393951a9be36abb7cbe9a0391333168d09da02b828b6dd77ee44c5f"
+        },
+        "first_failure": "lowering"
+      },
+      "posthoc_scalar_builtins": {
+        "checked": false,
+        "accepted": false,
+        "materialization": {
+          "outcome": "check_error",
+          "detail": "line 2, byte 10: only the scalar builtins abs, min and max can be called"
+        },
+        "public": {
+          "outcome": "not_run"
+        },
+        "heldout": {
+          "outcome": "not_run"
+        },
+        "source_sha256": {
+          "python_fragment_source_sha256": "80cfe8b346645acedd98ea3d04fa61910b459af6b7c17fc16a59f0223b6a2cb9",
+          "normalized_fragment_sha256": "d166ad690393951a9be36abb7cbe9a0391333168d09da02b828b6dd77ee44c5f"
+        },
+        "first_failure": "lowering"
+      }
+    },
+    {
+      "source_condition": "python_fim",
+      "task": "slalom_penalty",
+      "model": "qwen2.5-coder:7b",
+      "seed": 42,
+      "final_attempt_number": 1,
+      "raw_response_sha256": "be1c32fa14be19028c0fe814c4d2c5ea2cf93571b8853cbc8fb9daff0b06c550",
+      "original": {
+        "accepted": false,
+        "terminal_outcome": "heldout_wrong_answer",
+        "public_outcome": "pass",
+        "public_detail": "",
+        "heldout_detail": "solve(0, 4, True) returned 20; expected -1."
+      },
+      "frozen_v3": {
+        "checked": true,
+        "accepted": false,
+        "materialization": {
+          "outcome": "pass",
+          "detail": ""
+        },
+        "public": {
+          "outcome": "pass",
+          "detail": "",
+          "cases": 3
+        },
+        "heldout": {
+          "outcome": "wrong_answer",
+          "detail": "solve(0, 4, True) returned 20; expected -1.",
+          "cases": 48
+        },
+        "source_sha256": {
+          "python_fragment_source_sha256": "3a9ad227a965395144c2b8fc5f49d2db33d8d16f33a6c94f1bd899fce30462c7",
+          "normalized_fragment_sha256": "829d70a80fb781555802c4d01b10944106b54c3d1bc71d08da87f6fb8a4a16ce",
+          "lowered_fragment_sha256": "e14d28fb0ff62cca0189415746b97f5319f650e918c0a7fd20ebb4f2c5b7c191",
+          "gpp_edit_source_sha256": "4265cd5ae2f70c89acf89d9283a68e94a6fcff2a1a508d3fc9c91cc3d34c5af4"
+        },
+        "first_failure": "heldout"
+      },
+      "posthoc_scalar_builtins": {
+        "checked": true,
+        "accepted": false,
+        "materialization": {
+          "outcome": "pass",
+          "detail": ""
+        },
+        "public": {
+          "outcome": "pass",
+          "detail": "",
+          "cases": 3
+        },
+        "heldout": {
+          "outcome": "wrong_answer",
+          "detail": "solve(0, 4, True) returned 20; expected -1.",
+          "cases": 48
+        },
+        "source_sha256": {
+          "python_fragment_source_sha256": "3a9ad227a965395144c2b8fc5f49d2db33d8d16f33a6c94f1bd899fce30462c7",
+          "normalized_fragment_sha256": "829d70a80fb781555802c4d01b10944106b54c3d1bc71d08da87f6fb8a4a16ce",
+          "lowered_fragment_sha256": "e14d28fb0ff62cca0189415746b97f5319f650e918c0a7fd20ebb4f2c5b7c191",
+          "gpp_edit_source_sha256": "4265cd5ae2f70c89acf89d9283a68e94a6fcff2a1a508d3fc9c91cc3d34c5af4"
+        },
+        "first_failure": "heldout"
+      }
+    },
+    {
+      "source_condition": "gpp_projected",
+      "task": "fade_level",
+      "model": "qwen2.5-coder:7b",
+      "seed": 42,
+      "final_attempt_number": 2,
+      "raw_response_sha256": "2db31d983a901ea77aa340feeb53b24c34f1ab682928f8ed32fc2b5cf819803c",
+      "original": {
+        "accepted": false,
+        "terminal_outcome": "wrong_answer",
+        "public_outcome": "wrong_answer",
+        "public_detail": "solve(19, 5, 3) returned 14; expected 13.",
+        "heldout_detail": ""
+      },
+      "frozen_v3": {
+        "checked": true,
+        "accepted": false,
+        "materialization": {
+          "outcome": "pass",
+          "detail": ""
+        },
+        "public": {
+          "outcome": "wrong_answer",
+          "detail": "solve(19, 5, 3) returned 14; expected 13.",
+          "cases": 3
+        },
+        "heldout": {
+          "outcome": "wrong_answer",
+          "detail": "solve(100, 0, 1) returned 88; expected 87.",
+          "cases": 25
+        },
+        "source_sha256": {
+          "python_fragment_source_sha256": "03ef9ccde397c7b95bfe7e2238a6f863df2ba81a6e3dc128e9273aa7e5c7bfee",
+          "normalized_fragment_sha256": "2db31d983a901ea77aa340feeb53b24c34f1ab682928f8ed32fc2b5cf819803c",
+          "lowered_fragment_sha256": "34cd7697a0b4b6bd5644269ac43e3f13b0ad1bde59f70ef0d9791a2ca81f4806",
+          "gpp_edit_source_sha256": "4f4aa2fde7929faf339e97ae610e0fc1fdea50320e76e98147d85aa5aa16d1b0"
+        },
+        "first_failure": "public"
+      },
+      "posthoc_scalar_builtins": {
+        "checked": true,
+        "accepted": false,
+        "materialization": {
+          "outcome": "pass",
+          "detail": ""
+        },
+        "public": {
+          "outcome": "wrong_answer",
+          "detail": "solve(19, 5, 3) returned 14; expected 13.",
+          "cases": 3
+        },
+        "heldout": {
+          "outcome": "wrong_answer",
+          "detail": "solve(100, 0, 1) returned 88; expected 87.",
+          "cases": 25
+        },
+        "source_sha256": {
+          "python_fragment_source_sha256": "03ef9ccde397c7b95bfe7e2238a6f863df2ba81a6e3dc128e9273aa7e5c7bfee",
+          "normalized_fragment_sha256": "2db31d983a901ea77aa340feeb53b24c34f1ab682928f8ed32fc2b5cf819803c",
+          "lowered_fragment_sha256": "34cd7697a0b4b6bd5644269ac43e3f13b0ad1bde59f70ef0d9791a2ca81f4806",
+          "gpp_edit_source_sha256": "4f4aa2fde7929faf339e97ae610e0fc1fdea50320e76e98147d85aa5aa16d1b0"
+        },
+        "first_failure": "public"
+      }
+    },
+    {
+      "source_condition": "gpp_projected",
+      "task": "nearest_station",
+      "model": "qwen2.5-coder:7b",
+      "seed": 42,
+      "final_attempt_number": 2,
+      "raw_response_sha256": "044a9372edd7b4c8edec10102ae3e319094ea4e95b762b9bbdfacb86540cbb6a",
+      "original": {
+        "accepted": false,
+        "terminal_outcome": "check_error",
+        "public_outcome": "check_error",
+        "public_detail": "line 1, byte 9: unsupported expression Call",
+        "heldout_detail": ""
+      },
+      "frozen_v3": {
+        "checked": false,
+        "accepted": false,
+        "materialization": {
+          "outcome": "check_error",
+          "detail": "line 1, byte 9: unsupported expression Call"
+        },
+        "public": {
+          "outcome": "not_run"
+        },
+        "heldout": {
+          "outcome": "not_run"
+        },
+        "source_sha256": {
+          "python_fragment_source_sha256": "5eba2df902e749b0b7e1484db70574b990290686fb8154f43e7c27b7e693cadf",
+          "normalized_fragment_sha256": "044a9372edd7b4c8edec10102ae3e319094ea4e95b762b9bbdfacb86540cbb6a"
+        },
+        "first_failure": "lowering"
+      },
+      "posthoc_scalar_builtins": {
+        "checked": true,
+        "accepted": true,
+        "materialization": {
+          "outcome": "pass",
+          "detail": ""
+        },
+        "public": {
+          "outcome": "pass",
+          "detail": "",
+          "cases": 3
+        },
+        "heldout": {
+          "outcome": "pass",
+          "detail": "",
+          "cases": 26
+        },
+        "source_sha256": {
+          "python_fragment_source_sha256": "5eba2df902e749b0b7e1484db70574b990290686fb8154f43e7c27b7e693cadf",
+          "normalized_fragment_sha256": "044a9372edd7b4c8edec10102ae3e319094ea4e95b762b9bbdfacb86540cbb6a",
+          "lowered_fragment_sha256": "80e5817335c2f372fb3337023cfb370226f07b40713b0ce2954e700dcf81170c",
+          "gpp_edit_source_sha256": "fcc61a4b5f8d4e1c79ef706725c705e074ac9c82376f493dd91a36d90d2cac70"
+        },
+        "first_failure": null
+      }
+    },
+    {
+      "source_condition": "gpp_projected",
+      "task": "parcel_check_digit",
+      "model": "qwen2.5-coder:7b",
+      "seed": 42,
+      "final_attempt_number": 2,
+      "raw_response_sha256": "6faf763d94308f63522225fd2d204c420b455129ec8d9f63e74e51eb555d3b42",
+      "original": {
+        "accepted": false,
+        "terminal_outcome": "check_error",
+        "public_outcome": "check_error",
+        "public_detail": "Completion contains code outside the fixed function.",
+        "heldout_detail": ""
+      },
+      "frozen_v3": {
+        "checked": false,
+        "accepted": false,
+        "materialization": {
+          "outcome": "check_error",
+          "detail": "Completion contains code outside the fixed function."
+        },
+        "public": {
+          "outcome": "not_run"
+        },
+        "heldout": {
+          "outcome": "not_run"
+        },
+        "source_sha256": {},
+        "first_failure": "python_fragment"
+      },
+      "posthoc_scalar_builtins": {
+        "checked": false,
+        "accepted": false,
+        "materialization": {
+          "outcome": "check_error",
+          "detail": "Completion contains code outside the fixed function."
+        },
+        "public": {
+          "outcome": "not_run"
+        },
+        "heldout": {
+          "outcome": "not_run"
+        },
+        "source_sha256": {},
+        "first_failure": "python_fragment"
+      }
+    },
+    {
+      "source_condition": "gpp_projected",
+      "task": "identical_repair_kits",
+      "model": "qwen2.5-coder:7b",
+      "seed": 42,
+      "final_attempt_number": 2,
+      "raw_response_sha256": "866abd54422fd95219c15629b7413dda17c8c7e7593f4a3b8aa008907ddf6f0f",
+      "original": {
+        "accepted": false,
+        "terminal_outcome": "check_error",
+        "public_outcome": "check_error",
+        "public_detail": "Completion contains code outside the fixed function.",
+        "heldout_detail": ""
+      },
+      "frozen_v3": {
+        "checked": false,
+        "accepted": false,
+        "materialization": {
+          "outcome": "check_error",
+          "detail": "Completion contains code outside the fixed function."
+        },
+        "public": {
+          "outcome": "not_run"
+        },
+        "heldout": {
+          "outcome": "not_run"
+        },
+        "source_sha256": {},
+        "first_failure": "python_fragment"
+      },
+      "posthoc_scalar_builtins": {
+        "checked": false,
+        "accepted": false,
+        "materialization": {
+          "outcome": "check_error",
+          "detail": "Completion contains code outside the fixed function."
+        },
+        "public": {
+          "outcome": "not_run"
+        },
+        "heldout": {
+          "outcome": "not_run"
+        },
+        "source_sha256": {},
+        "first_failure": "python_fragment"
+      }
+    },
+    {
+      "source_condition": "gpp_projected",
+      "task": "panel_color_order",
+      "model": "qwen2.5-coder:7b",
+      "seed": 42,
+      "final_attempt_number": 2,
+      "raw_response_sha256": "c38dbbe3ec12ea5d0718a532fac7486ffd22a9ac89e188a0d97f9cf9c2724f1a",
+      "original": {
+        "accepted": false,
+        "terminal_outcome": "wrong_answer",
+        "public_outcome": "wrong_answer",
+        "public_detail": "solve(0, 255, 0) returned 64512; expected 2016.",
+        "heldout_detail": ""
+      },
+      "frozen_v3": {
+        "checked": true,
+        "accepted": false,
+        "materialization": {
+          "outcome": "pass",
+          "detail": ""
+        },
+        "public": {
+          "outcome": "wrong_answer",
+          "detail": "solve(0, 255, 0) returned 64512; expected 2016.",
+          "cases": 3
+        },
+        "heldout": {
+          "outcome": "wrong_answer",
+          "detail": "solve(255, 255, 255) returned 1080351; expected 65535.",
+          "cases": 21
+        },
+        "source_sha256": {
+          "python_fragment_source_sha256": "d2afaebe70ecb0cec67c83a71bf3a0bb017373485a82234ec6b6f0d015d6fa83",
+          "normalized_fragment_sha256": "5d0236332f9e3e57dd8fc7e75daa1e14c2c2244f5d47f91cc4db21a96b71597c",
+          "lowered_fragment_sha256": "64b8359d586b230108fdb753532bfdba6696acbbb35b703e4533f0a0cc282560",
+          "gpp_edit_source_sha256": "997784cb553eea52934b37443b7738f1a118916858a86018badf6f0611155038"
+        },
+        "first_failure": "public"
+      },
+      "posthoc_scalar_builtins": {
+        "checked": true,
+        "accepted": false,
+        "materialization": {
+          "outcome": "pass",
+          "detail": ""
+        },
+        "public": {
+          "outcome": "wrong_answer",
+          "detail": "solve(0, 255, 0) returned 64512; expected 2016.",
+          "cases": 3
+        },
+        "heldout": {
+          "outcome": "wrong_answer",
+          "detail": "solve(255, 255, 255) returned 1080351; expected 65535.",
+          "cases": 21
+        },
+        "source_sha256": {
+          "python_fragment_source_sha256": "d2afaebe70ecb0cec67c83a71bf3a0bb017373485a82234ec6b6f0d015d6fa83",
+          "normalized_fragment_sha256": "5d0236332f9e3e57dd8fc7e75daa1e14c2c2244f5d47f91cc4db21a96b71597c",
+          "lowered_fragment_sha256": "64b8359d586b230108fdb753532bfdba6696acbbb35b703e4533f0a0cc282560",
+          "gpp_edit_source_sha256": "997784cb553eea52934b37443b7738f1a118916858a86018badf6f0611155038"
+        },
+        "first_failure": "public"
+      }
+    },
+    {
+      "source_condition": "gpp_projected",
+      "task": "actuator_downrate",
+      "model": "qwen2.5-coder:7b",
+      "seed": 42,
+      "final_attempt_number": 2,
+      "raw_response_sha256": "368cc2d0155009598f80eac49db4862823ccf545c2cbb7434351ae07fbd1eaf4",
+      "original": {
+        "accepted": false,
+        "terminal_outcome": "check_error",
+        "public_outcome": "check_error",
+        "public_detail": "line 1, byte 1: unsupported expression Call",
+        "heldout_detail": ""
+      },
+      "frozen_v3": {
+        "checked": false,
+        "accepted": false,
+        "materialization": {
+          "outcome": "check_error",
+          "detail": "line 1, byte 1: unsupported expression Call"
+        },
+        "public": {
+          "outcome": "not_run"
+        },
+        "heldout": {
+          "outcome": "not_run"
+        },
+        "source_sha256": {
+          "python_fragment_source_sha256": "bce4336a852f121b06cf806ef524652f5e8858ff76677ea609b39b44e5332991",
+          "normalized_fragment_sha256": "e6e127f973186d76b910712ecac95dc129f15de40c6a5cd2eb23f51930fe639d"
+        },
+        "first_failure": "lowering"
+      },
+      "posthoc_scalar_builtins": {
+        "checked": true,
+        "accepted": false,
+        "materialization": {
+          "outcome": "pass",
+          "detail": ""
+        },
+        "public": {
+          "outcome": "wrong_answer",
+          "detail": "solve(30, 15, 4) returned 26; expected 22.",
+          "cases": 3
+        },
+        "heldout": {
+          "outcome": "wrong_answer",
+          "detail": "solve(100, 0, 12) returned 88; expected 76.",
+          "cases": 21
+        },
+        "source_sha256": {
+          "python_fragment_source_sha256": "bce4336a852f121b06cf806ef524652f5e8858ff76677ea609b39b44e5332991",
+          "normalized_fragment_sha256": "e6e127f973186d76b910712ecac95dc129f15de40c6a5cd2eb23f51930fe639d",
+          "lowered_fragment_sha256": "41b7865d224fa81715335dacc4ed1ec1d5e3030ad3251163b02024b5ba12e812",
+          "gpp_edit_source_sha256": "d3d351028c0412f848d25d6158657740ede9f5679b82d50221a852521b84ff66"
+        },
+        "first_failure": "public"
+      }
+    },
+    {
+      "source_condition": "gpp_projected",
+      "task": "interest_after_payment",
+      "model": "qwen2.5-coder:7b",
+      "seed": 42,
+      "final_attempt_number": 2,
+      "raw_response_sha256": "c376b1914fca62077d2a53ffe4004aecd5cf2c940c892d324e18b60356707d1b",
+      "original": {
+        "accepted": false,
+        "terminal_outcome": "check_error",
+        "public_outcome": "check_error",
+        "public_detail": "line 2, byte 1: unsupported statement For",
+        "heldout_detail": ""
+      },
+      "frozen_v3": {
+        "checked": false,
+        "accepted": false,
+        "materialization": {
+          "outcome": "check_error",
+          "detail": "line 2, byte 1: unsupported statement For"
+        },
+        "public": {
+          "outcome": "not_run"
+        },
+        "heldout": {
+          "outcome": "not_run"
+        },
+        "source_sha256": {
+          "python_fragment_source_sha256": "795fa65197bc28fd8d6978c8b8e5a207f7b16e347842675adba56e121cc98aef",
+          "normalized_fragment_sha256": "ddec37474fe2f558c045856c11a9b5fb5709a9046b1bda958cc2e016856812cb"
+        },
+        "first_failure": "lowering"
+      },
+      "posthoc_scalar_builtins": {
+        "checked": false,
+        "accepted": false,
+        "materialization": {
+          "outcome": "check_error",
+          "detail": "line 2, byte 10: only the scalar builtins abs, min and max can be called"
+        },
+        "public": {
+          "outcome": "not_run"
+        },
+        "heldout": {
+          "outcome": "not_run"
+        },
+        "source_sha256": {
+          "python_fragment_source_sha256": "795fa65197bc28fd8d6978c8b8e5a207f7b16e347842675adba56e121cc98aef",
+          "normalized_fragment_sha256": "ddec37474fe2f558c045856c11a9b5fb5709a9046b1bda958cc2e016856812cb"
+        },
+        "first_failure": "lowering"
+      }
+    },
+    {
+      "source_condition": "gpp_projected",
+      "task": "slalom_penalty",
+      "model": "qwen2.5-coder:7b",
+      "seed": 42,
+      "final_attempt_number": 2,
+      "raw_response_sha256": "3c5a0bffff5dfb0cc2febf28d6cd24e3674df7b1cc68ceda43879d9ed1047620",
+      "original": {
+        "accepted": false,
+        "terminal_outcome": "wrong_answer",
+        "public_outcome": "wrong_answer",
+        "public_detail": "solve(84, 3, True) returned -1; expected 119.",
+        "heldout_detail": ""
+      },
+      "frozen_v3": {
+        "checked": true,
+        "accepted": false,
+        "materialization": {
+          "outcome": "pass",
+          "detail": ""
+        },
+        "public": {
+          "outcome": "wrong_answer",
+          "detail": "solve(84, 3, True) returned -1; expected 119.",
+          "cases": 3
+        },
+        "heldout": {
+          "outcome": "wrong_answer",
+          "detail": "solve(0, 3, True) returned -1; expected 35.",
+          "cases": 48
+        },
+        "source_sha256": {
+          "python_fragment_source_sha256": "ebf9274ee793bef3c1362af0495c36b519b69579c0f8403651e6d4a3cce1636b",
+          "normalized_fragment_sha256": "d334f69cb333733ea56e75e18075af7b348645dbe461e59e91646dcf101c13a8",
+          "lowered_fragment_sha256": "30d75e3a6d4b1f221f5aebd9f784b03de9428f15a5643439aeaa4d11fd85824c",
+          "gpp_edit_source_sha256": "39a118a290292faaaa84af904a79824cccfb59029260b026c0ec7de3d7cebce3"
+        },
+        "first_failure": "public"
+      },
+      "posthoc_scalar_builtins": {
+        "checked": true,
+        "accepted": false,
+        "materialization": {
+          "outcome": "pass",
+          "detail": ""
+        },
+        "public": {
+          "outcome": "wrong_answer",
+          "detail": "solve(84, 3, True) returned -1; expected 119.",
+          "cases": 3
+        },
+        "heldout": {
+          "outcome": "wrong_answer",
+          "detail": "solve(0, 3, True) returned -1; expected 35.",
+          "cases": 48
+        },
+        "source_sha256": {
+          "python_fragment_source_sha256": "ebf9274ee793bef3c1362af0495c36b519b69579c0f8403651e6d4a3cce1636b",
+          "normalized_fragment_sha256": "d334f69cb333733ea56e75e18075af7b348645dbe461e59e91646dcf101c13a8",
+          "lowered_fragment_sha256": "30d75e3a6d4b1f221f5aebd9f784b03de9428f15a5643439aeaa4d11fd85824c",
+          "gpp_edit_source_sha256": "39a118a290292faaaa84af904a79824cccfb59029260b026c0ec7de3d7cebce3"
+        },
+        "first_failure": "public"
+      }
+    }
+  ]
+}

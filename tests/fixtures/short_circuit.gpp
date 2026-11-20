@@ -1,0 +1,17 @@
+// result 42
+module fixtures.lazy;
+
+fn ignore() -> Unit !{} {}
+fn would_fault() -> Bool !{} {
+    return 1 / 0 == 0;
+}
+
+pub fn main() -> I64 !{} {
+    var on = true;
+    if false && would_fault() { return -1; }
+    while on && (true || would_fault()) {
+        on = false;
+    }
+    if ignore() == () && !on { return 42; }
+    return -2;
+}

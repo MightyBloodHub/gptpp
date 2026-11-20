@@ -1,0 +1,1084 @@
+//! Syntax of the scalar bootstrap profile. All spans are half-open UTF-8 byte offsets.
+use std::fmt::{self, Write};
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct Span {
+    pub start: usize,
+    pub end: usize,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Diagnostic {
+    pub code: &'static str,
+    pub message: String,
+    pub span: Span,
+}
+
+impl Diagnostic {
+    pub fn new(code: &'static str, message: impl Into<String>, span: Span) -> Self {
+        Self {
+            code,
+            message: message.into(),
+            span,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Type {
+    I64,
+    Bool,
+    Unit,
+}
+
+impl fmt::Display for Type {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            Self::I64 => "I64",
+            Self::Bool => "Bool",
+            Self::Unit => "Unit",
+        })
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Module {
+    pub name: String,
+    pub functions: Vec<Function>,
+}
+
+#[derive(Clone, Debug)]
+pub struct Function {
+    pub public: bool,
+    pub name: String,
+    pub params: Vec<Param>,
+    pub result: Type,
+    pub body: Vec<Stmt>,
+    pub body_span: Span,
+    pub span: Span,
+}
+
+#[derive(Clone, Debug)]
+pub struct Param {
+    pub name: String,
+    pub ty: Type,
+    pub span: Span,
+}
+
+#[derive(Clone, Debug)]
+pub struct Stmt {
+    pub kind: StmtKind,
+    pub span: Span,
+}
+
+#[derive(Clone, Debug)]
+pub enum StmtKind {
+    Bind {
+        mutable: bool,
+        name: String,
+        annotation: Option<Type>,
+        value: Expr,
+    },
+    Assign {
+        name: String,
+        value: Expr,
+    },
+    Return(Expr),
+    If {
+        cond: Expr,
+        then_body: Vec<Stmt>,
+        else_body: Vec<Stmt>,
+    },
+    While {
+        cond: Expr,
+        body: Vec<Stmt>,
+    },
+    Expr(Expr),
+}
+
+#[derive(Clone, Debug)]
+pub struct Expr {
+    pub kind: ExprKind,
+    pub span: Span,
+}
+
+#[derive(Clone, Debug)]
+pub enum ExprKind {
+    Int(i64),
+    Bool(bool),
+    Unit,
+    Name(String),
+    Call(String, Vec<Expr>),
+    Unary(UnOp, Box<Expr>),
+    Binary(BinOp, Box<Expr>, Box<Expr>),
+    If {
+        cond: Box<Expr>,
+        yes: Box<Expr>,
+        no: Box<Expr>,
+    },
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum UnOp {
+    Neg,
+    Not,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum BinOp {
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Rem,
+    Eq,
+    Ne,
+    Lt,
+    Le,
+    Gt,
+    Ge,
+    And,
+    Or,
+}
+
+impl BinOp {
+    fn from_token(token: &str) -> Option<Self> {
+        Some(match token {
+            "+" => Self::Add,
+            "-" => Self::Sub,
+            "*" => Self::Mul,
+            "/" => Self::Div,
+            "%" => Self::Rem,
+            "==" => Self::Eq,
+            "!=" => Self::Ne,
+            "<" => Self::Lt,
+            "<=" => Self::Le,
+            ">" => Self::Gt,
+            ">=" => Self::Ge,
+            "&&" => Self::And,
+            "||" => Self::Or,
+            _ => return None,
+        })
+    }
+
+    fn precedence(self) -> u8 {
+        match self {
+            Self::Or => 1,
+            Self::And => 2,
+            Self::Eq | Self::Ne => 3,
+            Self::Lt | Self::Le | Self::Gt | Self::Ge => 4,
+            Self::Add | Self::Sub => 5,
+            Self::Mul | Self::Div | Self::Rem => 6,
+        }
+    }
+
+    fn spelling(self) -> &'static str {
+        match self {
+            Self::Add => "+",
+            Self::Sub => "-",
+            Self::Mul => "*",
+            Self::Div => "/",
+            Self::Rem => "%",
+            Self::Eq => "==",
+            Self::Ne => "!=",
+            Self::Lt => "<",
+            Self::Le => "<=",
+            Self::Gt => ">",
+            Self::Ge => ">=",
+            Self::And => "&&",
+            Self::Or => "||",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+struct Token<'a> {
+    text: &'a str,
+    span: Span,
+}
+
+fn is_reserved(word: &str) -> bool {
+    matches!(
+        word,
+        "module"
+            | "pub"
+            | "fn"
+            | "let"
+            | "var"
+            | "return"
+            | "if"
+            | "else"
+            | "while"
+            | "true"
+            | "false"
+            | "use"
+            | "record"
+            | "enum"
+            | "const"
+            | "test"
+            | "requires"
+            | "ensures"
+            | "for"
+            | "in"
+            | "match"
+            | "break"
+            | "continue"
+            | "assert"
+    )
+}
+
+fn ident_start(byte: u8) -> bool {
+    byte == b'_' || byte.is_ascii_alphabetic()
+}
+
+fn is_identifier(text: &str) -> bool {
+    text.bytes().next().is_some_and(ident_start) && !is_reserved(text)
+}
+
+fn bidirectional_control(c: char) -> bool {
+    matches!(c, '\u{061c}' | '\u{200e}' | '\u{200f}' | '\u{202a}'..='\u{202e}' | '\u{2066}'..='\u{2069}')
+}
+
+fn lex(source: &str) -> Result<Vec<Token<'_>>, Diagnostic> {
+    if let Some((start, c)) = source
+        .char_indices()
+        .find(|&(_, c)| bidirectional_control(c))
+    {
+        return Err(Diagnostic::new(
+            "GPP-LEX-002",
+            "bidirectional control character in source",
+            Span {
+                start,
+                end: start + c.len_utf8(),
+            },
+        ));
+    }
+    let bytes = source.as_bytes();
+    let mut pos = 0;
+    let mut tokens = Vec::new();
+    while pos < bytes.len() {
+        let start = pos;
+        let byte = bytes[pos];
+        pos += 1;
+        if byte.is_ascii_whitespace() {
+            continue;
+        }
+        if byte == b'/' && bytes.get(pos) == Some(&b'/') {
+            while pos < bytes.len() && !matches!(bytes[pos], b'\n' | b'\r') {
+                pos += 1;
+            }
+            continue;
+        }
+        if ident_start(byte) {
+            while pos < bytes.len() && (ident_start(bytes[pos]) || bytes[pos].is_ascii_digit()) {
+                pos += 1;
+            }
+        } else if byte.is_ascii_digit() {
+            while pos < bytes.len() && bytes[pos].is_ascii_digit() {
+                pos += 1;
+            }
+        } else if matches!(
+            (byte, bytes.get(pos)),
+            (b'-', Some(b'>'))
+                | (
+                    b'=' | b'!' | b'<' | b'>' | b'+' | b'-' | b'*' | b'/' | b'%',
+                    Some(b'=')
+                )
+                | (b'&', Some(b'&'))
+                | (b'|', Some(b'|'))
+        ) {
+            pos += 1;
+        } else if !b";.,:(){}+-*/%=!<>".contains(&byte) {
+            let c = source[start..].chars().next().unwrap();
+            return Err(Diagnostic::new(
+                "GPP-LEX-001",
+                format!("unexpected character {c:?} in scalar source"),
+                Span {
+                    start,
+                    end: start + c.len_utf8(),
+                },
+            ));
+        }
+        tokens.push(Token {
+            text: &source[start..pos],
+            span: Span { start, end: pos },
+        });
+    }
+    tokens.push(Token {
+        text: "",
+        span: Span {
+            start: pos,
+            end: pos,
+        },
+    });
+    Ok(tokens)
+}
+
+const MAX_DEPTH: usize = 64;
+
+fn check_depth(depth: usize, span: Span) -> Result<(), Diagnostic> {
+    if depth > MAX_DEPTH {
+        Err(Diagnostic::new(
+            "GPP-PARSE-004",
+            format!("scalar syntax nesting exceeds {MAX_DEPTH}"),
+            span,
+        ))
+    } else {
+        Ok(())
+    }
+}
+
+// Pratt recursion alone does not bound the height of a left-associated expression.
+// Keep its height during parsing so later AST visitors and drop also stay bounded.
+struct ParsedExpr {
+    expr: Expr,
+    height: usize,
+}
+
+struct Parser<'a> {
+    tokens: Vec<Token<'a>>,
+    at: usize,
+}
+
+pub fn parse(source: &str) -> Result<Module, Diagnostic> {
+    Parser {
+        tokens: lex(source)?,
+        at: 0,
+    }
+    .module()
+}
+
+/// Parse exactly one expression. The end offset precedes any trailing comment,
+/// which is where a caller wrapping the expression in a return inserts its semicolon.
+pub fn expression_end(source: &str) -> Result<usize, Diagnostic> {
+    let mut parser = Parser {
+        tokens: lex(source)?,
+        at: 0,
+    };
+    let expr = parser.expression(0)?;
+    parser.end()?;
+    Ok(expr.span.end)
+}
+
+/// Return the exact interior of a complete braced block or a list of statements.
+pub fn body_fragment(source: &str) -> Result<&str, Diagnostic> {
+    let mut parser = Parser {
+        tokens: lex(source)?,
+        at: 0,
+    };
+    if parser.peek().text == "{" {
+        let start = parser.peek().span.end;
+        parser.block(0)?;
+        let end = parser.tokens[parser.at - 1].span.start;
+        parser.end()?;
+        Ok(&source[start..end])
+    } else {
+        while !parser.peek().text.is_empty() {
+            parser.statement(0)?;
+        }
+        Ok(source)
+    }
+}
+
+impl<'a> Parser<'a> {
+    fn end(&self) -> Result<(), Diagnostic> {
+        if self.peek().text.is_empty() {
+            Ok(())
+        } else {
+            Err(self.expected("end of fragment"))
+        }
+    }
+
+    fn peek(&self) -> Token<'a> {
+        self.tokens[self.at]
+    }
+
+    fn bump(&mut self) -> Token<'a> {
+        let token = self.peek();
+        if !token.text.is_empty() {
+            self.at += 1;
+        }
+        token
+    }
+
+    fn eat(&mut self, text: &str) -> bool {
+        if self.peek().text == text {
+            self.bump();
+            true
+        } else {
+            false
+        }
+    }
+
+    fn span_from(&self, start: usize) -> Span {
+        Span {
+            start,
+            end: self.tokens[self.at - 1].span.end,
+        }
+    }
+
+    fn expected(&self, what: &str) -> Diagnostic {
+        let token = self.peek();
+        let found = if token.text.is_empty() {
+            "end of input".into()
+        } else {
+            format!("'{}'", token.text)
+        };
+        Diagnostic::new(
+            "GPP-PARSE-001",
+            format!("expected {what}, found {found}"),
+            token.span,
+        )
+    }
+
+    fn require(&mut self, text: &str) -> Result<(), Diagnostic> {
+        if self.eat(text) {
+            Ok(())
+        } else {
+            Err(self.expected(&format!("'{text}'")))
+        }
+    }
+
+    fn identifier(&mut self) -> Result<String, Diagnostic> {
+        if is_identifier(self.peek().text) {
+            Ok(self.bump().text.to_owned())
+        } else {
+            Err(self.expected("an identifier"))
+        }
+    }
+
+    fn ty(&mut self) -> Result<Type, Diagnostic> {
+        let ty = match self.peek().text {
+            "I64" => Type::I64,
+            "Bool" => Type::Bool,
+            "Unit" => Type::Unit,
+            _ if is_identifier(self.peek().text) => {
+                return Err(Diagnostic::new(
+                    "GPP-PARSE-002",
+                    format!("type '{}' is outside the scalar profile", self.peek().text),
+                    self.peek().span,
+                ));
+            }
+            _ => return Err(self.expected("a scalar type")),
+        };
+        self.bump();
+        Ok(ty)
+    }
+
+    fn module(mut self) -> Result<Module, Diagnostic> {
+        self.require("module")?;
+        let mut name = self.identifier()?;
+        while self.eat(".") {
+            name.push('.');
+            name.push_str(&self.identifier()?);
+        }
+        self.require(";")?;
+        let mut functions = Vec::new();
+        while !self.peek().text.is_empty() {
+            functions.push(self.function()?);
+        }
+        Ok(Module { name, functions })
+    }
+
+    fn function(&mut self) -> Result<Function, Diagnostic> {
+        let start = self.peek().span.start;
+        let public = self.eat("pub");
+        if matches!(
+            self.peek().text,
+            "use" | "record" | "enum" | "const" | "test"
+        ) {
+            return Err(Diagnostic::new(
+                "GPP-PARSE-002",
+                format!(
+                    "'{}' declarations are outside the scalar profile",
+                    self.peek().text
+                ),
+                self.peek().span,
+            ));
+        }
+        self.require("fn")?;
+        let name = self.identifier()?;
+        self.require("(")?;
+        let mut params = Vec::new();
+        while self.peek().text != ")" {
+            let param_start = self.peek().span.start;
+            let name = self.identifier()?;
+            self.require(":")?;
+            let ty = self.ty()?;
+            params.push(Param {
+                name,
+                ty,
+                span: self.span_from(param_start),
+            });
+            if !self.eat(",") {
+                break;
+            }
+        }
+        self.require(")")?;
+        self.require("->")?;
+        let result = self.ty()?;
+        self.require("!")?;
+        self.require("{")?;
+        if is_identifier(self.peek().text) {
+            return Err(Diagnostic::new(
+                "GPP-PARSE-002",
+                "scalar functions require an empty effect set",
+                self.peek().span,
+            ));
+        }
+        self.require("}")?;
+        let body_start = self.peek().span.start;
+        let body = self.block(0)?;
+        let body_span = self.span_from(body_start);
+        Ok(Function {
+            public,
+            name,
+            params,
+            result,
+            body,
+            body_span,
+            span: self.span_from(start),
+        })
+    }
+
+    fn block(&mut self, depth: usize) -> Result<Vec<Stmt>, Diagnostic> {
+        check_depth(depth, self.peek().span)?;
+        self.require("{")?;
+        let mut body = Vec::new();
+        while !self.eat("}") {
+            if self.peek().text.is_empty() {
+                return Err(self.expected("'}'"));
+            }
+            body.push(self.statement(depth)?);
+        }
+        Ok(body)
+    }
+
+    fn statement(&mut self, depth: usize) -> Result<Stmt, Diagnostic> {
+        let token = self.peek();
+        let kind = match token.text {
+            "let" | "var" => {
+                self.bump();
+                let name = self.identifier()?;
+                let annotation = if self.eat(":") {
+                    Some(self.ty()?)
+                } else {
+                    None
+                };
+                self.require("=")?;
+                let value = self.expression(depth)?;
+                self.require(";")?;
+                StmtKind::Bind {
+                    mutable: token.text == "var",
+                    name,
+                    annotation,
+                    value,
+                }
+            }
+            "return" => {
+                self.bump();
+                let value = self.expression(depth)?;
+                self.require(";")?;
+                StmtKind::Return(value)
+            }
+            "if" => return self.if_stmt(depth),
+            "while" => {
+                self.bump();
+                let cond = self.expression(depth)?;
+                let body = self.block(depth + 1)?;
+                StmtKind::While { cond, body }
+            }
+            "for" | "break" | "continue" | "match" | "assert" => {
+                return Err(Diagnostic::new(
+                    "GPP-PARSE-002",
+                    format!("'{}' statements are outside the scalar profile", token.text),
+                    token.span,
+                ));
+            }
+            name if is_identifier(name)
+                && matches!(
+                    self.tokens[self.at + 1].text,
+                    "=" | "+=" | "-=" | "*=" | "/=" | "%="
+                ) =>
+            {
+                self.bump();
+                let assignment = self.bump();
+                let rhs = self.binary(1, depth)?;
+                let value = if assignment.text == "=" {
+                    rhs.expr
+                } else {
+                    // Assignment targets are names, so the ordinary binary expression
+                    // evaluates the old value once and inherits the checked operation.
+                    let op = BinOp::from_token(&assignment.text[..1]).unwrap();
+                    let span = self.span_from(token.span.start);
+                    check_depth(rhs.height + 1, span)?;
+                    let local = Expr {
+                        kind: ExprKind::Name(name.to_owned()),
+                        span: token.span,
+                    };
+                    Expr {
+                        kind: ExprKind::Binary(op, Box::new(local), Box::new(rhs.expr)),
+                        span,
+                    }
+                };
+                self.require(";")?;
+                StmtKind::Assign {
+                    name: name.to_owned(),
+                    value,
+                }
+            }
+            _ => {
+                let value = self.expression(depth)?;
+                self.require(";")?;
+                StmtKind::Expr(value)
+            }
+        };
+        Ok(Stmt {
+            kind,
+            span: self.span_from(token.span.start),
+        })
+    }
+
+    fn if_stmt(&mut self, depth: usize) -> Result<Stmt, Diagnostic> {
+        check_depth(depth, self.peek().span)?;
+        let start = self.bump().span.start;
+        let cond = self.expression(depth)?;
+        let then_body = self.block(depth + 1)?;
+        let else_body = if !self.eat("else") {
+            Vec::new()
+        } else if self.peek().text == "if" {
+            vec![self.if_stmt(depth + 1)?]
+        } else {
+            self.block(depth + 1)?
+        };
+        Ok(Stmt {
+            kind: StmtKind::If {
+                cond,
+                then_body,
+                else_body,
+            },
+            span: self.span_from(start),
+        })
+    }
+
+    fn expression(&mut self, depth: usize) -> Result<Expr, Diagnostic> {
+        Ok(self.binary(1, depth)?.expr)
+    }
+
+    fn binary(&mut self, minimum: u8, depth: usize) -> Result<ParsedExpr, Diagnostic> {
+        check_depth(depth, self.peek().span)?;
+        let mut left = self.prefix(depth)?;
+        while let Some(op) = BinOp::from_token(self.peek().text) {
+            if op.precedence() < minimum {
+                break;
+            }
+            self.bump();
+            let right = self.binary(op.precedence() + 1, depth + 1)?;
+            let span = Span {
+                start: left.expr.span.start,
+                end: right.expr.span.end,
+            };
+            let height = 1 + left.height.max(right.height);
+            check_depth(height, span)?;
+            left = ParsedExpr {
+                expr: Expr {
+                    kind: ExprKind::Binary(op, Box::new(left.expr), Box::new(right.expr)),
+                    span,
+                },
+                height,
+            };
+        }
+        Ok(left)
+    }
+
+    fn braced_expression(&mut self, depth: usize) -> Result<ParsedExpr, Diagnostic> {
+        self.require("{")?;
+        let value = self.binary(1, depth)?;
+        self.require("}")?;
+        Ok(value)
+    }
+
+    fn prefix(&mut self, depth: usize) -> Result<ParsedExpr, Diagnostic> {
+        check_depth(depth, self.peek().span)?;
+        let token = self.peek();
+        let mut height = 1;
+        let kind = match token.text {
+            "if" => {
+                self.bump();
+                let cond = self.binary(1, depth + 1)?;
+                let yes = self.braced_expression(depth + 1)?;
+                self.require("else")?;
+                let no = if self.peek().text == "if" {
+                    self.prefix(depth + 1)?
+                } else {
+                    self.braced_expression(depth + 1)?
+                };
+                height = 1 + cond.height.max(yes.height).max(no.height);
+                ExprKind::If {
+                    cond: Box::new(cond.expr),
+                    yes: Box::new(yes.expr),
+                    no: Box::new(no.expr),
+                }
+            }
+            "-" | "!" => {
+                self.bump();
+                // The minimum is the only I64 whose absolute value doesn't fit in I64.
+                if token.text == "-"
+                    && self.peek().text.trim_start_matches('0') == "9223372036854775808"
+                {
+                    self.bump();
+                    ExprKind::Int(i64::MIN)
+                } else {
+                    let child = self.prefix(depth + 1)?;
+                    height = child.height + 1;
+                    let op = if token.text == "-" {
+                        UnOp::Neg
+                    } else {
+                        UnOp::Not
+                    };
+                    ExprKind::Unary(op, Box::new(child.expr))
+                }
+            }
+            "(" => {
+                self.bump();
+                if self.eat(")") {
+                    ExprKind::Unit
+                } else {
+                    let mut child = self.binary(1, depth + 1)?;
+                    self.require(")")?;
+                    child.expr.span = self.span_from(token.span.start);
+                    return Ok(child);
+                }
+            }
+            "true" | "false" => {
+                self.bump();
+                ExprKind::Bool(token.text == "true")
+            }
+            word if word.as_bytes().first().is_some_and(u8::is_ascii_digit) => {
+                self.bump();
+                let n = word.parse::<i64>().map_err(|_| {
+                    Diagnostic::new(
+                        "GPP-PARSE-003",
+                        "integer literal is outside the I64 range",
+                        token.span,
+                    )
+                })?;
+                ExprKind::Int(n)
+            }
+            word if is_identifier(word) => {
+                self.bump();
+                if self.eat("(") {
+                    let mut args = Vec::new();
+                    while self.peek().text != ")" {
+                        let arg = self.binary(1, depth + 1)?;
+                        height = height.max(arg.height + 1);
+                        args.push(arg.expr);
+                        if !self.eat(",") {
+                            break;
+                        }
+                    }
+                    self.require(")")?;
+                    ExprKind::Call(word.to_owned(), args)
+                } else {
+                    ExprKind::Name(word.to_owned())
+                }
+            }
+            _ => return Err(self.expected("an expression")),
+        };
+        let span = self.span_from(token.span.start);
+        check_depth(height, span)?;
+        Ok(ParsedExpr {
+            expr: Expr { kind, span },
+            height,
+        })
+    }
+}
+
+impl fmt::Display for BinOp {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.spelling())
+    }
+}
+
+impl fmt::Display for UnOp {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            Self::Neg => "-",
+            Self::Not => "!",
+        })
+    }
+}
+
+/// Stable source-like AST dump. Comments and redundant grouping are trivia.
+pub fn print(module: &Module) -> String {
+    let mut text = String::new();
+    writeln!(text, "module {};", module.name).unwrap();
+    for function in &module.functions {
+        text.push('\n');
+        if function.public {
+            text.push_str("pub ");
+        }
+        write!(text, "fn {}(", function.name).unwrap();
+        for (index, param) in function.params.iter().enumerate() {
+            if index != 0 {
+                text.push_str(", ");
+            }
+            write!(text, "{}: {}", param.name, param.ty).unwrap();
+        }
+        write!(text, ") -> {} !{{}} ", function.result).unwrap();
+        print_block(&function.body, 0, &mut text);
+        text.push('\n');
+    }
+    text
+}
+
+fn print_block(body: &[Stmt], indent: usize, text: &mut String) {
+    text.push_str("{\n");
+    for stmt in body {
+        text.push_str(&"    ".repeat(indent + 1));
+        match &stmt.kind {
+            StmtKind::Bind {
+                mutable,
+                name,
+                annotation,
+                value,
+            } => {
+                write!(text, "{} {name}", if *mutable { "var" } else { "let" }).unwrap();
+                if let Some(ty) = annotation {
+                    write!(text, ": {ty}").unwrap();
+                }
+                text.push_str(" = ");
+                print_expr(value, 0, text);
+                text.push(';');
+            }
+            StmtKind::Assign { name, value } => {
+                write!(text, "{name} = ").unwrap();
+                print_expr(value, 0, text);
+                text.push(';');
+            }
+            StmtKind::Return(value) => {
+                text.push_str("return ");
+                print_expr(value, 0, text);
+                text.push(';');
+            }
+            StmtKind::If {
+                cond,
+                then_body,
+                else_body,
+            } => {
+                text.push_str("if ");
+                print_expr(cond, 0, text);
+                text.push(' ');
+                print_block(then_body, indent + 1, text);
+                if !else_body.is_empty() {
+                    text.push_str(" else ");
+                    print_block(else_body, indent + 1, text);
+                }
+            }
+            StmtKind::While { cond, body } => {
+                text.push_str("while ");
+                print_expr(cond, 0, text);
+                text.push(' ');
+                print_block(body, indent + 1, text);
+            }
+            StmtKind::Expr(expr) => {
+                let start = text.len();
+                print_expr(expr, 0, text);
+                // A leading bare "if" is parsed as a statement.
+                if text[start..].starts_with("if ") {
+                    text.insert(start, '(');
+                    text.push(')');
+                }
+                text.push(';');
+            }
+        }
+        text.push('\n');
+    }
+    text.push_str(&"    ".repeat(indent));
+    text.push('}');
+}
+
+fn print_expr(expr: &Expr, minimum: u8, text: &mut String) {
+    match &expr.kind {
+        ExprKind::If { cond, yes, no } => {
+            text.push_str("if ");
+            print_expr(cond, 0, text);
+            text.push_str(" { ");
+            print_expr(yes, 0, text);
+            text.push_str(" } else { ");
+            print_expr(no, 0, text);
+            text.push_str(" }");
+        }
+        ExprKind::Int(n) => write!(text, "{n}").unwrap(),
+        ExprKind::Bool(b) => write!(text, "{b}").unwrap(),
+        ExprKind::Unit => text.push_str("()"),
+        ExprKind::Name(name) => text.push_str(name),
+        ExprKind::Call(name, args) => {
+            write!(text, "{name}(").unwrap();
+            for (index, arg) in args.iter().enumerate() {
+                if index != 0 {
+                    text.push_str(", ");
+                }
+                print_expr(arg, 0, text);
+            }
+            text.push(')');
+        }
+        ExprKind::Unary(op, child) => {
+            write!(text, "{op}").unwrap();
+            print_expr(child, 7, text);
+        }
+        ExprKind::Binary(op, left, right) => {
+            let precedence = op.precedence();
+            let parens = precedence < minimum;
+            if parens {
+                text.push('(');
+            }
+            print_expr(left, precedence, text);
+            write!(text, " {op} ").unwrap();
+            print_expr(right, precedence + 1, text);
+            if parens {
+                text.push(')');
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn with_body(body: &str) -> String {
+        format!("module demo; pub fn main() -> I64 !{{}} {{ {body} }}")
+    }
+
+    #[test]
+    fn discarded_conditional_values_survive_printing() {
+        let source =
+            with_body("(if true { 1 } else { 0 }); (if true { 3 } else { 4 }) + 5; return 0;");
+        let printed = print(&parse(&source).unwrap());
+        assert!(printed.contains("(if true { 1 } else { 0 });"));
+        assert!(printed.contains("(if true { 3 } else { 4 } + 5);"));
+        assert_eq!(printed, print(&parse(&printed).unwrap()));
+    }
+
+    #[test]
+    fn operators_preserve_grouping_and_associativity() {
+        let source = with_body("return (2+3)*4-(9-(8/2%3))+(-1);");
+        let printed = print(&parse(&source).unwrap());
+        assert!(printed.contains("return (2 + 3) * 4 - (9 - 8 / 2 % 3) + -1;"));
+        assert_eq!(printed, print(&parse(&printed).unwrap()));
+
+        let expr = &parse(&with_body(
+            "return true || false && 1 + 2 * 3 <= 7 == !false;",
+        ))
+        .unwrap()
+        .functions[0]
+            .body[0];
+        let StmtKind::Return(Expr {
+            kind: ExprKind::Binary(BinOp::Or, _, rhs),
+            ..
+        }) = &expr.kind
+        else {
+            panic!("expected outer ||");
+        };
+        assert!(matches!(rhs.kind, ExprKind::Binary(BinOp::And, _, _)));
+    }
+
+    #[test]
+    fn prints_code_with_parameters_scopes_and_unit() {
+        let source = "module demo.math; // demonstration ☺\n
+            fn count(stop:I64,) -> Unit !{} {
+                var n:I64=0; while n<stop {n=n+1;} return ();
+            }
+            pub fn main() -> I64 !{} {
+                let b:Bool=!false; count(3,); if b {return 4;} else if false {return 2;} else {return 1;}
+            }";
+        let tree = parse(source).unwrap();
+        assert_eq!(tree.name, "demo.math");
+        let dump = print(&tree);
+        assert!(dump.contains("while n < stop {\n        n = n + 1;"));
+        assert!(dump.contains("    let b: Bool = !false;\n    count(3);"));
+        assert_eq!(dump, print(&parse(&dump).unwrap()));
+    }
+
+    #[test]
+    fn minimum_integer_requires_a_negative_literal() {
+        let source = with_body("return -9223372036854775808;");
+        let tree = parse(&source).unwrap();
+        assert!(matches!(
+            tree.functions[0].body[0].kind,
+            StmtKind::Return(Expr {
+                kind: ExprKind::Int(i64::MIN),
+                ..
+            })
+        ));
+        for numeral in [
+            "9223372036854775808",
+            "-9223372036854775809",
+            "999999999999999999999999999999",
+        ] {
+            assert_eq!(
+                parse(&with_body(&format!("return {numeral};")))
+                    .unwrap_err()
+                    .code,
+                "GPP-PARSE-003"
+            );
+        }
+    }
+
+    #[test]
+    fn reports_utf8_byte_offsets_and_rejects_bidi_controls() {
+        let source = with_body("// π\n return é;");
+        let error = parse(&source).unwrap_err();
+        assert_eq!(&source[error.span.start..error.span.end], "é");
+        assert_eq!(
+            parse(&with_body("// π\u{2068}\n return 0;"))
+                .unwrap_err()
+                .code,
+            "GPP-LEX-002"
+        );
+    }
+
+    #[test]
+    fn rejects_bad_syntax_at_the_unexpected_token() {
+        for (body, unexpected) in [
+            ("return;", ";"),
+            ("let if = 0;", "if"),
+            ("return f(1,,);", ","),
+            ("let x 2;", "2"),
+            ("while {", "{"),
+        ] {
+            let source = with_body(body);
+            let error = parse(&source).unwrap_err();
+            assert_eq!(&source[error.span.start..error.span.end], unexpected);
+        }
+        let truncated = "module m; fn f() -> I64 !{} { return 1;";
+        assert_eq!(
+            parse(truncated).unwrap_err().span,
+            Span {
+                start: truncated.len(),
+                end: truncated.len()
+            }
+        );
+        let effectful = with_body("return 0;").replace("!{}", "!{clock}");
+        assert_eq!(parse(&effectful).unwrap_err().code, "GPP-PARSE-002");
+    }
+
+    #[test]
+    fn bounds_recursive_and_left_associated_trees() {
+        for expr in [
+            format!("{}0{}", "(".repeat(1000), ")".repeat(1000)),
+            format!("{}0", "-".repeat(1000)),
+            format!("0{}", "+0".repeat(1000)),
+        ] {
+            let source = with_body(&format!("return {expr};"));
+            assert_eq!(parse(&source).unwrap_err().code, "GPP-PARSE-004");
+        }
+        let mut nested = "if true {".repeat(1000);
+        nested.push_str(&"}".repeat(1000));
+        assert_eq!(
+            parse(&with_body(&nested)).unwrap_err().code,
+            "GPP-PARSE-004"
+        );
+    }
+}

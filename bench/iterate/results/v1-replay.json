@@ -1,0 +1,971 @@
+{
+  "study": "v1 terminal GPT++ offline replay",
+  "input_sha256": "167558ee9a9d744f596996965920ef461bc196ac99b2253302018dd07afa4ff9",
+  "original_compiler_sha256": "1008b4ccd77b73ba62e156ec198f0aaa5cbb71587e43eb9bf6f7bce0e0ec6a95",
+  "current_compiler_sha256": "c245a91b44a5f5dd77c41b72d414915fc0a82ed69e501118f24317c286c8760c",
+  "replay_script_sha256": "b6dcaca5ccc82a47a06b4084bfaa76c35bb942494bb329e45f223e2a491b95fb",
+  "rules": [
+    "Use the final recorded reply, original fence extraction for direct, current checker/interpreter and unchanged v1 oracles.",
+    "Body recovery requires one line-start fn solve declaration, balanced parentheses, a recognizable header, and a complete brace group; skip // line comments. Retain the exact brace-delimited source slice.",
+    "Apply the body with gpp edit --body --stdout to the task's fixed signature, then evaluate the emitted function. Never rewrite statements or use expected outputs in extraction.",
+    "Score all public and all held-out cases for every checked candidate, independently. Numeric counts exact single integer outputs. Acceptance requires both suites.",
+    "Fallback uses direct output whenever it checks and uses the body arm only on a compile failure. This decision has no access to test outcomes."
+  ],
+  "original_accepted": 0,
+  "original_public_all": 0,
+  "totals": {
+    "direct": {
+      "assigned": 24,
+      "checked": 8,
+      "public_all": 1,
+      "heldout_all": 1,
+      "accepted_both": 1,
+      "public": {
+        "cases": 24,
+        "numeric": 24,
+        "correct": 10
+      },
+      "heldout": {
+        "cases": 228,
+        "numeric": 228,
+        "correct": 106
+      }
+    },
+    "body": {
+      "assigned": 24,
+      "checked": 11,
+      "public_all": 1,
+      "heldout_all": 1,
+      "accepted_both": 1,
+      "public": {
+        "cases": 33,
+        "numeric": 33,
+        "correct": 14
+      },
+      "heldout": {
+        "cases": 314,
+        "numeric": 314,
+        "correct": 148
+      }
+    },
+    "fallback": {
+      "assigned": 24,
+      "checked": 11,
+      "public_all": 1,
+      "heldout_all": 1,
+      "accepted_both": 1,
+      "public": {
+        "cases": 33,
+        "numeric": 33,
+        "correct": 14
+      },
+      "heldout": {
+        "cases": 314,
+        "numeric": 314,
+        "correct": 148
+      }
+    }
+  },
+  "extraction_stages": {
+    "edited": 11,
+    "edit_rejected": 9,
+    "extract_error": 4
+  },
+  "results": [
+    {
+      "model": "deepseek-coder:6.7b",
+      "task": "maintenance_split_quota",
+      "original_v1_outcome": "wrong_answer",
+      "raw_response_sha256": "df40c5db5ff0f405752b5528644e72766e7def4741749ec5b3a878c292f311d1",
+      "direct_source_sha256": "8c65dde0e75e24dbb86cc82454c4238099afa4c042ecf03a936a9d6a3ee6ae7e",
+      "body_source_sha256": "8c65dde0e75e24dbb86cc82454c4238099afa4c042ecf03a936a9d6a3ee6ae7e",
+      "direct": {
+        "checked": true,
+        "public": {
+          "cases": 3,
+          "numeric": 3,
+          "correct": 1,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 2
+          }
+        },
+        "heldout": {
+          "cases": 35,
+          "numeric": 35,
+          "correct": 23,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 12
+          }
+        }
+      },
+      "extraction": {
+        "body_char_range": [
+          563,
+          720
+        ],
+        "body_sha256": "c96f8d431c45cd4cf9f4e4dbf1671980f030800c8e0c34cff7868f79833e7a6b",
+        "stage": "edited"
+      },
+      "body": {
+        "checked": true,
+        "public": {
+          "cases": 3,
+          "numeric": 3,
+          "correct": 1,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 2
+          }
+        },
+        "heldout": {
+          "cases": 35,
+          "numeric": 35,
+          "correct": 23,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 12
+          }
+        }
+      },
+      "fallback_selected": "direct"
+    },
+    {
+      "model": "deepseek-coder:6.7b",
+      "task": "digit_descents",
+      "original_v1_outcome": "check_error",
+      "raw_response_sha256": "a2456e20ec9f1c3482a8ad69e4da84a3de1b86ab484894c9561d70e224617e71",
+      "direct_source_sha256": "09c770e4e677a2b27818d65911f9b1253c2a7f5dfe3b0421b5c729e429e5a5dd",
+      "body_source_sha256": null,
+      "direct": {
+        "checked": false,
+        "detail": "trial.gpp:9:17: error[GPP-LEX-001]: unexpected character '\uff5c' in scalar source"
+      },
+      "extraction": {
+        "body_char_range": [
+          153,
+          449
+        ],
+        "body_sha256": "8ba467e143342a4d65a4d34b4e01f39397da9514ee4f7f7e667d7220ef5c0db8",
+        "stage": "edit_rejected",
+        "detail": "body.fragment:8:17: error[GPP-LEX-001]: unexpected character '\uff5c' in scalar source"
+      },
+      "body": {
+        "checked": false
+      },
+      "fallback_selected": "body"
+    },
+    {
+      "model": "deepseek-coder:6.7b",
+      "task": "circular_overlap",
+      "original_v1_outcome": "check_error",
+      "raw_response_sha256": "9789bf1509b23445bdd25320712d3b69557dadabe343bb4b5ee226522a16a26c",
+      "direct_source_sha256": "48d8279ac64f9f9b6ea63b548a7b1074d688b67d7e6e0d0896ef31431d7902f0",
+      "body_source_sha256": null,
+      "direct": {
+        "checked": false,
+        "detail": "trial.gpp:2:63: error[GPP-PARSE-001]: expected '!', found '{'"
+      },
+      "extraction": {
+        "body_char_range": [
+          257,
+          432
+        ],
+        "body_sha256": "b46ad8fe171f746b2feb411782a209983144514f23d46871c951cbc04ff88d3a",
+        "stage": "edit_rejected",
+        "detail": "body.fragment:3:5: error[GPP-PARSE-002]: 'for' statements are outside the scalar profile"
+      },
+      "body": {
+        "checked": false
+      },
+      "fallback_selected": "body"
+    },
+    {
+      "model": "deepseek-coder:6.7b",
+      "task": "maintenance_bracket_rebate",
+      "original_v1_outcome": "check_error",
+      "raw_response_sha256": "91c2f554058515161c4cd5067d01cc13f51e765915f18c952ed0a814f1ea2e86",
+      "direct_source_sha256": "dd5d2fc945813e303335864cb28141ab47f87641cbb959cfd66c882e27b5b112",
+      "body_source_sha256": null,
+      "direct": {
+        "checked": false,
+        "detail": "trial.gpp:2:43: error[GPP-PARSE-001]: expected '!', found '{'"
+      },
+      "extraction": {
+        "body_char_range": [
+          242,
+          631
+        ],
+        "body_sha256": "b601a08936f4d4f557c3ca786bf84b3e6c07b6f9649e1230645ca15b0c02093a",
+        "stage": "edit_rejected",
+        "detail": "body.fragment:7:30: error[GPP-PARSE-001]: expected ')', found 'as'"
+      },
+      "body": {
+        "checked": false
+      },
+      "fallback_selected": "body"
+    },
+    {
+      "model": "deepseek-coder:6.7b",
+      "task": "median_index",
+      "original_v1_outcome": "check_error",
+      "raw_response_sha256": "d43243ba4bfc6b3b2517dd4108c85861dfa2d879aeabd44c74850e16df9426a6",
+      "direct_source_sha256": "563f29c5c884d9876e3a949c6f465ab9ef37fec3a7bc2d8c41596f1b4a5a4107",
+      "body_source_sha256": null,
+      "direct": {
+        "checked": false,
+        "detail": "trial.gpp:2:1: error[GPP-PARSE-001]: expected 'fn', found 'def'"
+      },
+      "extraction": {
+        "stage": "extract_error",
+        "detail": "expected exactly one line-start function declaration named solve"
+      },
+      "body": {
+        "checked": false
+      },
+      "fallback_selected": "body"
+    },
+    {
+      "model": "deepseek-coder:6.7b",
+      "task": "maintenance_rotating_index",
+      "original_v1_outcome": "check_error",
+      "raw_response_sha256": "6995108d851d88ab9e10c8bf48d30c9fd754af633db41933d60595b7cd06663b",
+      "direct_source_sha256": "c975d5a54060386a7025b3f978d7981850c990d4c71f8a9cfac3384394ad970f",
+      "body_source_sha256": null,
+      "direct": {
+        "checked": false,
+        "detail": "trial.gpp:2:183: error[GPP-LEX-001]: unexpected character '\\'' in scalar source"
+      },
+      "extraction": {
+        "stage": "extract_error",
+        "detail": "expected exactly one line-start function declaration named solve"
+      },
+      "body": {
+        "checked": false
+      },
+      "fallback_selected": "body"
+    },
+    {
+      "model": "deepseek-coder:6.7b",
+      "task": "maintenance_sample_rounding",
+      "original_v1_outcome": "check_error",
+      "raw_response_sha256": "87b96e1859f12a954db5733b77da94a42f34f4c5a1b395fe44bb9c9ed67c971f",
+      "direct_source_sha256": "c52787dc1a91a0ca6728c3f061a7be22f7a4678bbe8bce651eee8bcaf541ce7f",
+      "body_source_sha256": null,
+      "direct": {
+        "checked": false,
+        "detail": "trial.gpp:2:41: error[GPP-PARSE-001]: expected '!', found '{'"
+      },
+      "extraction": {
+        "stage": "extract_error",
+        "detail": "incomplete group"
+      },
+      "body": {
+        "checked": false
+      },
+      "fallback_selected": "body"
+    },
+    {
+      "model": "deepseek-coder:6.7b",
+      "task": "reorder_day",
+      "original_v1_outcome": "check_error",
+      "raw_response_sha256": "27746c594718caaa82bbd4963e543b6db28ae5f6fb3c1aff49fa5ff68b935122",
+      "direct_source_sha256": "95f29ff2b9ec81470730f36141978c67dae3c8118761768447d253cf618cabf6",
+      "body_source_sha256": null,
+      "direct": {
+        "checked": false,
+        "detail": "trial.gpp:3:18: error[GPP-LEX-001]: unexpected character '[' in scalar source"
+      },
+      "extraction": {
+        "body_char_range": [
+          113,
+          553
+        ],
+        "body_sha256": "42e13de5a7c283f61ba9b43d4bc02497bdd5d8cad7f1ee820505f1c408ff84c0",
+        "stage": "edit_rejected",
+        "detail": "body.fragment:2:18: error[GPP-LEX-001]: unexpected character '[' in scalar source"
+      },
+      "body": {
+        "checked": false
+      },
+      "fallback_selected": "body"
+    },
+    {
+      "model": "deepseek-coder:6.7b",
+      "task": "peak_fare",
+      "original_v1_outcome": "check_error",
+      "raw_response_sha256": "64e0972c80c5b6a0ec49c6246213927313b909006d76ade65605b8da89fa11de",
+      "direct_source_sha256": "c24546f95bc1a826daf0d54b8f42f6490e48046bd2797b3790eeb4cefc3fab01",
+      "body_source_sha256": null,
+      "direct": {
+        "checked": false,
+        "detail": "trial.gpp:3:5: error[GPP-PARSE-001]: expected '}', found 'var'"
+      },
+      "extraction": {
+        "body_char_range": [
+          234,
+          619
+        ],
+        "body_sha256": "3785e34ae576bfd27cef79a884db0acb27b5eb7eb8e3bd4d60f09c8b33b62f95",
+        "stage": "edit_rejected",
+        "detail": "skeleton.gpp:9:9: error[GPP-MUT-001]: cannot assign to immutable 'seats'"
+      },
+      "body": {
+        "checked": false
+      },
+      "fallback_selected": "body"
+    },
+    {
+      "model": "deepseek-coder:6.7b",
+      "task": "maintenance_marker_streak",
+      "original_v1_outcome": "check_error",
+      "raw_response_sha256": "1316829acb3c8891a4fafded8361e3b982d3caa4e142b14438858754960878d4",
+      "direct_source_sha256": "ee9d302d45b4f8e1eb9eac181d5d72391cc4d36ce3d3059e8833882a7b40045e",
+      "body_source_sha256": "187f51222ba8fab0d161360fe776a9be4842a99af8268d55d3b85413edb16cf2",
+      "direct": {
+        "checked": false,
+        "detail": "trial.gpp:3:5: error[GPP-PARSE-001]: expected '}', found 'var'"
+      },
+      "extraction": {
+        "body_char_range": [
+          230,
+          499
+        ],
+        "body_sha256": "04f76449d43dea136d5580c121c38841aaafb907dd1d7c7c08a162d30def40b6",
+        "stage": "edited"
+      },
+      "body": {
+        "checked": true,
+        "public": {
+          "cases": 3,
+          "numeric": 3,
+          "correct": 2,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 1
+          }
+        },
+        "heldout": {
+          "cases": 22,
+          "numeric": 22,
+          "correct": 14,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 8
+          }
+        }
+      },
+      "fallback_selected": "body"
+    },
+    {
+      "model": "deepseek-coder:6.7b",
+      "task": "round_ties_even",
+      "original_v1_outcome": "check_error",
+      "raw_response_sha256": "adb1f350946f0f53e6c08f0bcc477709c40b51c92eaf3369ff834cf7d467d0de",
+      "direct_source_sha256": "a143331fd19f9ce52c5e740e2c2187791ad9a35d410c625381622378f4a12a15",
+      "body_source_sha256": "3e95cedd9349ef95858ea36d45e831b72b3c280f958a791463b83a991903adf2",
+      "direct": {
+        "checked": false,
+        "detail": "trial.gpp:2:33: error[GPP-PARSE-001]: expected '!', found '{'"
+      },
+      "extraction": {
+        "body_char_range": [
+          466,
+          586
+        ],
+        "body_sha256": "388fe3ec34352b4ef810153923ab80b1af4a65574e57e2c0c559f78ffd2be598",
+        "stage": "edited"
+      },
+      "body": {
+        "checked": true,
+        "public": {
+          "cases": 3,
+          "numeric": 3,
+          "correct": 2,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 1
+          }
+        },
+        "heldout": {
+          "cases": 32,
+          "numeric": 32,
+          "correct": 24,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 8
+          }
+        }
+      },
+      "fallback_selected": "body"
+    },
+    {
+      "model": "deepseek-coder:6.7b",
+      "task": "maintenance_reserve_floor",
+      "original_v1_outcome": "check_error",
+      "raw_response_sha256": "569a215522ddcafd42e620624c3b0e9d22ac2843f48325b1eb525b298b4d7dd3",
+      "direct_source_sha256": "cc4cd8373fc1c4d59fb88d009f90a47bc3cb2093d62b2298e2029b1bd96e2036",
+      "body_source_sha256": null,
+      "direct": {
+        "checked": false,
+        "detail": "trial.gpp:2:1: error[GPP-PARSE-001]: expected 'fn', found 'Your'"
+      },
+      "extraction": {
+        "stage": "extract_error",
+        "detail": "expected exactly one line-start function declaration named solve"
+      },
+      "body": {
+        "checked": false
+      },
+      "fallback_selected": "body"
+    },
+    {
+      "model": "llama3:latest",
+      "task": "maintenance_sample_rounding",
+      "original_v1_outcome": "wrong_answer",
+      "raw_response_sha256": "66e42e114d0e75875d695f5036fa036befc885f687259995a2c8be22ce3b9d48",
+      "direct_source_sha256": "79d56cd7ba916d6b113b3b2334a1d9838f09448bb322c4f4b5160bdc50d70574",
+      "body_source_sha256": "79d56cd7ba916d6b113b3b2334a1d9838f09448bb322c4f4b5160bdc50d70574",
+      "direct": {
+        "checked": true,
+        "public": {
+          "cases": 3,
+          "numeric": 3,
+          "correct": 1,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 2
+          }
+        },
+        "heldout": {
+          "cases": 30,
+          "numeric": 30,
+          "correct": 5,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 25
+          }
+        }
+      },
+      "extraction": {
+        "body_char_range": [
+          80,
+          360
+        ],
+        "body_sha256": "767fc1ab17e94d66928e8452065cd754a53350af26218a17cb60d917389564c0",
+        "stage": "edited"
+      },
+      "body": {
+        "checked": true,
+        "public": {
+          "cases": 3,
+          "numeric": 3,
+          "correct": 1,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 2
+          }
+        },
+        "heldout": {
+          "cases": 30,
+          "numeric": 30,
+          "correct": 5,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 25
+          }
+        }
+      },
+      "fallback_selected": "direct"
+    },
+    {
+      "model": "llama3:latest",
+      "task": "circular_overlap",
+      "original_v1_outcome": "check_error",
+      "raw_response_sha256": "12bcde40982ece90aac504c1e0747db42ff0b67810022ca4d3aa64f7d7f617b2",
+      "direct_source_sha256": "905535120cfd363bfc5f17e46017c1869eae05beb8987542530141da924792d0",
+      "body_source_sha256": null,
+      "direct": {
+        "checked": false,
+        "detail": "trial.gpp:9:33: error[GPP-LEX-001]: unexpected character '?' in scalar source"
+      },
+      "extraction": {
+        "body_char_range": [
+          103,
+          519
+        ],
+        "body_sha256": "a5ea475a6a2e26ba6ef6623f5d8b92a291a14f15a138718f95f0b19e1e3ae70d",
+        "stage": "edit_rejected",
+        "detail": "body.fragment:8:33: error[GPP-LEX-001]: unexpected character '?' in scalar source"
+      },
+      "body": {
+        "checked": false
+      },
+      "fallback_selected": "body"
+    },
+    {
+      "model": "llama3:latest",
+      "task": "maintenance_reserve_floor",
+      "original_v1_outcome": "check_error",
+      "raw_response_sha256": "08b6168a03d8f01dbbc183187596723848408d96b78f3053048acc300226eede",
+      "direct_source_sha256": "ff1d558c8a829ee333c1a45481b9c3afbb5c80d98d79ce90c7bc24c64d90e118",
+      "body_source_sha256": "ff1d558c8a829ee333c1a45481b9c3afbb5c80d98d79ce90c7bc24c64d90e118",
+      "direct": {
+        "checked": true,
+        "public": {
+          "cases": 3,
+          "numeric": 3,
+          "correct": 3,
+          "all_pass": true,
+          "failures": {}
+        },
+        "heldout": {
+          "cases": 22,
+          "numeric": 22,
+          "correct": 22,
+          "all_pass": true,
+          "failures": {}
+        }
+      },
+      "extraction": {
+        "body_char_range": [
+          92,
+          410
+        ],
+        "body_sha256": "5cf00f2e91453cc890e54ff581eb127aa0a58a71401c040e5eb26113d7a107f7",
+        "stage": "edited"
+      },
+      "body": {
+        "checked": true,
+        "public": {
+          "cases": 3,
+          "numeric": 3,
+          "correct": 3,
+          "all_pass": true,
+          "failures": {}
+        },
+        "heldout": {
+          "cases": 22,
+          "numeric": 22,
+          "correct": 22,
+          "all_pass": true,
+          "failures": {}
+        }
+      },
+      "fallback_selected": "direct"
+    },
+    {
+      "model": "llama3:latest",
+      "task": "maintenance_split_quota",
+      "original_v1_outcome": "wrong_answer",
+      "raw_response_sha256": "29d36368179b5db2ac25a0e564cfef67a5a57782bb1cc40e8a531af69df9cab5",
+      "direct_source_sha256": "81eccfbd8ae7e1b8b8ac4196d919b854173d551d596d00764cc8920e8a85200b",
+      "body_source_sha256": "81eccfbd8ae7e1b8b8ac4196d919b854173d551d596d00764cc8920e8a85200b",
+      "direct": {
+        "checked": true,
+        "public": {
+          "cases": 3,
+          "numeric": 3,
+          "correct": 1,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 2
+          }
+        },
+        "heldout": {
+          "cases": 35,
+          "numeric": 35,
+          "correct": 17,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 18
+          }
+        }
+      },
+      "extraction": {
+        "body_char_range": [
+          106,
+          335
+        ],
+        "body_sha256": "2c48c792e0b11948ff17c9566506199f977d4fb1b5bfc07542657a53688fb44d",
+        "stage": "edited"
+      },
+      "body": {
+        "checked": true,
+        "public": {
+          "cases": 3,
+          "numeric": 3,
+          "correct": 1,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 2
+          }
+        },
+        "heldout": {
+          "cases": 35,
+          "numeric": 35,
+          "correct": 17,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 18
+          }
+        }
+      },
+      "fallback_selected": "direct"
+    },
+    {
+      "model": "llama3:latest",
+      "task": "reorder_day",
+      "original_v1_outcome": "check_error",
+      "raw_response_sha256": "1758f4a387859e4b008b5af19626dbbe5ae22aa7831ee5edfb77e2b607e7f910",
+      "direct_source_sha256": "56c05d480aab41756672d29d7d04bc87ba507d8252dc763829526a5e04997cf2",
+      "body_source_sha256": null,
+      "direct": {
+        "checked": false,
+        "detail": "trial.gpp:5:53: error[GPP-LEX-001]: unexpected character '?' in scalar source"
+      },
+      "extraction": {
+        "body_char_range": [
+          94,
+          324
+        ],
+        "body_sha256": "9dc78fb37b771621e801679fc3666a85fc56a9ec07e7bee4a6136e0f890f92fa",
+        "stage": "edit_rejected",
+        "detail": "body.fragment:4:53: error[GPP-LEX-001]: unexpected character '?' in scalar source"
+      },
+      "body": {
+        "checked": false
+      },
+      "fallback_selected": "body"
+    },
+    {
+      "model": "llama3:latest",
+      "task": "maintenance_bracket_rebate",
+      "original_v1_outcome": "check_error",
+      "raw_response_sha256": "631065de44af00ae0f79035ec1b7ab4107b980b38504ca6688fc237e6b295a88",
+      "direct_source_sha256": "aaa4ca0792543c866d929ddd728325b72ca5af81131e628715cabc7f3e926545",
+      "body_source_sha256": null,
+      "direct": {
+        "checked": false,
+        "detail": "trial.gpp:8:22: error[GPP-TYPE-001]: operator '+' cannot take I64 and Bool"
+      },
+      "extraction": {
+        "body_char_range": [
+          82,
+          353
+        ],
+        "body_sha256": "cc93a45f92eead9f5f51ee0d506358d1978bdfca32ac3a4defc066ea9e0bffbe",
+        "stage": "edit_rejected",
+        "detail": "skeleton.gpp:8:22: error[GPP-TYPE-001]: operator '+' cannot take I64 and Bool"
+      },
+      "body": {
+        "checked": false
+      },
+      "fallback_selected": "body"
+    },
+    {
+      "model": "llama3:latest",
+      "task": "peak_fare",
+      "original_v1_outcome": "check_error",
+      "raw_response_sha256": "621fb3fff0a36c21a27840efe4ed697dd6921de26d37eb64dfc107b42e65a836",
+      "direct_source_sha256": "e18928e07287f53182d78137e4b6fa736e36eec352c2ffe04307c16531e5779c",
+      "body_source_sha256": "e18928e07287f53182d78137e4b6fa736e36eec352c2ffe04307c16531e5779c",
+      "direct": {
+        "checked": true,
+        "public": {
+          "cases": 3,
+          "numeric": 3,
+          "correct": 1,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 2
+          }
+        },
+        "heldout": {
+          "cases": 32,
+          "numeric": 32,
+          "correct": 3,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 29
+          }
+        }
+      },
+      "extraction": {
+        "body_char_range": [
+          95,
+          316
+        ],
+        "body_sha256": "1ab6444292c8583d2a47b69aa04831e6a3caa066d1aa575af311d6fab82b0dbb",
+        "stage": "edited"
+      },
+      "body": {
+        "checked": true,
+        "public": {
+          "cases": 3,
+          "numeric": 3,
+          "correct": 1,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 2
+          }
+        },
+        "heldout": {
+          "cases": 32,
+          "numeric": 32,
+          "correct": 3,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 29
+          }
+        }
+      },
+      "fallback_selected": "direct"
+    },
+    {
+      "model": "llama3:latest",
+      "task": "round_ties_even",
+      "original_v1_outcome": "wrong_answer",
+      "raw_response_sha256": "3d07022a8cebe67af5d84672053e9a0d05895d2ab9359aacb349e5e62c3f24c8",
+      "direct_source_sha256": "ae03a5341a1251387c19c191d44e0861efe38203254d77e839988e1af135ada0",
+      "body_source_sha256": "ae03a5341a1251387c19c191d44e0861efe38203254d77e839988e1af135ada0",
+      "direct": {
+        "checked": true,
+        "public": {
+          "cases": 3,
+          "numeric": 3,
+          "correct": 2,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 1
+          }
+        },
+        "heldout": {
+          "cases": 32,
+          "numeric": 32,
+          "correct": 23,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 9
+          }
+        }
+      },
+      "extraction": {
+        "body_char_range": [
+          73,
+          283
+        ],
+        "body_sha256": "7360fd7a70b04a547e0023bfd469046e2ec186731919fcc9531e74be020680f1",
+        "stage": "edited"
+      },
+      "body": {
+        "checked": true,
+        "public": {
+          "cases": 3,
+          "numeric": 3,
+          "correct": 2,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 1
+          }
+        },
+        "heldout": {
+          "cases": 32,
+          "numeric": 32,
+          "correct": 23,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 9
+          }
+        }
+      },
+      "fallback_selected": "direct"
+    },
+    {
+      "model": "llama3:latest",
+      "task": "maintenance_marker_streak",
+      "original_v1_outcome": "wrong_answer",
+      "raw_response_sha256": "a392c98a7d84ccdbfc78c3c94b34e5b9dbf4bdfd0d6426f98e12e1b52e8794d7",
+      "direct_source_sha256": "40da439f720289515fcb2b471272984e0a215661e6c1925642de5872e617b5e2",
+      "body_source_sha256": "40da439f720289515fcb2b471272984e0a215661e6c1925642de5872e617b5e2",
+      "direct": {
+        "checked": true,
+        "public": {
+          "cases": 3,
+          "numeric": 3,
+          "correct": 0,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 3
+          }
+        },
+        "heldout": {
+          "cases": 22,
+          "numeric": 22,
+          "correct": 4,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 18
+          }
+        }
+      },
+      "extraction": {
+        "body_char_range": [
+          84,
+          756
+        ],
+        "body_sha256": "e02e42b237322073fe45e692213d07ffa9bc3ebb8804450666732c4eafbb569e",
+        "stage": "edited"
+      },
+      "body": {
+        "checked": true,
+        "public": {
+          "cases": 3,
+          "numeric": 3,
+          "correct": 0,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 3
+          }
+        },
+        "heldout": {
+          "cases": 22,
+          "numeric": 22,
+          "correct": 4,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 18
+          }
+        }
+      },
+      "fallback_selected": "direct"
+    },
+    {
+      "model": "llama3:latest",
+      "task": "maintenance_rotating_index",
+      "original_v1_outcome": "wrong_answer",
+      "raw_response_sha256": "5b3140488b36e7d207752cfb1a0e8887346407012245a7666235b74a50386c4c",
+      "direct_source_sha256": "d06a5fa2d60e58d7dd09d8982d7ada11003a78a0218ec90c9c03155fe7c82ec6",
+      "body_source_sha256": "6337b6e6899a6697b5ef6f46aefc421c226c9c6d6bedaa7b99cc57998a2f0a81",
+      "direct": {
+        "checked": true,
+        "public": {
+          "cases": 3,
+          "numeric": 3,
+          "correct": 1,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 2
+          }
+        },
+        "heldout": {
+          "cases": 20,
+          "numeric": 20,
+          "correct": 9,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 11
+          }
+        }
+      },
+      "extraction": {
+        "body_char_range": [
+          106,
+          362
+        ],
+        "body_sha256": "579826cfee380362b4116cf5f31cfc73fe8d5b4a7b8b6f03fc48c4416f3ecbc3",
+        "stage": "edited"
+      },
+      "body": {
+        "checked": true,
+        "public": {
+          "cases": 3,
+          "numeric": 3,
+          "correct": 1,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 2
+          }
+        },
+        "heldout": {
+          "cases": 20,
+          "numeric": 20,
+          "correct": 9,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 11
+          }
+        }
+      },
+      "fallback_selected": "direct"
+    },
+    {
+      "model": "llama3:latest",
+      "task": "median_index",
+      "original_v1_outcome": "check_error",
+      "raw_response_sha256": "1bcc73f121f12f1a540ceacbf07cff776d6caf95a15a5a22b9d156036d673869",
+      "direct_source_sha256": "1bcc73f121f12f1a540ceacbf07cff776d6caf95a15a5a22b9d156036d673869",
+      "body_source_sha256": "d73051841630ba692b5b727b7c4f99c7ff4ff4cb83316451b44da20ec5b97bf2",
+      "direct": {
+        "checked": false,
+        "detail": "trial.gpp:2:1: error[GPP-PARSE-001]: expected 'fn', found 'Here'"
+      },
+      "extraction": {
+        "body_char_range": [
+          77,
+          175
+        ],
+        "body_sha256": "5de58a5d9baea8b9ad6425b1be07a7f2bb004949c452eea5dae834f571508692",
+        "stage": "edited"
+      },
+      "body": {
+        "checked": true,
+        "public": {
+          "cases": 3,
+          "numeric": 3,
+          "correct": 0,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 3
+          }
+        },
+        "heldout": {
+          "cases": 32,
+          "numeric": 32,
+          "correct": 4,
+          "all_pass": false,
+          "failures": {
+            "wrong_answer": 28
+          }
+        }
+      },
+      "fallback_selected": "body"
+    },
+    {
+      "model": "llama3:latest",
+      "task": "digit_descents",
+      "original_v1_outcome": "check_error",
+      "raw_response_sha256": "f298a5e35549172c1eb6efb71dffcadf70a26e9aa750da66ee0e21077e54a26a",
+      "direct_source_sha256": "36aefb2657d51e3475ac46f2baa1283e72820b3b41334fc7cc84d0a83ae5a7b1",
+      "body_source_sha256": null,
+      "direct": {
+        "checked": false,
+        "detail": "trial.gpp:11:9: error[GPP-MUT-001]: cannot assign to immutable 'n'"
+      },
+      "extraction": {
+        "body_char_range": [
+          65,
+          313
+        ],
+        "body_sha256": "9bcfb347b6d5590be9806d9fc38fd0d28e703d1b0b51cb5f7a528ee02fa7903c",
+        "stage": "edit_rejected",
+        "detail": "skeleton.gpp:11:9: error[GPP-MUT-001]: cannot assign to immutable 'n'"
+      },
+      "body": {
+        "checked": false
+      },
+      "fallback_selected": "body"
+    }
+  ]
+}

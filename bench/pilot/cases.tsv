@@ -1,0 +1,14 @@
+case	subtotal_cents	member	pickup	old_fee	new_fee
+member_zero	0	true	false	299	299
+ordinary_zero	0	false	false	599	599
+member_just_below	4999	true	false	299	299
+member_at_threshold	5000	true	false	299	0
+member_just_above	5001	true	false	299	0
+member_below_old_threshold	7499	true	false	299	0
+member_at_old_threshold	7500	true	false	0	0
+ordinary_at_member_threshold	5000	false	false	599	599
+ordinary_below_threshold	7499	false	false	599	599
+ordinary_at_threshold	7500	false	false	0	0
+ordinary_large	1000000	false	false	0	0
+member_pickup	1	true	true	0	0
+ordinary_pickup	5000	false	true	0	0

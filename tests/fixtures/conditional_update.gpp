@@ -1,0 +1,16 @@
+// result 54
+module fixtures.conditional_update;
+
+fn select(v: I64, first: Bool) -> I64 !{} {
+    var n = 12;
+    n += 3;
+    n -= 1;
+    n *= 3;
+    n /= 2;
+    n %= 8;
+    return n + 2 * if first { v } else if v >= 0 { 1 / 0 } else { 7 };
+}
+
+pub fn main() -> I64 !{} {
+    return select(15, true) + select(-1, false);
+}

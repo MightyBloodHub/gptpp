@@ -1,0 +1,8 @@
+[package]
+name = "gpp"
+version = "0.1.0-dev"
+edition = "2024"
+publish = false
+
+[workspace]
+resolver = "3"

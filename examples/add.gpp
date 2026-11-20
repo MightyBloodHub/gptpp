@@ -1,0 +1,9 @@
+module demo.main;
+
+fn add(left: I64, right: I64) -> I64 !{} {
+    return left + right;
+}
+
+pub fn main() -> I64 !{} {
+    return add(20, 22);
+}

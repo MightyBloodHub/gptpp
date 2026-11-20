@@ -1,0 +1,11 @@
+module checkout.shipping;
+
+pub fn shipping_fee(subtotal_cents: I64, member: Bool, pickup: Bool) -> I64 !{} {
+    if pickup || subtotal_cents >= 7500 {
+        return 0;
+    }
+    if member {
+        return 299;
+    }
+    return 599;
+}

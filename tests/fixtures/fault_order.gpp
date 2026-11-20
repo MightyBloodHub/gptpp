@@ -1,0 +1,7 @@
+// fault DivisionByZero
+module fixtures.order;
+
+fn select_right(left: I64, right: I64) -> I64 !{} { return right; }
+pub fn main() -> I64 !{} {
+    return select_right(7 / 0, 9223372036854775807 + 1);
+}

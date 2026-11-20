@@ -1,0 +1,10 @@
+{
+  "initial_script_sha256": "af4a0b07988a6f688a3d7fd3e961bd9eadc95cf9d814cd583e158e0ae2faa5b3",
+  "initial_manifest_sha256": "65479cf52ba65e86ef19fb95143863fd03048a82e8473bd28065cf30e1fd6624",
+  "corrected_script_sha256": "82c140c136e83a32cec1e850d7bcc67d27f37bd668c8d1d77d439680acff75de",
+  "rows_before_fix": {
+    "manifest": 1,
+    "scored": 0
+  },
+  "change": "Rename the temporary baseline binary from gpp to previous-gpp so the gpp language work directory can be created. No change to solver, task, budget, model, or primary capture."
+}

@@ -1,0 +1,25 @@
+{
+  "authoring_started": "2026-11-20T23:21:46Z",
+  "freeze_utc": "2026-11-20T23:23:08.070155+00:00",
+  "sources": {
+    "corpus.py": "6fc45c0580987e5da241b77d74280caa4d0dc4f9e56a3e5a82540228b75839ce",
+    "protocol.md": "04040a629c8bf5e7b5bfe325dd6c1c289b16312ae985d2517a19904ebb98aa36"
+  },
+  "families": 12,
+  "public_direct": 288,
+  "withheld_direct": 22675,
+  "codingbat_sources": {
+    "makeBricks": "https://codingbat.com/prob/p183562",
+    "loneSum": "https://codingbat.com/prob/p148972",
+    "luckySum": "https://codingbat.com/prob/p130788",
+    "noTeenSum": "https://codingbat.com/prob/p182879",
+    "roundSum": "https://codingbat.com/prob/p186753",
+    "closeFar": "https://codingbat.com/prob/p138990",
+    "blackjack": "https://codingbat.com/prob/p117019",
+    "evenlySpaced": "https://codingbat.com/prob/p198700",
+    "cigarParty": "https://codingbat.com/prob/p159531",
+    "dateFashion": "https://codingbat.com/prob/p103360",
+    "caughtSpeeding": "https://codingbat.com/prob/p157733",
+    "sortaSum": "https://codingbat.com/prob/p183071"
+  }
+}

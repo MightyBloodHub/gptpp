@@ -1,0 +1,506 @@
+[
+  {
+    "task": "makeBricks",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 976,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "d5c2cf62ce9dc5de2a85215b7410673f427af829ff9a9d12848f9589ac2caf09"
+    }
+  },
+  {
+    "task": "makeBricks",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 976,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "d5c2cf62ce9dc5de2a85215b7410673f427af829ff9a9d12848f9589ac2caf09"
+    }
+  },
+  {
+    "task": "makeBricks",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 976,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "d5c2cf62ce9dc5de2a85215b7410673f427af829ff9a9d12848f9589ac2caf09"
+    }
+  },
+  {
+    "task": "loneSum",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 488,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "bbf9380125d1abee428af13b12fbfc8424535293bea3436d7a3a4240d6998774"
+    }
+  },
+  {
+    "task": "loneSum",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 488,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "bbf9380125d1abee428af13b12fbfc8424535293bea3436d7a3a4240d6998774"
+    }
+  },
+  {
+    "task": "loneSum",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 488,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "bbf9380125d1abee428af13b12fbfc8424535293bea3436d7a3a4240d6998774"
+    }
+  },
+  {
+    "task": "luckySum",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 976,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "77f43d6686497101b021575ec30a9eebe8ef25331b9f6550898a8912d053b440"
+    }
+  },
+  {
+    "task": "luckySum",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 976,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "77f43d6686497101b021575ec30a9eebe8ef25331b9f6550898a8912d053b440"
+    }
+  },
+  {
+    "task": "luckySum",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 976,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "77f43d6686497101b021575ec30a9eebe8ef25331b9f6550898a8912d053b440"
+    }
+  },
+  {
+    "task": "noTeenSum",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 3351,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "58d57760acae35517b31c61c77deb07ac2727fdd6d88be695c7970de8e7a5289"
+    }
+  },
+  {
+    "task": "noTeenSum",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 3351,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "58d57760acae35517b31c61c77deb07ac2727fdd6d88be695c7970de8e7a5289"
+    }
+  },
+  {
+    "task": "noTeenSum",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 3351,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "58d57760acae35517b31c61c77deb07ac2727fdd6d88be695c7970de8e7a5289"
+    }
+  },
+  {
+    "task": "roundSum",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 10624,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "733c1b16585a0557780e6e152d02cb21721841412342e11391d30802d886afff"
+    }
+  },
+  {
+    "task": "roundSum",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 10624,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "733c1b16585a0557780e6e152d02cb21721841412342e11391d30802d886afff"
+    }
+  },
+  {
+    "task": "roundSum",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 10624,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "733c1b16585a0557780e6e152d02cb21721841412342e11391d30802d886afff"
+    }
+  },
+  {
+    "task": "closeFar",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 2174,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "6a341096e79ee94a96890bbfd1a9c0ea42a74c5b90cdc811e5682fdd9bf3b476"
+    }
+  },
+  {
+    "task": "closeFar",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 2174,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "6a341096e79ee94a96890bbfd1a9c0ea42a74c5b90cdc811e5682fdd9bf3b476"
+    }
+  },
+  {
+    "task": "closeFar",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 2174,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "6a341096e79ee94a96890bbfd1a9c0ea42a74c5b90cdc811e5682fdd9bf3b476"
+    }
+  },
+  {
+    "task": "blackjack",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 876,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "b8fd962d42bc066a38c294622856cae250a0b01b32934527b7410503e6a2dd27"
+    }
+  },
+  {
+    "task": "blackjack",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 876,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "b8fd962d42bc066a38c294622856cae250a0b01b32934527b7410503e6a2dd27"
+    }
+  },
+  {
+    "task": "blackjack",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 876,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "b8fd962d42bc066a38c294622856cae250a0b01b32934527b7410503e6a2dd27"
+    }
+  },
+  {
+    "task": "evenlySpaced",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 2173,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "88fb42eeefc323cbf9735523403401033bfbce3628529c53f2120255e5bd1467"
+    }
+  },
+  {
+    "task": "evenlySpaced",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 2173,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "88fb42eeefc323cbf9735523403401033bfbce3628529c53f2120255e5bd1467"
+    }
+  },
+  {
+    "task": "evenlySpaced",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 2173,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "88fb42eeefc323cbf9735523403401033bfbce3628529c53f2120255e5bd1467"
+    }
+  },
+  {
+    "task": "cigarParty",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 88,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "78d94b55d3ede36d3a0f741b5400c365399a77d7b1097f9e52950fa614abd713"
+    }
+  },
+  {
+    "task": "cigarParty",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 88,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "78d94b55d3ede36d3a0f741b5400c365399a77d7b1097f9e52950fa614abd713"
+    }
+  },
+  {
+    "task": "cigarParty",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 88,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "78d94b55d3ede36d3a0f741b5400c365399a77d7b1097f9e52950fa614abd713"
+    }
+  },
+  {
+    "task": "dateFashion",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 97,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "7475cdc62dd1c4854b6cfd6366bfbd066b96805fc45852ec5be62d387df3987a"
+    }
+  },
+  {
+    "task": "dateFashion",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 97,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "7475cdc62dd1c4854b6cfd6366bfbd066b96805fc45852ec5be62d387df3987a"
+    }
+  },
+  {
+    "task": "dateFashion",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 97,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "7475cdc62dd1c4854b6cfd6366bfbd066b96805fc45852ec5be62d387df3987a"
+    }
+  },
+  {
+    "task": "caughtSpeeding",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 92,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "6bb07259b54ca190acfaa7120a937e2aa4848b2c3f5dbd07fb9519edbfd493da"
+    }
+  },
+  {
+    "task": "caughtSpeeding",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 92,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "6bb07259b54ca190acfaa7120a937e2aa4848b2c3f5dbd07fb9519edbfd493da"
+    }
+  },
+  {
+    "task": "caughtSpeeding",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 92,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "6bb07259b54ca190acfaa7120a937e2aa4848b2c3f5dbd07fb9519edbfd493da"
+    }
+  },
+  {
+    "task": "sortaSum",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 760,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "02491986456cd44d1e24739802d5f31837f47640aa5d30547b3245231e8b562c"
+    }
+  },
+  {
+    "task": "sortaSum",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 760,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "02491986456cd44d1e24739802d5f31837f47640aa5d30547b3245231e8b562c"
+    }
+  },
+  {
+    "task": "sortaSum",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 760,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "02491986456cd44d1e24739802d5f31837f47640aa5d30547b3245231e8b562c"
+    }
+  }
+]

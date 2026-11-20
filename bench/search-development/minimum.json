@@ -1,0 +1,921 @@
+{
+  "schema": "gpp.development-minimum/1",
+  "gpp_sha256": "5ebeb2892a4fa6be96604603b45c9cf838a29641a3573aa84187ce2949723ab5",
+  "replay_sha256": "4fbe02680756d3c43c2bd39c97cc75e0320a853c4c243f8c5fea4afc88a5b2ef",
+  "files_sha256": {
+    "corpus.py": "1ec6ac23559eccdd31c87d7f02e19e52bda941143d506d8960222279442f3968",
+    "native.py": "2005a0db93d4dd3687da792fbaa18f5019fc59e1bf65c9ae3f1cf63899360084",
+    "engine.py": "047e61d540a9dff657a0f7327e57a1789f12d1290136c763cfe54f47bdcb9848"
+  },
+  "rows": [
+    {
+      "task": "drum_index",
+      "input_sha256": "e5d6beaa8ca136e8f59228be85603083a3f0b46780782e96bb69a0824e26a88a",
+      "completion": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:e5d6beaa8ca136e8f59228be85603083a3f0b46780782e96bb69a0824e26a88a",
+        "hole": "change",
+        "status": "verified",
+        "tested": 256,
+        "witnesses": 3,
+        "passing_candidates_seen": 19,
+        "candidate_limit": 256,
+        "grammar_truncated": true,
+        "guidance": {
+          "contract_runs": 116,
+          "examples": 18,
+          "value_vectors": 9168,
+          "branch_joins": 0,
+          "proposals": 19
+        },
+        "probe_calls_per_passing_candidate": 64,
+        "selected": "((advance + slot) % 5)",
+        "verification": {
+          "schema": "gpp.verify/1",
+          "revision": "sha256:5ef307a3f96b838a3d530413f5ac96e39932226f2159c91cfa62f6fd5b99633b",
+          "status": "passed",
+          "checked": 18,
+          "budget": 10000,
+          "contracts": [
+            {
+              "name": "sample_0",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_1",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_2",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_3",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_4",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_5",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_6",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_7",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_8",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_9",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_10",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_11",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_12",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_13",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_14",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_15",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_16",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_17",
+              "status": "passed",
+              "checked": 1
+            }
+          ]
+        },
+        "selection": {
+          "policy": "minimum_ast_cost",
+          "cost": 5,
+          "value_vectors": 16403,
+          "numeric_hypotheses": 141,
+          "longer_passing": 17,
+          "longer_disagreement": {
+            "function": "transition",
+            "inputs": {
+              "slot": -1,
+              "advance": -1
+            },
+            "alternatives": [
+              {
+                "expression": "((advance + slot) % 5)",
+                "outcome": {
+                  "result": -2
+                }
+              },
+              {
+                "expression": "max(((advance + slot) % 5), 0)",
+                "outcome": {
+                  "result": 0
+                }
+              }
+            ]
+          }
+        }
+      },
+      "withheld": {
+        "direct": 32,
+        "histories": 1089,
+        "direct_wrong": 0,
+        "history_wrong": 0,
+        "first_error": null,
+        "outcomes_sha256": "620b9bf9afa88adbf40603b920663c93741d25425398bde9dbae3e37e5322412"
+      }
+    },
+    {
+      "task": "bit_packet",
+      "input_sha256": "6f5541915b911a4195d78ce337d902b8093f1432156b04f06399b3ffb3474107",
+      "completion": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:6f5541915b911a4195d78ce337d902b8093f1432156b04f06399b3ffb3474107",
+        "hole": "change",
+        "status": "verified",
+        "tested": 256,
+        "witnesses": 1,
+        "passing_candidates_seen": 5,
+        "candidate_limit": 256,
+        "grammar_truncated": true,
+        "guidance": {
+          "contract_runs": 122,
+          "examples": 18,
+          "value_vectors": 3261,
+          "branch_joins": 2,
+          "proposals": 5
+        },
+        "probe_calls_per_passing_candidate": 20,
+        "selected": "((incoming as I64) + (prefix + prefix))",
+        "verification": {
+          "schema": "gpp.verify/1",
+          "revision": "sha256:e93162756c5e5304ce71cc0ce1b24ee70623df9fd64eddafd43ee68853637923",
+          "status": "passed",
+          "checked": 18,
+          "budget": 10000,
+          "contracts": [
+            {
+              "name": "sample_0",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_1",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_2",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_3",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_4",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_5",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_6",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_7",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_8",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_9",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_10",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_11",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_12",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_13",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_14",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_15",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_16",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_17",
+              "status": "passed",
+              "checked": 1
+            }
+          ]
+        },
+        "selection": {
+          "policy": "minimum_ast_cost",
+          "cost": 6,
+          "value_vectors": 31047,
+          "numeric_hypotheses": 3,
+          "longer_passing": 4,
+          "longer_disagreement": {
+            "function": "transition",
+            "inputs": {
+              "prefix": -1,
+              "incoming": false
+            },
+            "alternatives": [
+              {
+                "expression": "((incoming as I64) + (prefix + prefix))",
+                "outcome": {
+                  "result": -2
+                }
+              },
+              {
+                "expression": "max((prefix + (prefix + (incoming as I64))), prefix)",
+                "outcome": {
+                  "result": -1
+                }
+              }
+            ]
+          }
+        }
+      },
+      "withheld": {
+        "direct": 112,
+        "histories": 124,
+        "direct_wrong": 0,
+        "history_wrong": 0,
+        "first_error": null,
+        "outcomes_sha256": "aaec45595c5713ef122a1573b791539bccde36c96142ccbeeaa88bed3faf18f6"
+      }
+    },
+    {
+      "task": "fan_memory",
+      "input_sha256": "83801ef712432cee4de7d33a275118525d8962778dc0ab399fcbe2fafd722832",
+      "completion": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:83801ef712432cee4de7d33a275118525d8962778dc0ab399fcbe2fafd722832",
+        "hole": "change",
+        "status": "ambiguous",
+        "tested": 6,
+        "witnesses": 2,
+        "passing_candidates_seen": 2,
+        "candidate_limit": 256,
+        "grammar_truncated": false,
+        "guidance": {
+          "contract_runs": 24,
+          "examples": 12,
+          "value_vectors": 4518,
+          "branch_joins": 164,
+          "proposals": 18
+        },
+        "probe_calls_per_passing_candidate": 20,
+        "question": {
+          "function": "transition",
+          "inputs": {
+            "spinning": false,
+            "reading": 3
+          },
+          "alternatives": [
+            {
+              "expression": "(2 < reading)",
+              "outcome": {
+                "result": true
+              }
+            },
+            {
+              "expression": "(3 < reading)",
+              "outcome": {
+                "result": false
+              }
+            }
+          ]
+        },
+        "first_passing": "(2 < reading)",
+        "selection": {
+          "policy": "minimum_ast_cost",
+          "cost": 3,
+          "value_vectors": 361,
+          "numeric_hypotheses": 2,
+          "longer_passing": 0,
+          "longer_disagreement": null
+        }
+      },
+      "withheld": null
+    },
+    {
+      "task": "camera_follow",
+      "input_sha256": "d1490087d548824266e4ceb38972b33f1b889d65fa1dd77065cb268298eb5161",
+      "completion": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:d1490087d548824266e4ceb38972b33f1b889d65fa1dd77065cb268298eb5161",
+        "hole": "change",
+        "status": "verified",
+        "tested": 256,
+        "witnesses": 4,
+        "passing_candidates_seen": 17,
+        "candidate_limit": 256,
+        "grammar_truncated": true,
+        "guidance": {
+          "contract_runs": 144,
+          "examples": 18,
+          "value_vectors": 9524,
+          "branch_joins": 20,
+          "proposals": 17
+        },
+        "probe_calls_per_passing_candidate": 64,
+        "selected": "max((location - 1), min(target, (location + 1)))",
+        "verification": {
+          "schema": "gpp.verify/1",
+          "revision": "sha256:d0557a762d9374d088039fa7c37433a1bc3e9e65195a2e907d2cac6b949b9755",
+          "status": "passed",
+          "checked": 18,
+          "budget": 10000,
+          "contracts": [
+            {
+              "name": "sample_0",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_1",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_2",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_3",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_4",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_5",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_6",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_7",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_8",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_9",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_10",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_11",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_12",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_13",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_14",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_15",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_16",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_17",
+              "status": "passed",
+              "checked": 1
+            }
+          ]
+        },
+        "selection": {
+          "policy": "minimum_ast_cost",
+          "cost": 9,
+          "value_vectors": 73214,
+          "numeric_hypotheses": 138,
+          "longer_passing": 16,
+          "longer_disagreement": {
+            "function": "transition",
+            "inputs": {
+              "location": 0,
+              "target": 0
+            },
+            "alternatives": [
+              {
+                "expression": "max((location - 1), min(target, (location + 1)))",
+                "outcome": {
+                  "result": 0
+                }
+              },
+              {
+                "expression": "if (location < target) { (location + 1) } else { (location - 1) }",
+                "outcome": {
+                  "result": -1
+                }
+              }
+            ]
+          }
+        }
+      },
+      "withheld": {
+        "direct": 125,
+        "histories": 5456,
+        "direct_wrong": 0,
+        "history_wrong": 0,
+        "first_error": null,
+        "outcomes_sha256": "8a18cd47b6b56f8b48029d7e0861ae59bb9dada9ce2b5b0f5479d32207fb4a4c"
+      }
+    },
+    {
+      "task": "time_intersection",
+      "input_sha256": "c0ab95e36f054347c68f2514d3e9537f024e7495df0ee52b8978216234914ca7",
+      "completion": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:c0ab95e36f054347c68f2514d3e9537f024e7495df0ee52b8978216234914ca7",
+        "hole": "change",
+        "status": "ambiguous",
+        "tested": 138,
+        "witnesses": 7,
+        "passing_candidates_seen": 3,
+        "candidate_limit": 256,
+        "grammar_truncated": true,
+        "guidance": {
+          "contract_runs": 36,
+          "examples": 18,
+          "value_vectors": 24000,
+          "branch_joins": 322,
+          "proposals": 31
+        },
+        "probe_calls_per_passing_candidate": 64,
+        "question": {
+          "function": "transition",
+          "inputs": {
+            "start_a": 9223372036854775807,
+            "end_a": 0,
+            "start_b": -1,
+            "end_b": 3
+          },
+          "alternatives": [
+            {
+              "expression": "(1 < (end_a - start_a))",
+              "outcome": {
+                "result": false
+              }
+            },
+            {
+              "expression": "((start_a + 1) < end_a)",
+              "outcome": {
+                "fault": "IntegerOverflow"
+              }
+            }
+          ]
+        },
+        "first_passing": "(1 < (end_a - start_a))",
+        "selection": {
+          "policy": "minimum_ast_cost",
+          "cost": 5,
+          "value_vectors": 17177,
+          "numeric_hypotheses": 536,
+          "longer_passing": 0,
+          "longer_disagreement": null
+        }
+      },
+      "withheld": null
+    },
+    {
+      "task": "sensor_vote",
+      "input_sha256": "4b9348a9cc48a1016fb59c715feeada244edc667f2215d007231248f4afd2740",
+      "completion": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:4b9348a9cc48a1016fb59c715feeada244edc667f2215d007231248f4afd2740",
+        "hole": "change",
+        "status": "ambiguous",
+        "tested": 237,
+        "witnesses": 3,
+        "passing_candidates_seen": 2,
+        "candidate_limit": 256,
+        "grammar_truncated": true,
+        "guidance": {
+          "contract_runs": 109,
+          "examples": 18,
+          "value_vectors": 20029,
+          "branch_joins": 74,
+          "proposals": 21
+        },
+        "probe_calls_per_passing_candidate": 64,
+        "question": {
+          "function": "transition",
+          "inputs": {
+            "left": 9223372036854775807,
+            "center": 2,
+            "right": 9
+          },
+          "alternatives": [
+            {
+              "expression": "max(min(right, (right % 3)), min(center, left))",
+              "outcome": {
+                "result": 2
+              }
+            },
+            {
+              "expression": "min(max(center, right), max(left, (right % 3)))",
+              "outcome": {
+                "result": 9
+              }
+            }
+          ]
+        },
+        "first_passing": "max(min(right, (right % 3)), min(center, left))",
+        "selection": {
+          "policy": "minimum_ast_cost",
+          "cost": 9,
+          "value_vectors": 73451,
+          "numeric_hypotheses": 405,
+          "longer_passing": 0,
+          "longer_disagreement": null
+        }
+      },
+      "withheld": null
+    },
+    {
+      "task": "meeting_quorum",
+      "input_sha256": "f6baef9f8d19e7a04c185cc5b28be8ab3dbface4f2c18b08f9458cfc73e32d04",
+      "completion": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:f6baef9f8d19e7a04c185cc5b28be8ab3dbface4f2c18b08f9458cfc73e32d04",
+        "hole": "change",
+        "status": "ambiguous",
+        "tested": 238,
+        "witnesses": 4,
+        "passing_candidates_seen": 2,
+        "candidate_limit": 256,
+        "grammar_truncated": true,
+        "guidance": {
+          "contract_runs": 36,
+          "examples": 18,
+          "value_vectors": 8302,
+          "branch_joins": 68,
+          "proposals": 20
+        },
+        "probe_calls_per_passing_candidate": 64,
+        "question": {
+          "function": "transition",
+          "inputs": {
+            "present": 1,
+            "registered": 1
+          },
+          "alternatives": [
+            {
+              "expression": "(((registered * -2) + (present * 3)) >= 3)",
+              "outcome": {
+                "result": false
+              }
+            },
+            {
+              "expression": "(((registered * -3) + (present * 4)) >= 1)",
+              "outcome": {
+                "result": true
+              }
+            }
+          ]
+        },
+        "first_passing": "(((registered * -2) + (present * 3)) >= 3)",
+        "selection": {
+          "policy": "minimum_ast_cost",
+          "cost": 9,
+          "value_vectors": 95473,
+          "numeric_hypotheses": 92,
+          "longer_passing": 0,
+          "longer_disagreement": null
+        }
+      },
+      "withheld": null
+    },
+    {
+      "task": "parcel_pick",
+      "input_sha256": "499963a45034934d9e7a8cac0097226ddcf49f6c4cacd9ec599de3dae49bcabe",
+      "completion": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:499963a45034934d9e7a8cac0097226ddcf49f6c4cacd9ec599de3dae49bcabe",
+        "hole": "change",
+        "status": "verified",
+        "tested": 256,
+        "witnesses": 2,
+        "passing_candidates_seen": 37,
+        "candidate_limit": 256,
+        "grammar_truncated": true,
+        "guidance": {
+          "contract_runs": 120,
+          "examples": 18,
+          "value_vectors": 8058,
+          "branch_joins": 72,
+          "proposals": 33
+        },
+        "probe_calls_per_passing_candidate": 64,
+        "selected": "min(ordered, ready)",
+        "verification": {
+          "schema": "gpp.verify/1",
+          "revision": "sha256:741022c08d01ceecd27651580e9279a514b0af01aaf183cb82a00bbedb78f755",
+          "status": "passed",
+          "checked": 18,
+          "budget": 10000,
+          "contracts": [
+            {
+              "name": "sample_0",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_1",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_2",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_3",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_4",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_5",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_6",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_7",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_8",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_9",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_10",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_11",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_12",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_13",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_14",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_15",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_16",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_17",
+              "status": "passed",
+              "checked": 1
+            }
+          ]
+        },
+        "selection": {
+          "policy": "minimum_ast_cost",
+          "cost": 3,
+          "value_vectors": 595,
+          "numeric_hypotheses": 138,
+          "longer_passing": 35,
+          "longer_disagreement": {
+            "function": "transition",
+            "inputs": {
+              "ordered": -1,
+              "ready": -1
+            },
+            "alternatives": [
+              {
+                "expression": "min(ordered, ready)",
+                "outcome": {
+                  "result": -1
+                }
+              },
+              {
+                "expression": "clamp(ordered, 0, ready)",
+                "outcome": {
+                  "fault": "InvalidBounds"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "withheld": {
+        "direct": 238,
+        "histories": 0,
+        "direct_wrong": 0,
+        "history_wrong": 0,
+        "first_error": null,
+        "outcomes_sha256": "94f0875ac2a136cb3939d699c3dd68ab4e2bf203f4de82c6c0b22f454c132000"
+      }
+    },
+    {
+      "task": "tile_color",
+      "input_sha256": "1054336e032ab18afb605fe13b3e476221dc5fb7c975beb21d2cb307e08ec3df",
+      "completion": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:1054336e032ab18afb605fe13b3e476221dc5fb7c975beb21d2cb307e08ec3df",
+        "hole": "change",
+        "status": "ambiguous",
+        "tested": 152,
+        "witnesses": 5,
+        "passing_candidates_seen": 2,
+        "candidate_limit": 256,
+        "grammar_truncated": true,
+        "guidance": {
+          "contract_runs": 36,
+          "examples": 18,
+          "value_vectors": 9090,
+          "branch_joins": 0,
+          "proposals": 18
+        },
+        "probe_calls_per_passing_candidate": 64,
+        "question": {
+          "function": "transition",
+          "inputs": {
+            "column": 1,
+            "row": -9223372036854775808
+          },
+          "alternatives": [
+            {
+              "expression": "(((row + column) % 2) != 0)",
+              "outcome": {
+                "result": true
+              }
+            },
+            {
+              "expression": "(((row + column) % 2) == 1)",
+              "outcome": {
+                "result": false
+              }
+            }
+          ]
+        },
+        "first_passing": "(((row + column) % 2) != 0)",
+        "selection": {
+          "policy": "minimum_ast_cost",
+          "cost": 7,
+          "value_vectors": 95475,
+          "numeric_hypotheses": 116,
+          "longer_passing": 0,
+          "longer_disagreement": null
+        }
+      },
+      "withheld": null
+    }
+  ]
+}

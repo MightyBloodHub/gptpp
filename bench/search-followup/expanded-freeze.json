@@ -1,0 +1,19 @@
+{
+  "frozen_utc": "2026-11-20T23:26:56.684261+00:00",
+  "protocol_sha256": "abe6f43726c5df71817806f9d10f595e85f48df03420adeaf2e570e1b192def6",
+  "max_vector_work": 152192,
+  "full_root_limit": 256,
+  "wall_seconds": 30,
+  "cost_layers_cumulative": [
+    2000,
+    12000,
+    18000,
+    42000,
+    53000,
+    78000,
+    87000,
+    110000,
+    126000,
+    140000
+  ]
+}

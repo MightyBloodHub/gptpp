@@ -27,3 +27,16 @@ python3 -B bench/search-development/replay.py
 ```
 
 The runner builds the baseline from its pinned Git sources in a temporary directory, copies both executables, and runs all 24 task, search-mode and budget combinations. It uses an assignment budget of 10,000 per full verification. Use `--write` to regenerate the archive or `--baseline-gpp PATH` to use a previously built baseline. Each record includes the source digest, the compiler's completion report and the hidden score for any selected expression. Binaries from different debug build directories may have different digests.
+
+## Minimum-cost mode on the published nine-task corpus
+
+These nine tasks had already been published when the minimum-cost engine was developed. At 256 candidates, the frozen build selected four expressions. All four passed every withheld direct call and event history. The other five returned concrete ambiguity reports. [Replay archive](minimum.json) · [Original benchmark](../search/README.md)
+
+| Selected task | Withheld direct calls | Withheld histories | Wrong outcomes |
+| --- | ---: | ---: | ---: |
+| Drum index | 32 | 1,089 | 0 |
+| Bit packet | 112 | 124 | 0 |
+| Camera follow | 125 | 5,456 | 0 |
+| Parcel pick | 238 | 0 | 0 |
+
+Fan memory, time intersection, sensor vote, meeting quorum and tile color were ambiguous. Reproduce with `python3 -B bench/search-development/minimum.py` after building commit `eaac2cd`. The replay checks each published expression with the original independent scorer and stores all nine reports with `--write`.

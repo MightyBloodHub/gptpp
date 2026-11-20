@@ -1,0 +1,16 @@
+{
+  "replay_exit": 0,
+  "expanded_replay_exit": 0,
+  "old_source": "8359fc6",
+  "minimum_source": "eaac2cd0d93591856562fc4b6cc7270fffb4fd88",
+  "files": {
+    "results.jsonl": "d8a16fd4a8e608d786424371f53bc56cae2b95656a7ce6aa401f8596346b2c58",
+    "expanded.jsonl": "4fddcf46093f3a0519566a5b5bd1dcd2247f5fbe78208aa74cfc7150ca13b4ff",
+    "preflight.json": "1d00b0cf5d49c2c5d17a9a75a6ebd4705be43f8926e7422fab6b35015bda5b56"
+  },
+  "original_model_calls": 72,
+  "native_solver_rows": 36,
+  "small_portable_rows": 12,
+  "expanded_portable_rows": 12,
+  "native_preflights": 36
+}

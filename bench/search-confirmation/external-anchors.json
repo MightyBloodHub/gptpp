@@ -1,0 +1,101 @@
+[
+  {
+    "exercise": "love6",
+    "source": "https://codingbat.com/prob/p137742",
+    "published_anchor_answers": [
+      true,
+      false,
+      true
+    ]
+  },
+  {
+    "exercise": "in1To10",
+    "source": "https://codingbat.com/prob/p137365",
+    "published_anchor_answers": [
+      true,
+      false,
+      true
+    ]
+  },
+  {
+    "exercise": "specialEleven",
+    "source": "https://codingbat.com/prob/p100962",
+    "published_anchor_answers": [
+      true,
+      true,
+      false
+    ]
+  },
+  {
+    "exercise": "more20",
+    "source": "https://codingbat.com/prob/p118290",
+    "published_anchor_answers": [
+      false,
+      true,
+      true
+    ]
+  },
+  {
+    "exercise": "old35",
+    "source": "https://codingbat.com/prob/p159612",
+    "published_anchor_answers": [
+      true,
+      true,
+      false
+    ]
+  },
+  {
+    "exercise": "sumDouble",
+    "source": "https://codingbat.com/prob/p154485",
+    "published_anchor_answers": [
+      3,
+      5,
+      8
+    ]
+  },
+  {
+    "exercise": "diff21",
+    "source": "https://codingbat.com/prob/p116624",
+    "published_anchor_answers": [
+      2,
+      11,
+      0
+    ]
+  },
+  {
+    "exercise": "parrotTrouble",
+    "source": "https://codingbat.com/prob/p140449",
+    "published_anchor_answers": [
+      true,
+      false,
+      false
+    ]
+  },
+  {
+    "exercise": "makes10",
+    "source": "https://codingbat.com/prob/p182873",
+    "published_anchor_answers": [
+      true,
+      false,
+      true
+    ]
+  },
+  {
+    "exercise": "nearHundred",
+    "source": "https://codingbat.com/prob/p184004",
+    "published_anchor_answers": [
+      true,
+      true,
+      false
+    ]
+  },
+  {
+    "exercise": "posNeg",
+    "source": "https://codingbat.com/prob/p159227",
+    "published_anchor_answers": [
+      true,
+      true,
+      true
+    ]
+  }
+]

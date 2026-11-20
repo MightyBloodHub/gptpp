@@ -1,0 +1,74 @@
+{
+  "solver": "Z3 version 4.16.0 - 64 bit",
+  "tasks": {
+    "specialEleven": {
+      "selected": "((n % 11) <= 1)",
+      "module_sha256": "ad223cf2627896dcfa60569c78ed9c2f130552ed45014e8191f3e4412f695045",
+      "completed": {
+        "schema": "gpp.prove/1",
+        "solver": "z3",
+        "revision": "sha256:c2837e4e80d1a466d12b99890025589b552ec465f5c856f5669efaf6e5a8e0ee",
+        "status": "proved",
+        "contracts": [
+          {
+            "name": "whole_domain",
+            "status": "proved"
+          }
+        ]
+      },
+      "starter": {
+        "schema": "gpp.prove/1",
+        "solver": "z3",
+        "revision": "sha256:dcc82971cf2ffd63bed738036ca5d12a3fda55a9b1c1e00d1b6bc12547b78793",
+        "status": "refuted",
+        "contracts": [
+          {
+            "name": "whole_domain",
+            "status": "refuted",
+            "counterexample": {
+              "inputs": {
+                "n": 4248274167338758305
+              },
+              "result": false
+            }
+          }
+        ]
+      }
+    },
+    "sumDouble": {
+      "selected": "if (a != b) { (a + b) } else { (a * 4) }",
+      "module_sha256": "8e90811fbddef31a6474d4424da09b86ba462c5b004aa90770aeffdb4607841f",
+      "completed": {
+        "schema": "gpp.prove/1",
+        "solver": "z3",
+        "revision": "sha256:64dc3a95ad156d00291175a359349ab15bf98f5b11974d3617c94c4a3d0cfc3d",
+        "status": "proved",
+        "contracts": [
+          {
+            "name": "whole_domain",
+            "status": "proved"
+          }
+        ]
+      },
+      "starter": {
+        "schema": "gpp.prove/1",
+        "solver": "z3",
+        "revision": "sha256:4beaf6b96d95f7e11cb96bb8c6b0a6ada420ae5bead74e8644afe3385e11f848",
+        "status": "refuted",
+        "contracts": [
+          {
+            "name": "whole_domain",
+            "status": "refuted",
+            "counterexample": {
+              "inputs": {
+                "a": -1685895933576191174,
+                "b": -1685895933576191174
+              },
+              "result": false
+            }
+          }
+        ]
+      }
+    }
+  }
+}

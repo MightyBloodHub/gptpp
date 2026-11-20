@@ -1,0 +1,17 @@
+{
+  "replay_exit_code": 0,
+  "old_source": "8359fc6",
+  "minimum_source": "eaac2cd0d93591856562fc4b6cc7270fffb4fd88",
+  "piecewise_source": "2f24b54e162a881167d64a2c5b7da6fa476b3bd2",
+  "piecewise_binary_sha256": "29ee6720f11f99d2fa92aa1dea5d12d2090bb9a3072b7b7df950679c1d442de1",
+  "sha256": {
+    "results.jsonl": "1f8df6b2cb030cf6856c43b6ca3a635913e71d659aac3cad184762856163e158",
+    "preflight.json": "df19cb65ddc4a683076bcd515d0230891c2bdb18d4c95aa5fca8a41b93b589a8",
+    "external-anchors.json": "e303a5a333c6f6784169755ee5b357f176a38f2887174554eb456518f321fc59"
+  },
+  "original_model_calls_replayed": 66,
+  "native_searches_replayed": 44,
+  "portable_searches_replayed": 33,
+  "native_reference_preflights": 33,
+  "published_external_examples_checked": 33
+}

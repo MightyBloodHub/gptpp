@@ -2,9 +2,11 @@
 ## A general-purpose programming language and compiler optimized for AI-authored software
 
 **Document:** `docs/design.md`<br>
-**Design revision:** 0.7<br>
+**Design revision:** 0.8<br>
 **Date:** 21 November 2026<br>
 **Status:** The compiler supports typed expression holes, flat records, enums, finite contracts and optional symbolic verification with Z3. A Python booking application and a Rust client import the same GPT++ component through a versioned scalar C interface. The executable reference describes the shipped subset. Later sections also describe planned features. [Reservation application](../examples/reservations/README.md) · [Language reference](scalar-language.md)
+
+Completion can now learn candidate expressions from sampled public contracts. The optional minimum-cost mode ranks passing candidates by syntax-tree size and reports a witnessed disagreement with a longer candidate. Piecewise search can divide sampled behavior into branches. Three blinded experiments compare the search modes with portable solvers and model generation in Rust and typed Python. [Compiler reference](scalar-language.md#prefer-the-shortest-passing-expression) · [Bounded search](../bench/search/README.md) · [Minimum-cost follow-up](../bench/search-followup/README.md) · [Final confirmation](../bench/search-confirmation/README.md)
 
 > **Mission:** Give AI agents the language and compiler operations they need to construct, understand and revise correct programs. Compiled programs run independently of a model.
 

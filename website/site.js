@@ -96,11 +96,40 @@ function enableContractVerifier() {
   const preset = form.querySelector("#contract-example");
   const bugButton = form.querySelector("[data-load-bug]");
   const repeat = "if booking == Booking::Cancelled { return Change(available, booking, Outcome::Ok); }";
-  const booking = source.defaultValue;
+  const booking = form.querySelector("#booking-example").content.textContent;
   const queue = form.querySelector("#queue-example").content.textContent;
+  const sketch = form.querySelector("#calibration-sketch").content.textContent;
+  const searchReport = JSON.parse(form.querySelector("#calibration-report").content.textContent);
+  const [linear, competing] = searchReport.question.alternatives.map(({expression}) =>
+    sketch.replace("?rule: I64", expression));
+  const extraObservation = form.querySelector("#extra-observation");
+  const calibrationControl = form.querySelector("[data-calibration-control]");
+  const eighth = "\ncontract next_reading() { correct(4) == 73 }\n";
+  const scenario = document.getElementById("contract-scenario");
+  const heading = document.getElementById("contracts-title");
+  const terminals = document.querySelectorAll("[data-terminal]");
   const examples = {
-    booking: { source: booking, bug: booking.replace(repeat, repeat.replace("Change(available,", "Change(available + 1,")), button: "Introduce double release" },
-    queue: { source: queue, bug: queue.replace("return queued < 8;", "return queued <= 8;"), button: "Introduce off-by-one" },
+    booking: {
+      source: booking,
+      bug: booking.replace(repeat, repeat.replace("Change(available,", "Change(available + 1,")),
+      button: "Introduce double release",
+      title: "Does cancelling twice free two seats?",
+      description: "A and B each hold a seat. Cancel A twice and B should still hold its booking, with one seat available. Run the reservation module, then introduce a double release to see which history fails.",
+    },
+    queue: {
+      source: queue,
+      bug: queue.replace("return queued < 8;", "return queued <= 8;"),
+      button: "Introduce off-by-one",
+      title: "Can this queue admit one more item?",
+      description: "The queue has eight slots. Check sizes zero through eight, then change the comparison to admit one item too many.",
+    },
+    calibration: {
+      source: linear,
+      bug: competing,
+      button: "Try competing formula",
+      title: heading.textContent,
+      description: scenario.textContent,
+    },
   };
   let worker = null;
   let deadline;
@@ -146,6 +175,9 @@ function enableContractVerifier() {
       if (source.value === examples.booking.bug && row.name === "three_actions") {
         const actions = ["reserve A", "cancel A", "reserve B", "cancel B"];
         description = "First failing history · " + witness.args.map((index) => actions[index]).join(" → ") + ". The second cancellation releases an extra seat. " + coverage;
+      }
+      if (source.value === competing + eighth && row.name === "next_reading") {
+        description = "At reading 4, the competing formula returns 158. The added observation requires 73. " + coverage;
       }
       show("counterexample", "Counterexample", description, rawReport);
     } else if (report.status === "incomplete") {
@@ -207,9 +239,14 @@ function enableContractVerifier() {
     stopWorker();
     show("ready", "Ready to verify", "Run the verifier to check these changes.");
   });
-  function loadExample(faulty) {
+  function loadExample(faulty, run = true) {
     const example = examples[preset.value];
-    source.value = faulty ? example.bug : example.source;
+    heading.textContent = example.title;
+    scenario.textContent = example.description;
+    for (const terminal of terminals) terminal.hidden = terminal.dataset.terminal !== preset.value;
+    const calibration = preset.value === "calibration";
+    calibrationControl.hidden = !calibration;
+    source.value = (faulty ? example.bug : example.source) + (calibration && extraObservation.checked ? eighth : "");
     bugButton.textContent = example.button;
     budget.value = budget.defaultValue;
     source.scrollTop = 0;
@@ -217,14 +254,29 @@ function enableContractVerifier() {
       const line = source.value.split("Change(available + 1, booking")[0].split("\n").length;
       source.scrollTop = Math.max(0, (line - 5) * parseFloat(getComputedStyle(source).lineHeight));
     }
-    verify();
+    if (run) verify();
   }
-  preset.addEventListener("change", () => loadExample(false));
+  source.addEventListener("input", () => {
+    if (preset.value === "calibration") extraObservation.checked = source.value.includes(eighth.trim());
+  });
+  extraObservation.addEventListener("change", () => {
+    source.value = extraObservation.checked
+      ? source.value + eighth
+      : source.value.replace(source.value.includes(eighth) ? eighth : eighth.trim(), "");
+    verify();
+  });
+  preset.addEventListener("change", () => {
+    extraObservation.checked = true;
+    loadExample(false);
+  });
   bugButton.addEventListener("click", () => loadExample(true));
   form.querySelector("[data-reset-source]").addEventListener("click", () => loadExample(false));
 
   form.hidden = false;
-  document.querySelector(".contract-terminal").open = false;
+  for (const terminal of terminals) terminal.open = false;
+  const requested = new URL(window.location.href).searchParams.get("example");
+  if (requested && Object.hasOwn(examples, requested)) preset.value = requested;
+  loadExample(false, !window.IntersectionObserver);
   if (window.IntersectionObserver) {
     const observer = new IntersectionObserver((entries) => {
       if (entries.some((entry) => entry.isIntersecting)) {

@@ -17,6 +17,14 @@ GPT++ is a programming language designed for agents that write and maintain soft
 - Local-model proposals with public example checks. The maintenance preset starts with the target and can add caller excerpts after a failing public caller test. The experimental catalog method exposes each expression as a numbered choice and checks a single structured model response. [Authoring tools](tools/README.md)
 - Matched benchmarks in GPT++, typed Python and Rust, with historical sources, raw model responses and replay programs. [Study index](bench/README.md)
 
+## Search over typed expressions
+
+An agent can ask for the first verified completion with the default ambiguity checks, or request the shortest verified candidate that the compiler examined with `--search minimum`. The latter retains disagreements among longer passing programs in its JSON report. The calibration example exposes the practical difference between those decisions. [Language reference](docs/scalar-language.md#prefer-the-shortest-passing-expression) · [Calibration sketch](examples/calibration/sketch.gpp)
+
+Piecewise search solves branches recursively and can combine partial integer expressions. It solved four of eleven tasks on the final external exercise block, with three incorrect selections. The strongest portable minimum-cost control solved two. One-call Qwen solved seven per language. [Final results](bench/search-confirmation/results.md) · [Proofs of the two additional wins](bench/search-confirmation/proofs.md)
+
+The hybrid search solved one of nine independently frozen tasks, exchanging a previously solved inventory task for a binary-update task. The test archive includes the Rust and typed Python controls and the incorrect completion that passed every public example. [Nine-task outcomes](bench/search/results.md)
+
 ## Fresh stateful edits
 
 Two models attempted four state-machine changes in GPT++, typed Python and Rust. Each language repaired the same two of eight assignments. All six accepted edits came from Qwen’s first attempts. StarCoder2 repaired none. The study charged failed attempts to each language and recorded 42 model calls across 24 assignments. Holding the grammar and candidate ordering fixed, no-model search solved three of four tasks in every language. GPT++’s built-in completion solved two of four. Qwen supplied a streak update missed by both searches. [Results and costs](bench/stateful/results.md) · [Frozen evaluation](bench/stateful/protocol.md)

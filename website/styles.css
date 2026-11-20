@@ -805,3 +805,29 @@ section[id] { scroll-margin-block-start: 1.5rem; }
 .contract-editor-head { justify-content: start; }
 .contract-presets { margin-inline-start: auto; }
 .principles .text-link { display: inline-block; }
+
+.calibration-check {
+  display: block;
+  margin-bottom: 1rem;
+  color: var(--gpp-paper);
+}
+.calibration-check input { accent-color: var(--gpp-signal); }
+
+.study-summary {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr;
+  border-block: 1px solid var(--dark-rule);
+}
+.study-summary a {
+  padding: 1rem .75rem 1rem 0;
+  min-width: 0;
+  text-decoration: none;
+}
+.study-summary strong, .study-summary span { display: block; }
+.study-summary strong { color: var(--gpp-lavender); }
+.study-summary span { margin-top: .3rem; color: var(--gpp-mist); font-size: .95rem; }
+.study-summary a:hover strong { text-decoration: underline; }
+@media (max-width: 48em) {
+  .study-summary { grid-template-columns: 1fr; }
+  .study-summary a + a { border-top: 1px solid var(--dark-rule); }
+}

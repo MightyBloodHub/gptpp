@@ -1,0 +1,29 @@
+module study.search;
+fn transition(n: I64) -> Bool !{} {
+    return ?change: Bool;
+}
+pub fn main() -> I64 !{} { return 0; }
+contract sample_0() { transition(22) == true }
+contract sample_1() { transition(23) == true }
+contract sample_2() { transition(24) == false }
+contract sample_3() { transition(0) == true }
+contract sample_4() { transition(99) == true }
+contract sample_5() { transition(2) == false }
+contract sample_6() { transition(42) == false }
+contract sample_7() { transition(94) == false }
+contract sample_8() { transition(9) == false }
+contract sample_9() { transition(82) == false }
+contract sample_10() { transition(44) == true }
+contract sample_11() { transition(12) == true }
+contract sample_12() { transition(89) == true }
+contract sample_13() { transition(63) == false }
+contract sample_14() { transition(37) == false }
+contract sample_15() { transition(6) == false }
+contract sample_16() { transition(21) == false }
+contract sample_17() { transition(58) == false }
+contract sample_18() { transition(73) == false }
+contract sample_19() { transition(76) == false }
+contract sample_20() { transition(48) == false }
+contract sample_21() { transition(47) == false }
+contract sample_22() { transition(68) == false }
+contract sample_23() { transition(53) == false }

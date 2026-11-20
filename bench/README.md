@@ -4,6 +4,8 @@ The benchmark suite measures how much model work GPT++, typed Python, and Rust r
 
 ## Built-in completion search
 
+On the final eleven-exercise confirmation, the compiler’s piecewise search solved four tasks and the strongest portable minimum-cost search solved two in each language. Both portable successes were also solved by the compiler. GPT++ published three incorrect edits. Qwen solved seven exercises in each language with one model call per task. The first two automatic-search experiments are reported below. [Final results](search-confirmation/results.md) · [Proofs for both additional wins](search-confirmation/proofs.md)
+
 In the first blind comparison, GPT++'s hybrid search and the prior release each solved one of nine fresh tasks, with one paired win and one loss. A portable expression search returned four correct changes and four incorrect changes under first-passing selection. Its stricter agreement policy abstained on every task. The archive includes every accepted and rejected outcome and separately scored model-generated changes in all three languages. [Frozen protocol](search/protocol.md) · [Nine-task results](search/results.md) · [Earlier four-task development replay](search-development/README.md)
 
 A separate external follow-up tested minimum syntax-tree cost as a selection rule on 12 CodingBat exercises. Both the old and new compilers returned zero correct changes. The expanded portable search also solved zero. Qwen's single-shot expressions solved five in Rust, two in GPT++ and one in typed Python. [External study](search-followup/results.md) · [Expanded portable control](search-followup/expanded-results.md)

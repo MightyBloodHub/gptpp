@@ -1,0 +1,15 @@
+module example.calibration;
+
+fn correct(reading: I64) -> I64 !{} {
+    return ?rule: I64;
+}
+
+contract point_a() { correct(-3) == -46 }
+contract point_b() { correct(-2) == -29 }
+contract point_c() { correct(-1) == -12 }
+contract point_d() { correct(0) == 5 }
+contract point_e() { correct(1) == 22 }
+contract point_f() { correct(2) == 39 }
+contract point_g() { correct(3) == 56 }
+
+pub fn main() -> I64 !{} { return correct(1); }

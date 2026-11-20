@@ -1,0 +1,40 @@
+{
+  "schema": "gpp.complete/1",
+  "revision": "sha256:edb446dfb076c56c8de8b2396ec6c4c11a18e1cc20794aefb1e405d0d8d39576",
+  "hole": "rule",
+  "status": "ambiguous",
+  "tested": 26,
+  "witnesses": 1,
+  "passing_candidates_seen": 10,
+  "candidate_limit": 32,
+  "grammar_truncated": true,
+  "guidance": {
+    "contract_runs": 48,
+    "examples": 7,
+    "value_vectors": 4265,
+    "branch_joins": 2,
+    "proposals": 11
+  },
+  "probe_calls_per_passing_candidate": 10,
+  "question": {
+    "function": "correct",
+    "inputs": {
+      "reading": 4
+    },
+    "alternatives": [
+      {
+        "expression": "((reading * 17) + 5)",
+        "outcome": {
+          "result": 73
+        }
+      },
+      {
+        "expression": "if (2 < reading) { ((max(reading, 2) * 102) + -250) } else { ((min(reading, 2) * 17) + 5) }",
+        "outcome": {
+          "result": 158
+        }
+      }
+    ]
+  },
+  "first_passing": "((reading * 17) + 5)"
+}

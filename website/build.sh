@@ -41,7 +41,7 @@ import sys
 
 root, target, revision = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3]
 page = (root / "website/index.html").read_text()
-for marker, name in (("GPP_BOOKING_SOURCE", "reservations/booking.gpp"), ("GPP_QUEUE_SOURCE", "capacity.gpp")):
+for marker, name in (("GPP_BOOKING_SOURCE", "reservations/booking.gpp"), ("GPP_CALIBRATION_SKETCH", "calibration/sketch.gpp"), ("GPP_CALIBRATION_REPORT", "calibration/completion.json"), ("GPP_QUEUE_SOURCE", "capacity.gpp")):
     if page.count(marker) != 1:
         raise SystemExit(f"expected one {marker} in the playground")
     page = page.replace(marker, escape((root / "examples" / name).read_text(), quote=False))

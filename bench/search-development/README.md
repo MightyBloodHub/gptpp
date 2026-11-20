@@ -40,3 +40,22 @@ These nine tasks had already been published when the minimum-cost engine was dev
 | Parcel pick | 238 | 0 | 0 |
 
 Fan memory, time intersection, sensor vote, meeting quorum and tile color were ambiguous. Reproduce with `python3 -B bench/search-development/minimum.py` after building commit `eaac2cd`. The replay checks each published expression with the original independent scorer and stores all nine reports with `--write`.
+
+## Piecewise search on the two earlier corpora
+
+Both corpora were available to the authors when they designed piecewise search. These development replays measure whether it handles previously observed failures. The compiler used its original 256-candidate limit and 10,000-assignment verification budget. A selected edit had to pass the public checks and every withheld case in its original scorer. [External twelve reports](piecewise-external-twelve.json) · [Original nine reports](piecewise-original-nine.json)
+
+| Development corpus | Minimum correct | Piecewise correct | Piecewise wrong | Ambiguous | Incomplete |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Twelve external scalar exercises | 0 / 12 | 2 / 12 | 0 | 3 | 7 |
+| Original nine scalar and stateful tasks | 4 / 9 | 4 / 9 | 0 | 5 | 0 |
+
+On the twelve exercises, the compiler selected a blackjack expression that chooses the largest eligible total and a cigarParty expression that accounts for weekdays and weekends. They passed all 876 and 88 withheld calls respectively. The compiler found conflicting public fits for dateFashion, caughtSpeeding and sortaSum. It exhausted the candidate budget on the seven remaining tasks. The four successes on the original nine were drum index, bit packet, camera follow and parcel pick. [Original twelve-task results](../search-followup/results.md)
+
+Build compiler commit `2f24b54` in release mode and run both replays from the repository root. The runner validates full compiler reports, independent scores and input hashes against the archived results.
+
+```sh
+cargo build --release --locked --offline
+python3 -B bench/search-development/piecewise.py external-twelve
+python3 -B bench/search-development/piecewise.py original-nine
+```

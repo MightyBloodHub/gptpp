@@ -1,0 +1,464 @@
+[
+  {
+    "task": "love6",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 552,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "bca585775f683f33a32d29dee259c414d77a8c5cfc511451260a141fab726d34"
+    }
+  },
+  {
+    "task": "love6",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 552,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "bca585775f683f33a32d29dee259c414d77a8c5cfc511451260a141fab726d34"
+    }
+  },
+  {
+    "task": "love6",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 552,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "bca585775f683f33a32d29dee259c414d77a8c5cfc511451260a141fab726d34"
+    }
+  },
+  {
+    "task": "in1To10",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 46,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "7badac6157bba1ec12a0b16adb630fc96a5741ec43eb4d148c96e696d04590d3"
+    }
+  },
+  {
+    "task": "in1To10",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 46,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "7badac6157bba1ec12a0b16adb630fc96a5741ec43eb4d148c96e696d04590d3"
+    }
+  },
+  {
+    "task": "in1To10",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 46,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "7badac6157bba1ec12a0b16adb630fc96a5741ec43eb4d148c96e696d04590d3"
+    }
+  },
+  {
+    "task": "specialEleven",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 76,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "bb719f02893ebb4840a196adddb623c9486d91a3aa83b4af59af5642814d8995"
+    }
+  },
+  {
+    "task": "specialEleven",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 76,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "bb719f02893ebb4840a196adddb623c9486d91a3aa83b4af59af5642814d8995"
+    }
+  },
+  {
+    "task": "specialEleven",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 76,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "bb719f02893ebb4840a196adddb623c9486d91a3aa83b4af59af5642814d8995"
+    }
+  },
+  {
+    "task": "more20",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 77,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "0355841284d112f3f9a149b90dd3cc474f4549e13b5e093185045663f121cff5"
+    }
+  },
+  {
+    "task": "more20",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 77,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "0355841284d112f3f9a149b90dd3cc474f4549e13b5e093185045663f121cff5"
+    }
+  },
+  {
+    "task": "more20",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 77,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "0355841284d112f3f9a149b90dd3cc474f4549e13b5e093185045663f121cff5"
+    }
+  },
+  {
+    "task": "old35",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 76,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "14a01e039c95e232cecda588b88d2e0ffee6d0e3a2d5d71595f63111645fe485"
+    }
+  },
+  {
+    "task": "old35",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 76,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "14a01e039c95e232cecda588b88d2e0ffee6d0e3a2d5d71595f63111645fe485"
+    }
+  },
+  {
+    "task": "old35",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 76,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "14a01e039c95e232cecda588b88d2e0ffee6d0e3a2d5d71595f63111645fe485"
+    }
+  },
+  {
+    "task": "sumDouble",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 417,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "99654ffb3c3ab0602c39cd0de637b7b7802640e8f0a18971c035b641c1a2065b"
+    }
+  },
+  {
+    "task": "sumDouble",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 417,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "99654ffb3c3ab0602c39cd0de637b7b7802640e8f0a18971c035b641c1a2065b"
+    }
+  },
+  {
+    "task": "sumDouble",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 417,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "99654ffb3c3ab0602c39cd0de637b7b7802640e8f0a18971c035b641c1a2065b"
+    }
+  },
+  {
+    "task": "diff21",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 61,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "98bc7e8a464db434531b02f143ae2ed6c8b3daba2a0c97fd35d63a7ed943b5e1"
+    }
+  },
+  {
+    "task": "diff21",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 61,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "98bc7e8a464db434531b02f143ae2ed6c8b3daba2a0c97fd35d63a7ed943b5e1"
+    }
+  },
+  {
+    "task": "diff21",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 61,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "98bc7e8a464db434531b02f143ae2ed6c8b3daba2a0c97fd35d63a7ed943b5e1"
+    }
+  },
+  {
+    "task": "parrotTrouble",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 24,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "19d4004af2d9ef6fac01c74ea9ebfbb2fa447ebf64f12b1c5572225414a103ab"
+    }
+  },
+  {
+    "task": "parrotTrouble",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 24,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "19d4004af2d9ef6fac01c74ea9ebfbb2fa447ebf64f12b1c5572225414a103ab"
+    }
+  },
+  {
+    "task": "parrotTrouble",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 24,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "19d4004af2d9ef6fac01c74ea9ebfbb2fa447ebf64f12b1c5572225414a103ab"
+    }
+  },
+  {
+    "task": "makes10",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 552,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "cf53036447456e785cf60a6f4568314ab395443563f201f9bec59e1dc984c909"
+    }
+  },
+  {
+    "task": "makes10",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 552,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "cf53036447456e785cf60a6f4568314ab395443563f201f9bec59e1dc984c909"
+    }
+  },
+  {
+    "task": "makes10",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 552,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "cf53036447456e785cf60a6f4568314ab395443563f201f9bec59e1dc984c909"
+    }
+  },
+  {
+    "task": "nearHundred",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 147,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "d99768acbbbe2ef5790c1d572265f1794da43db153bd1318ed11bf88c4537eb7"
+    }
+  },
+  {
+    "task": "nearHundred",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 147,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "d99768acbbbe2ef5790c1d572265f1794da43db153bd1318ed11bf88c4537eb7"
+    }
+  },
+  {
+    "task": "nearHundred",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 147,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "d99768acbbbe2ef5790c1d572265f1794da43db153bd1318ed11bf88c4537eb7"
+    }
+  },
+  {
+    "task": "posNeg",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 314,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "dc47121eceaaf22713b6fe127ef5755a2235c97d7f39207ff653853a9be9e4fc"
+    }
+  },
+  {
+    "task": "posNeg",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 314,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "dc47121eceaaf22713b6fe127ef5755a2235c97d7f39207ff653853a9be9e4fc"
+    }
+  },
+  {
+    "task": "posNeg",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_correct": false,
+    "reference": {
+      "direct": 314,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "dc47121eceaaf22713b6fe127ef5755a2235c97d7f39207ff653853a9be9e4fc"
+    }
+  }
+]

@@ -1,0 +1,24 @@
+{
+  "start_utc": "2026-11-20T23:31:54Z",
+  "freeze_utc": "2026-11-20T23:31:55.132103+00:00",
+  "files": {
+    "corpus.py": "7bb28fd180b7560e57108ce9f591f627047234f2a7318ec53b7d158d775fc28c",
+    "protocol.md": "4887486e88de8485c88bc222e16965d4cc318454d90b0965095707942021832d"
+  },
+  "tasks": 11,
+  "public": 264,
+  "withheld": 2342,
+  "sources": {
+    "love6": "https://codingbat.com/prob/p137742",
+    "in1To10": "https://codingbat.com/prob/p137365",
+    "specialEleven": "https://codingbat.com/prob/p100962",
+    "more20": "https://codingbat.com/prob/p118290",
+    "old35": "https://codingbat.com/prob/p159612",
+    "sumDouble": "https://codingbat.com/prob/p154485",
+    "diff21": "https://codingbat.com/prob/p116624",
+    "parrotTrouble": "https://codingbat.com/prob/p140449",
+    "makes10": "https://codingbat.com/prob/p182873",
+    "nearHundred": "https://codingbat.com/prob/p184004",
+    "posNeg": "https://codingbat.com/prob/p159227"
+  }
+}

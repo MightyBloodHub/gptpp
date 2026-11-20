@@ -1,0 +1,33 @@
+{
+  "old_source": "8359fc6",
+  "minimum_source": "eaac2cd0d93591856562fc4b6cc7270fffb4fd88",
+  "build": "cargo build --release --locked --offline",
+  "files": {
+    "src/check.rs": "8bc1da0e9c3ab9bb94082cef8c8fe850d8c3dbb0a8ff2367d2ffff8561936087",
+    "src/complete.rs": "401233f170a23366d3d945c1299e6b93215b92376e24b6009cf8a2a0cdd3988f",
+    "src/completion_grammar.rs": "34cba3b5913c9b404bb7bc243efbb9c8af3cb42750fd3324b9228923b552a535",
+    "src/edit.rs": "b1b569407791bca016db8465a651bfd5500f3a4c647133df2c28473f29dc4378",
+    "src/guided_search.rs": "1e31ce18ef66a97ae64f91d2ec4b5751bc859e3edcbcab95363d9e648f09cd2c",
+    "src/holes.rs": "5258290a42e5761ae4164d4b1c19b51b1f874ddda81fcc78d998377c16821e48",
+    "src/interpreter.rs": "40f4eee1c3461a49ff18e89b947f8324919133f7b58af88408c8d6c701c10f90",
+    "src/ir.rs": "52ec0600687d602923f47674ee2de54c66a9b4f36b9aea9da26799b9a6443b99",
+    "src/library.rs": "4fb127018f9a8eb171cddc5c65ac4766e437b3f66adcc1993e551d8b62a4f9a3",
+    "src/main.rs": "67ccaec9159ec025992d2ca7f2d89b039f27f2992f2152841e451be9afb1b74e",
+    "src/minimal_search.rs": "e607d17cbdd95433bd4c5304a85b4a46ab794d89fa8b80919913b4cfc0f0f098",
+    "src/native.rs": "235bf78662352b273893a2e6c71b204b0247ce309a7ae482ae5cb8de74d9f6ff",
+    "src/parameter_search.rs": "0115afe21a3a551dd28c68cb2eea4d01696420b71fcd81e18a52456f7fd5b1a3",
+    "src/piecewise_search.rs": "cccadeea7c6959e8943ac7ee1299075f42b54f3dd4e37d00ceff4a7f36c366c9",
+    "src/probe.rs": "2798fda9ef6caeb4cf645016a1a0dc7c3df8b864c79d89009892916cb37a95e9",
+    "src/residual_search.rs": "336db1fdc03083b769cfec081a55199f103f0b3ce44a23d89df726b6da86bbe1",
+    "src/symbolic.rs": "5a34d94205c503dafd4f3efd39b817a80d89d081406edb4acdd7cf0a6fbb2a78",
+    "src/syntax.rs": "b35538785499648b9ecfc1aae07561559544688e44ebf55c38836b477b0d6a9d",
+    "src/trace.rs": "d9ee990f04c5d2a595027f09aaa4bae6b294a2150c88d8b273b84acef1a94fcb",
+    "src/verify.rs": "fb33cd2125d193c82ec7007121093b6ebf22da69cc3dc09728f49d387e404180"
+  },
+  "binary": {
+    "old": "33f73c2171fc3cbf781fb974e47f5e0f89681927f3c868384c7b02afdee656cc",
+    "minimum": "aa69cdeaf96a4a36a37b4748da9b41837f5aff6ad5b126b3bdabd64b9b3afb5a",
+    "piecewise": "29ee6720f11f99d2fa92aa1dea5d12d2090bb9a3072b7b7df950679c1d442de1"
+  },
+  "piecewise_source": "2f24b54e162a881167d64a2c5b7da6fa476b3bd2"
+}

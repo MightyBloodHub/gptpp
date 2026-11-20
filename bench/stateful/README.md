@@ -6,7 +6,7 @@ Qwen repaired the reading-marker and streak cases in each native language. StarC
 
 ## Reproduce
 
-Use the pinned local Rust toolchain and the Python 3.11 benchmark environment with mypy 1.15.0. The comparison uses a writable temporary directory for isolated checkers and a new output path for live collection. Inference calls Ollama on loopback. Reproducing the report and replaying archived replies require no model server. [Python environment setup](../empirical/README.md#reproduce)
+For the original automatic-search decisions use a checkout of commit `8359fc6`, the pinned Rust toolchain and the Python 3.11 benchmark environment with mypy 1.15.0. The comparison uses a writable temporary directory for isolated checkers and a new output path for live collection. Inference calls Ollama on loopback. Reproducing the report and replaying archived replies require no model server. [Python environment setup](../empirical/README.md#reproduce)
 
 ```sh
 cargo build --locked --offline

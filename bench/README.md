@@ -2,6 +2,10 @@
 
 The benchmark suite measures how much model work GPT++, typed Python, and Rust require to produce an accepted change. An accepted change passes the language checker, public examples, and withheld cases. Tokens per accepted edit includes input and output tokens from every attempt, including failures and retries. Reports include acceptance counts, timings, and paired uncertainty where available.
 
+## Built-in completion search
+
+In the first blind comparison, GPT++'s hybrid search and the prior release each solved one of nine fresh tasks, with one paired win and one loss. A portable expression search returned four correct changes and four incorrect changes under first-passing selection. Its stricter agreement policy abstained on every task. The archive includes every accepted and rejected outcome and separately scored model-generated changes in all three languages. [Frozen protocol](search/protocol.md) · [Nine-task results](search/results.md) · [Earlier four-task development replay](search-development/README.md)
+
 ## Matched state-transition maintenance
 
 Two models attempted four previously unseen event-driven changes in all three languages. GPT++, typed Python and Rust each accepted the same two of eight model-task assignments. The shared no-model search passed three of four families in every language. In one worked case, Qwen’s original GPT++ expression was checked against 1,088 withheld end states in both the interpreter and a compiled library called from Python. [Matched results](stateful/results.md) · [Paired comparison](stateful/paired.md) · [Runnable model completion](../examples/streak_counter/README.md)

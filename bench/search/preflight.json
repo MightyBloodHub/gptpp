@@ -1,0 +1,380 @@
+[
+  {
+    "task": "drum_index",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 32,
+      "histories": 1089,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "620b9bf9afa88adbf40603b920663c93741d25425398bde9dbae3e37e5322412"
+    }
+  },
+  {
+    "task": "drum_index",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 32,
+      "histories": 1089,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "620b9bf9afa88adbf40603b920663c93741d25425398bde9dbae3e37e5322412"
+    }
+  },
+  {
+    "task": "drum_index",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 32,
+      "histories": 1089,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "620b9bf9afa88adbf40603b920663c93741d25425398bde9dbae3e37e5322412"
+    }
+  },
+  {
+    "task": "bit_packet",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 112,
+      "histories": 124,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "aaec45595c5713ef122a1573b791539bccde36c96142ccbeeaa88bed3faf18f6"
+    }
+  },
+  {
+    "task": "bit_packet",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 112,
+      "histories": 124,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "aaec45595c5713ef122a1573b791539bccde36c96142ccbeeaa88bed3faf18f6"
+    }
+  },
+  {
+    "task": "bit_packet",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 112,
+      "histories": 124,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "aaec45595c5713ef122a1573b791539bccde36c96142ccbeeaa88bed3faf18f6"
+    }
+  },
+  {
+    "task": "fan_memory",
+    "language": "gpp",
+    "starter_public": "pass",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 12,
+      "histories": 5456,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "c8cd0f63d17fa9f4d90503e670b4191fca0ea463e8e492edaa802402ed900177"
+    }
+  },
+  {
+    "task": "fan_memory",
+    "language": "rust",
+    "starter_public": "pass",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 12,
+      "histories": 5456,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "c8cd0f63d17fa9f4d90503e670b4191fca0ea463e8e492edaa802402ed900177"
+    }
+  },
+  {
+    "task": "fan_memory",
+    "language": "python",
+    "starter_public": "pass",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 12,
+      "histories": 5456,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "c8cd0f63d17fa9f4d90503e670b4191fca0ea463e8e492edaa802402ed900177"
+    }
+  },
+  {
+    "task": "camera_follow",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 125,
+      "histories": 5456,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "8a18cd47b6b56f8b48029d7e0861ae59bb9dada9ce2b5b0f5479d32207fb4a4c"
+    }
+  },
+  {
+    "task": "camera_follow",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 125,
+      "histories": 5456,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "8a18cd47b6b56f8b48029d7e0861ae59bb9dada9ce2b5b0f5479d32207fb4a4c"
+    }
+  },
+  {
+    "task": "camera_follow",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 125,
+      "histories": 5456,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "8a18cd47b6b56f8b48029d7e0861ae59bb9dada9ce2b5b0f5479d32207fb4a4c"
+    }
+  },
+  {
+    "task": "time_intersection",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 607,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "06b5adee55ab1abac071ba9207ffb37f4e89a7f1ba3f4764e8b0e4e89970abd9"
+    }
+  },
+  {
+    "task": "time_intersection",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 607,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "06b5adee55ab1abac071ba9207ffb37f4e89a7f1ba3f4764e8b0e4e89970abd9"
+    }
+  },
+  {
+    "task": "time_intersection",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 607,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "06b5adee55ab1abac071ba9207ffb37f4e89a7f1ba3f4764e8b0e4e89970abd9"
+    }
+  },
+  {
+    "task": "sensor_vote",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 325,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "729c2ec164db97e4552727850b6d559aeb25098f67915e93c028c771d71fb375"
+    }
+  },
+  {
+    "task": "sensor_vote",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 325,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "729c2ec164db97e4552727850b6d559aeb25098f67915e93c028c771d71fb375"
+    }
+  },
+  {
+    "task": "sensor_vote",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 325,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "729c2ec164db97e4552727850b6d559aeb25098f67915e93c028c771d71fb375"
+    }
+  },
+  {
+    "task": "meeting_quorum",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 172,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "1859907a12dfbd5fa41fa586d171f2591baecd36718fbc9503f8e11437a05dd4"
+    }
+  },
+  {
+    "task": "meeting_quorum",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 172,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "1859907a12dfbd5fa41fa586d171f2591baecd36718fbc9503f8e11437a05dd4"
+    }
+  },
+  {
+    "task": "meeting_quorum",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 172,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "1859907a12dfbd5fa41fa586d171f2591baecd36718fbc9503f8e11437a05dd4"
+    }
+  },
+  {
+    "task": "parcel_pick",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 238,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "94f0875ac2a136cb3939d699c3dd68ab4e2bf203f4de82c6c0b22f454c132000"
+    }
+  },
+  {
+    "task": "parcel_pick",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 238,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "94f0875ac2a136cb3939d699c3dd68ab4e2bf203f4de82c6c0b22f454c132000"
+    }
+  },
+  {
+    "task": "parcel_pick",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 238,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "94f0875ac2a136cb3939d699c3dd68ab4e2bf203f4de82c6c0b22f454c132000"
+    }
+  },
+  {
+    "task": "tile_color",
+    "language": "gpp",
+    "starter_public": "public_or_type_failure",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 151,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "c3cbadc5ba87be97845c60fe25172013e865334ed2f636fab9633cfff0f9768d"
+    }
+  },
+  {
+    "task": "tile_color",
+    "language": "rust",
+    "starter_public": "public_failure",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 151,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "c3cbadc5ba87be97845c60fe25172013e865334ed2f636fab9633cfff0f9768d"
+    }
+  },
+  {
+    "task": "tile_color",
+    "language": "python",
+    "starter_public": "public_failure",
+    "starter_accepted": false,
+    "reference": {
+      "direct": 151,
+      "histories": 0,
+      "direct_wrong": 0,
+      "history_wrong": 0,
+      "first_error": null,
+      "outcomes_sha256": "c3cbadc5ba87be97845c60fe25172013e865334ed2f636fab9633cfff0f9768d"
+    }
+  }
+]

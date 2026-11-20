@@ -1,0 +1,1305 @@
+{
+  "schema": "gpp.historical-search/1",
+  "baseline_commit": "8359fc699e2d528ac01f82f802b236f18a063227",
+  "binaries_sha256": {
+    "baseline": "4c81bba1e3d0339716e55a5cc91a0e22b48a3b92d1888a2e8d88d05ea3c73bda",
+    "current": "19abc2220603baf2545ca5c638f724680025f14f543b969eb4257266ae2d4db8"
+  },
+  "task_sources_sha256": {
+    "tasks.py": "4f194e80487ac5686e2825e977134b2c95eca8a316a1ff2f22ee6ecef135bcc6",
+    "adapters.py": "63750af7b879b0e78b7670b3f1ae8cac803930f9aa6a6ddf6f2251ecbcd94ce6",
+    "compare.py": "c5577f5d9605a96afd48ce4843ec9a3f66ca23732efaadc97ae10c7bb794f06b"
+  },
+  "replay_sha256": "f62c5c28c7f714dd41050a37a284669859434a318672c6e2a9cf43f1779ecaf6",
+  "rows": [
+    {
+      "task": "reading_marker",
+      "source_sha256": "51d53d30ea1fa677c7ced71e9a4b42f15a3788b208a5bff918da359856229233",
+      "mode": "baseline",
+      "limit": 64,
+      "report": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:51d53d30ea1fa677c7ced71e9a4b42f15a3788b208a5bff918da359856229233",
+        "hole": "change",
+        "status": "verified",
+        "tested": 64,
+        "witnesses": 3,
+        "passing_candidates_seen": 5,
+        "candidate_limit": 64,
+        "grammar_truncated": true,
+        "probe_calls_per_passing_candidate": 48,
+        "selected": "s.page",
+        "verification": {
+          "schema": "gpp.verify/1",
+          "revision": "sha256:2c4256df14c626136094627dd88038a9c447a23360ee1956cc6bca63a52df983",
+          "status": "passed",
+          "checked": 4,
+          "budget": 10000,
+          "contracts": [
+            {
+              "name": "visible_0",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_1",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_2",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_3",
+              "status": "passed",
+              "checked": 1
+            }
+          ]
+        }
+      },
+      "hidden": {
+        "total": 1088,
+        "wrong": 0,
+        "outcomes_sha256": "df78600cdec7c5531031ac5684598f3790ee51a045501f95757aeb907fcf3898",
+        "first_failure": null
+      }
+    },
+    {
+      "task": "reading_marker",
+      "source_sha256": "51d53d30ea1fa677c7ced71e9a4b42f15a3788b208a5bff918da359856229233",
+      "mode": "baseline",
+      "limit": 256,
+      "report": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:51d53d30ea1fa677c7ced71e9a4b42f15a3788b208a5bff918da359856229233",
+        "hole": "change",
+        "status": "ambiguous",
+        "tested": 72,
+        "witnesses": 3,
+        "passing_candidates_seen": 8,
+        "candidate_limit": 256,
+        "grammar_truncated": false,
+        "probe_calls_per_passing_candidate": 48,
+        "question": {
+          "function": "step",
+          "inputs": {
+            "s": {
+              "page": -1,
+              "mark": -1
+            },
+            "e": "Event::Recall"
+          },
+          "alternatives": [
+            {
+              "expression": "s.page",
+              "outcome": {
+                "result": {
+                  "page": -1,
+                  "mark": -1
+                }
+              }
+            },
+            {
+              "expression": "max(s.page, 0)",
+              "outcome": {
+                "result": {
+                  "page": -1,
+                  "mark": 0
+                }
+              }
+            }
+          ]
+        }
+      },
+      "hidden": null
+    },
+    {
+      "task": "reading_marker",
+      "source_sha256": "51d53d30ea1fa677c7ced71e9a4b42f15a3788b208a5bff918da359856229233",
+      "mode": "grammar",
+      "limit": 64,
+      "report": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:51d53d30ea1fa677c7ced71e9a4b42f15a3788b208a5bff918da359856229233",
+        "hole": "change",
+        "status": "ambiguous",
+        "tested": 34,
+        "witnesses": 3,
+        "passing_candidates_seen": 4,
+        "candidate_limit": 64,
+        "grammar_truncated": true,
+        "guidance": {
+          "contract_runs": 0,
+          "examples": 0,
+          "value_vectors": 0,
+          "branch_joins": 0,
+          "proposals": 0
+        },
+        "probe_calls_per_passing_candidate": 48,
+        "question": {
+          "function": "step",
+          "inputs": {
+            "s": {
+              "page": 4,
+              "mark": 4
+            },
+            "e": "Event::Recall"
+          },
+          "alternatives": [
+            {
+              "expression": "s.page",
+              "outcome": {
+                "result": {
+                  "page": 4,
+                  "mark": 4
+                }
+              }
+            },
+            {
+              "expression": "s.page % 4",
+              "outcome": {
+                "result": {
+                  "page": 4,
+                  "mark": 0
+                }
+              }
+            }
+          ]
+        },
+        "first_passing": "s.page"
+      },
+      "hidden": null
+    },
+    {
+      "task": "reading_marker",
+      "source_sha256": "51d53d30ea1fa677c7ced71e9a4b42f15a3788b208a5bff918da359856229233",
+      "mode": "grammar",
+      "limit": 256,
+      "report": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:51d53d30ea1fa677c7ced71e9a4b42f15a3788b208a5bff918da359856229233",
+        "hole": "change",
+        "status": "ambiguous",
+        "tested": 34,
+        "witnesses": 3,
+        "passing_candidates_seen": 4,
+        "candidate_limit": 256,
+        "grammar_truncated": true,
+        "guidance": {
+          "contract_runs": 0,
+          "examples": 0,
+          "value_vectors": 0,
+          "branch_joins": 0,
+          "proposals": 0
+        },
+        "probe_calls_per_passing_candidate": 48,
+        "question": {
+          "function": "step",
+          "inputs": {
+            "s": {
+              "page": 4,
+              "mark": 4
+            },
+            "e": "Event::Recall"
+          },
+          "alternatives": [
+            {
+              "expression": "s.page",
+              "outcome": {
+                "result": {
+                  "page": 4,
+                  "mark": 4
+                }
+              }
+            },
+            {
+              "expression": "s.page % 4",
+              "outcome": {
+                "result": {
+                  "page": 4,
+                  "mark": 0
+                }
+              }
+            }
+          ]
+        },
+        "first_passing": "s.page"
+      },
+      "hidden": null
+    },
+    {
+      "task": "reading_marker",
+      "source_sha256": "51d53d30ea1fa677c7ced71e9a4b42f15a3788b208a5bff918da359856229233",
+      "mode": "hybrid",
+      "limit": 64,
+      "report": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:51d53d30ea1fa677c7ced71e9a4b42f15a3788b208a5bff918da359856229233",
+        "hole": "change",
+        "status": "ambiguous",
+        "tested": 34,
+        "witnesses": 3,
+        "passing_candidates_seen": 4,
+        "candidate_limit": 64,
+        "grammar_truncated": true,
+        "guidance": {
+          "contract_runs": 0,
+          "examples": 0,
+          "value_vectors": 0,
+          "branch_joins": 0,
+          "proposals": 0
+        },
+        "probe_calls_per_passing_candidate": 48,
+        "question": {
+          "function": "step",
+          "inputs": {
+            "s": {
+              "page": 4,
+              "mark": 4
+            },
+            "e": "Event::Recall"
+          },
+          "alternatives": [
+            {
+              "expression": "s.page",
+              "outcome": {
+                "result": {
+                  "page": 4,
+                  "mark": 4
+                }
+              }
+            },
+            {
+              "expression": "s.page % 4",
+              "outcome": {
+                "result": {
+                  "page": 4,
+                  "mark": 0
+                }
+              }
+            }
+          ]
+        },
+        "first_passing": "s.page"
+      },
+      "hidden": null
+    },
+    {
+      "task": "reading_marker",
+      "source_sha256": "51d53d30ea1fa677c7ced71e9a4b42f15a3788b208a5bff918da359856229233",
+      "mode": "hybrid",
+      "limit": 256,
+      "report": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:51d53d30ea1fa677c7ced71e9a4b42f15a3788b208a5bff918da359856229233",
+        "hole": "change",
+        "status": "ambiguous",
+        "tested": 34,
+        "witnesses": 3,
+        "passing_candidates_seen": 4,
+        "candidate_limit": 256,
+        "grammar_truncated": true,
+        "guidance": {
+          "contract_runs": 0,
+          "examples": 0,
+          "value_vectors": 0,
+          "branch_joins": 0,
+          "proposals": 0
+        },
+        "probe_calls_per_passing_candidate": 48,
+        "question": {
+          "function": "step",
+          "inputs": {
+            "s": {
+              "page": 4,
+              "mark": 4
+            },
+            "e": "Event::Recall"
+          },
+          "alternatives": [
+            {
+              "expression": "s.page",
+              "outcome": {
+                "result": {
+                  "page": 4,
+                  "mark": 4
+                }
+              }
+            },
+            {
+              "expression": "s.page % 4",
+              "outcome": {
+                "result": {
+                  "page": 4,
+                  "mark": 0
+                }
+              }
+            }
+          ]
+        },
+        "first_passing": "s.page"
+      },
+      "hidden": null
+    },
+    {
+      "task": "pair_dispatch",
+      "source_sha256": "29d8ae36862c4835a2df95659e5f0b55d2a8f266d4ccfb1bcef3eaec8d03d462",
+      "mode": "baseline",
+      "limit": 64,
+      "report": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:29d8ae36862c4835a2df95659e5f0b55d2a8f266d4ccfb1bcef3eaec8d03d462",
+        "hole": "change",
+        "status": "verified",
+        "tested": 64,
+        "witnesses": 2,
+        "passing_candidates_seen": 1,
+        "candidate_limit": 64,
+        "grammar_truncated": true,
+        "probe_calls_per_passing_candidate": 48,
+        "selected": "s.waiting % 2",
+        "verification": {
+          "schema": "gpp.verify/1",
+          "revision": "sha256:7f337e8847c19ebcf15f980ceb380e1cc2dccb7e079a88b41aa8aa1f36d0fd66",
+          "status": "passed",
+          "checked": 5,
+          "budget": 10000,
+          "contracts": [
+            {
+              "name": "visible_0",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_1",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_2",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_3",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_4",
+              "status": "passed",
+              "checked": 1
+            }
+          ]
+        }
+      },
+      "hidden": {
+        "total": 1087,
+        "wrong": 0,
+        "outcomes_sha256": "3cdfb8fec563cb1745925178a329150fcedb1240d0a999aa1546193b4d223cba",
+        "first_failure": null
+      }
+    },
+    {
+      "task": "pair_dispatch",
+      "source_sha256": "29d8ae36862c4835a2df95659e5f0b55d2a8f266d4ccfb1bcef3eaec8d03d462",
+      "mode": "baseline",
+      "limit": 256,
+      "report": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:29d8ae36862c4835a2df95659e5f0b55d2a8f266d4ccfb1bcef3eaec8d03d462",
+        "hole": "change",
+        "status": "verified",
+        "tested": 90,
+        "witnesses": 2,
+        "passing_candidates_seen": 1,
+        "candidate_limit": 256,
+        "grammar_truncated": false,
+        "probe_calls_per_passing_candidate": 48,
+        "selected": "s.waiting % 2",
+        "verification": {
+          "schema": "gpp.verify/1",
+          "revision": "sha256:7f337e8847c19ebcf15f980ceb380e1cc2dccb7e079a88b41aa8aa1f36d0fd66",
+          "status": "passed",
+          "checked": 5,
+          "budget": 10000,
+          "contracts": [
+            {
+              "name": "visible_0",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_1",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_2",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_3",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_4",
+              "status": "passed",
+              "checked": 1
+            }
+          ]
+        }
+      },
+      "hidden": {
+        "total": 1087,
+        "wrong": 0,
+        "outcomes_sha256": "3cdfb8fec563cb1745925178a329150fcedb1240d0a999aa1546193b4d223cba",
+        "first_failure": null
+      }
+    },
+    {
+      "task": "pair_dispatch",
+      "source_sha256": "29d8ae36862c4835a2df95659e5f0b55d2a8f266d4ccfb1bcef3eaec8d03d462",
+      "mode": "grammar",
+      "limit": 64,
+      "report": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:29d8ae36862c4835a2df95659e5f0b55d2a8f266d4ccfb1bcef3eaec8d03d462",
+        "hole": "change",
+        "status": "verified",
+        "tested": 64,
+        "witnesses": 2,
+        "passing_candidates_seen": 1,
+        "candidate_limit": 64,
+        "grammar_truncated": true,
+        "guidance": {
+          "contract_runs": 0,
+          "examples": 0,
+          "value_vectors": 0,
+          "branch_joins": 0,
+          "proposals": 0
+        },
+        "probe_calls_per_passing_candidate": 48,
+        "selected": "s.waiting % 2",
+        "verification": {
+          "schema": "gpp.verify/1",
+          "revision": "sha256:7f337e8847c19ebcf15f980ceb380e1cc2dccb7e079a88b41aa8aa1f36d0fd66",
+          "status": "passed",
+          "checked": 5,
+          "budget": 10000,
+          "contracts": [
+            {
+              "name": "visible_0",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_1",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_2",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_3",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_4",
+              "status": "passed",
+              "checked": 1
+            }
+          ]
+        }
+      },
+      "hidden": {
+        "total": 1087,
+        "wrong": 0,
+        "outcomes_sha256": "3cdfb8fec563cb1745925178a329150fcedb1240d0a999aa1546193b4d223cba",
+        "first_failure": null
+      }
+    },
+    {
+      "task": "pair_dispatch",
+      "source_sha256": "29d8ae36862c4835a2df95659e5f0b55d2a8f266d4ccfb1bcef3eaec8d03d462",
+      "mode": "grammar",
+      "limit": 256,
+      "report": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:29d8ae36862c4835a2df95659e5f0b55d2a8f266d4ccfb1bcef3eaec8d03d462",
+        "hole": "change",
+        "status": "verified",
+        "tested": 256,
+        "witnesses": 2,
+        "passing_candidates_seen": 1,
+        "candidate_limit": 256,
+        "grammar_truncated": true,
+        "guidance": {
+          "contract_runs": 0,
+          "examples": 0,
+          "value_vectors": 0,
+          "branch_joins": 0,
+          "proposals": 0
+        },
+        "probe_calls_per_passing_candidate": 48,
+        "selected": "s.waiting % 2",
+        "verification": {
+          "schema": "gpp.verify/1",
+          "revision": "sha256:7f337e8847c19ebcf15f980ceb380e1cc2dccb7e079a88b41aa8aa1f36d0fd66",
+          "status": "passed",
+          "checked": 5,
+          "budget": 10000,
+          "contracts": [
+            {
+              "name": "visible_0",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_1",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_2",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_3",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_4",
+              "status": "passed",
+              "checked": 1
+            }
+          ]
+        }
+      },
+      "hidden": {
+        "total": 1087,
+        "wrong": 0,
+        "outcomes_sha256": "3cdfb8fec563cb1745925178a329150fcedb1240d0a999aa1546193b4d223cba",
+        "first_failure": null
+      }
+    },
+    {
+      "task": "pair_dispatch",
+      "source_sha256": "29d8ae36862c4835a2df95659e5f0b55d2a8f266d4ccfb1bcef3eaec8d03d462",
+      "mode": "hybrid",
+      "limit": 64,
+      "report": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:29d8ae36862c4835a2df95659e5f0b55d2a8f266d4ccfb1bcef3eaec8d03d462",
+        "hole": "change",
+        "status": "verified",
+        "tested": 64,
+        "witnesses": 2,
+        "passing_candidates_seen": 1,
+        "candidate_limit": 64,
+        "grammar_truncated": true,
+        "guidance": {
+          "contract_runs": 0,
+          "examples": 0,
+          "value_vectors": 0,
+          "branch_joins": 0,
+          "proposals": 0
+        },
+        "probe_calls_per_passing_candidate": 48,
+        "selected": "s.waiting % 2",
+        "verification": {
+          "schema": "gpp.verify/1",
+          "revision": "sha256:7f337e8847c19ebcf15f980ceb380e1cc2dccb7e079a88b41aa8aa1f36d0fd66",
+          "status": "passed",
+          "checked": 5,
+          "budget": 10000,
+          "contracts": [
+            {
+              "name": "visible_0",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_1",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_2",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_3",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_4",
+              "status": "passed",
+              "checked": 1
+            }
+          ]
+        }
+      },
+      "hidden": {
+        "total": 1087,
+        "wrong": 0,
+        "outcomes_sha256": "3cdfb8fec563cb1745925178a329150fcedb1240d0a999aa1546193b4d223cba",
+        "first_failure": null
+      }
+    },
+    {
+      "task": "pair_dispatch",
+      "source_sha256": "29d8ae36862c4835a2df95659e5f0b55d2a8f266d4ccfb1bcef3eaec8d03d462",
+      "mode": "hybrid",
+      "limit": 256,
+      "report": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:29d8ae36862c4835a2df95659e5f0b55d2a8f266d4ccfb1bcef3eaec8d03d462",
+        "hole": "change",
+        "status": "verified",
+        "tested": 256,
+        "witnesses": 2,
+        "passing_candidates_seen": 1,
+        "candidate_limit": 256,
+        "grammar_truncated": true,
+        "guidance": {
+          "contract_runs": 0,
+          "examples": 0,
+          "value_vectors": 0,
+          "branch_joins": 0,
+          "proposals": 0
+        },
+        "probe_calls_per_passing_candidate": 48,
+        "selected": "s.waiting % 2",
+        "verification": {
+          "schema": "gpp.verify/1",
+          "revision": "sha256:7f337e8847c19ebcf15f980ceb380e1cc2dccb7e079a88b41aa8aa1f36d0fd66",
+          "status": "passed",
+          "checked": 5,
+          "budget": 10000,
+          "contracts": [
+            {
+              "name": "visible_0",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_1",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_2",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_3",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_4",
+              "status": "passed",
+              "checked": 1
+            }
+          ]
+        }
+      },
+      "hidden": {
+        "total": 1087,
+        "wrong": 0,
+        "outcomes_sha256": "3cdfb8fec563cb1745925178a329150fcedb1240d0a999aa1546193b4d223cba",
+        "first_failure": null
+      }
+    },
+    {
+      "task": "run_record",
+      "source_sha256": "eb13466fce822b93fb7417aa3de658a08c808fe8a08d48514ae28f5e2c565cb0",
+      "mode": "baseline",
+      "limit": 64,
+      "report": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:eb13466fce822b93fb7417aa3de658a08c808fe8a08d48514ae28f5e2c565cb0",
+        "hole": "change",
+        "status": "incomplete",
+        "tested": 64,
+        "witnesses": 2,
+        "passing_candidates_seen": 0,
+        "candidate_limit": 64,
+        "grammar_truncated": true,
+        "probe_calls_per_passing_candidate": 48
+      },
+      "hidden": null
+    },
+    {
+      "task": "run_record",
+      "source_sha256": "eb13466fce822b93fb7417aa3de658a08c808fe8a08d48514ae28f5e2c565cb0",
+      "mode": "baseline",
+      "limit": 256,
+      "report": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:eb13466fce822b93fb7417aa3de658a08c808fe8a08d48514ae28f5e2c565cb0",
+        "hole": "change",
+        "status": "rejected",
+        "tested": 90,
+        "witnesses": 2,
+        "passing_candidates_seen": 0,
+        "candidate_limit": 256,
+        "grammar_truncated": false,
+        "probe_calls_per_passing_candidate": 48
+      },
+      "hidden": null
+    },
+    {
+      "task": "run_record",
+      "source_sha256": "eb13466fce822b93fb7417aa3de658a08c808fe8a08d48514ae28f5e2c565cb0",
+      "mode": "grammar",
+      "limit": 64,
+      "report": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:eb13466fce822b93fb7417aa3de658a08c808fe8a08d48514ae28f5e2c565cb0",
+        "hole": "change",
+        "status": "verified",
+        "tested": 64,
+        "witnesses": 2,
+        "passing_candidates_seen": 1,
+        "candidate_limit": 64,
+        "grammar_truncated": true,
+        "guidance": {
+          "contract_runs": 0,
+          "examples": 0,
+          "value_vectors": 0,
+          "branch_joins": 0,
+          "proposals": 0
+        },
+        "probe_calls_per_passing_candidate": 48,
+        "selected": "max(s.best, s.streak + 1)",
+        "verification": {
+          "schema": "gpp.verify/1",
+          "revision": "sha256:e47d171facf75903464c091309789a3d22c5d823e83d12420eabdd8469602ad6",
+          "status": "passed",
+          "checked": 4,
+          "budget": 10000,
+          "contracts": [
+            {
+              "name": "visible_0",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_1",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_2",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_3",
+              "status": "passed",
+              "checked": 1
+            }
+          ]
+        }
+      },
+      "hidden": {
+        "total": 1088,
+        "wrong": 0,
+        "outcomes_sha256": "809ba9868c47f9aabac23a969dbb3aea4be84f23625e8874fe0d5883e99165ba",
+        "first_failure": null
+      }
+    },
+    {
+      "task": "run_record",
+      "source_sha256": "eb13466fce822b93fb7417aa3de658a08c808fe8a08d48514ae28f5e2c565cb0",
+      "mode": "grammar",
+      "limit": 256,
+      "report": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:eb13466fce822b93fb7417aa3de658a08c808fe8a08d48514ae28f5e2c565cb0",
+        "hole": "change",
+        "status": "ambiguous",
+        "tested": 122,
+        "witnesses": 2,
+        "passing_candidates_seen": 2,
+        "candidate_limit": 256,
+        "grammar_truncated": true,
+        "guidance": {
+          "contract_runs": 0,
+          "examples": 0,
+          "value_vectors": 0,
+          "branch_joins": 0,
+          "proposals": 0
+        },
+        "probe_calls_per_passing_candidate": 48,
+        "question": {
+          "function": "step",
+          "inputs": {
+            "s": {
+              "streak": 1,
+              "best": -9223372036854775808
+            },
+            "e": "Event::Hit"
+          },
+          "alternatives": [
+            {
+              "expression": "max(s.best, s.streak + 1)",
+              "outcome": {
+                "result": {
+                  "streak": 2,
+                  "best": 2
+                }
+              }
+            },
+            {
+              "expression": "if s.streak == s.best { s.streak + 1 } else { s.best }",
+              "outcome": {
+                "result": {
+                  "streak": 2,
+                  "best": -9223372036854775808
+                }
+              }
+            }
+          ]
+        },
+        "first_passing": "max(s.best, s.streak + 1)"
+      },
+      "hidden": null
+    },
+    {
+      "task": "run_record",
+      "source_sha256": "eb13466fce822b93fb7417aa3de658a08c808fe8a08d48514ae28f5e2c565cb0",
+      "mode": "hybrid",
+      "limit": 64,
+      "report": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:eb13466fce822b93fb7417aa3de658a08c808fe8a08d48514ae28f5e2c565cb0",
+        "hole": "change",
+        "status": "verified",
+        "tested": 64,
+        "witnesses": 2,
+        "passing_candidates_seen": 1,
+        "candidate_limit": 64,
+        "grammar_truncated": true,
+        "guidance": {
+          "contract_runs": 0,
+          "examples": 0,
+          "value_vectors": 0,
+          "branch_joins": 0,
+          "proposals": 0
+        },
+        "probe_calls_per_passing_candidate": 48,
+        "selected": "max(s.best, s.streak + 1)",
+        "verification": {
+          "schema": "gpp.verify/1",
+          "revision": "sha256:e47d171facf75903464c091309789a3d22c5d823e83d12420eabdd8469602ad6",
+          "status": "passed",
+          "checked": 4,
+          "budget": 10000,
+          "contracts": [
+            {
+              "name": "visible_0",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_1",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_2",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_3",
+              "status": "passed",
+              "checked": 1
+            }
+          ]
+        }
+      },
+      "hidden": {
+        "total": 1088,
+        "wrong": 0,
+        "outcomes_sha256": "809ba9868c47f9aabac23a969dbb3aea4be84f23625e8874fe0d5883e99165ba",
+        "first_failure": null
+      }
+    },
+    {
+      "task": "run_record",
+      "source_sha256": "eb13466fce822b93fb7417aa3de658a08c808fe8a08d48514ae28f5e2c565cb0",
+      "mode": "hybrid",
+      "limit": 256,
+      "report": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:eb13466fce822b93fb7417aa3de658a08c808fe8a08d48514ae28f5e2c565cb0",
+        "hole": "change",
+        "status": "ambiguous",
+        "tested": 122,
+        "witnesses": 2,
+        "passing_candidates_seen": 2,
+        "candidate_limit": 256,
+        "grammar_truncated": true,
+        "guidance": {
+          "contract_runs": 0,
+          "examples": 0,
+          "value_vectors": 0,
+          "branch_joins": 0,
+          "proposals": 0
+        },
+        "probe_calls_per_passing_candidate": 48,
+        "question": {
+          "function": "step",
+          "inputs": {
+            "s": {
+              "streak": 1,
+              "best": -9223372036854775808
+            },
+            "e": "Event::Hit"
+          },
+          "alternatives": [
+            {
+              "expression": "max(s.best, s.streak + 1)",
+              "outcome": {
+                "result": {
+                  "streak": 2,
+                  "best": 2
+                }
+              }
+            },
+            {
+              "expression": "if s.streak == s.best { s.streak + 1 } else { s.best }",
+              "outcome": {
+                "result": {
+                  "streak": 2,
+                  "best": -9223372036854775808
+                }
+              }
+            }
+          ]
+        },
+        "first_passing": "max(s.best, s.streak + 1)"
+      },
+      "hidden": null
+    },
+    {
+      "task": "armed_toggle",
+      "source_sha256": "17c3796214542ce00b7202da31ea18a590d01d323002d9091550709586700606",
+      "mode": "baseline",
+      "limit": 64,
+      "report": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:17c3796214542ce00b7202da31ea18a590d01d323002d9091550709586700606",
+        "hole": "change",
+        "status": "rejected",
+        "tested": 14,
+        "witnesses": 3,
+        "passing_candidates_seen": 0,
+        "candidate_limit": 64,
+        "grammar_truncated": false,
+        "probe_calls_per_passing_candidate": 12
+      },
+      "hidden": null
+    },
+    {
+      "task": "armed_toggle",
+      "source_sha256": "17c3796214542ce00b7202da31ea18a590d01d323002d9091550709586700606",
+      "mode": "baseline",
+      "limit": 256,
+      "report": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:17c3796214542ce00b7202da31ea18a590d01d323002d9091550709586700606",
+        "hole": "change",
+        "status": "rejected",
+        "tested": 14,
+        "witnesses": 3,
+        "passing_candidates_seen": 0,
+        "candidate_limit": 256,
+        "grammar_truncated": false,
+        "probe_calls_per_passing_candidate": 12
+      },
+      "hidden": null
+    },
+    {
+      "task": "armed_toggle",
+      "source_sha256": "17c3796214542ce00b7202da31ea18a590d01d323002d9091550709586700606",
+      "mode": "grammar",
+      "limit": 64,
+      "report": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:17c3796214542ce00b7202da31ea18a590d01d323002d9091550709586700606",
+        "hole": "change",
+        "status": "verified",
+        "tested": 64,
+        "witnesses": 3,
+        "passing_candidates_seen": 1,
+        "candidate_limit": 64,
+        "grammar_truncated": true,
+        "guidance": {
+          "contract_runs": 0,
+          "examples": 0,
+          "value_vectors": 0,
+          "branch_joins": 0,
+          "proposals": 0
+        },
+        "probe_calls_per_passing_candidate": 12,
+        "selected": "s.armed != s.lit",
+        "verification": {
+          "schema": "gpp.verify/1",
+          "revision": "sha256:ac01991aab488bd9cbd80393fe0924d1c9ef8d6119fb7fe8295e0bb6b1d21fbd",
+          "status": "passed",
+          "checked": 5,
+          "budget": 10000,
+          "contracts": [
+            {
+              "name": "visible_0",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_1",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_2",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_3",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_4",
+              "status": "passed",
+              "checked": 1
+            }
+          ]
+        }
+      },
+      "hidden": {
+        "total": 1087,
+        "wrong": 0,
+        "outcomes_sha256": "a366312a91a719463aab941856eba0308e8197e094af00a6469ccd35f26692cb",
+        "first_failure": null
+      }
+    },
+    {
+      "task": "armed_toggle",
+      "source_sha256": "17c3796214542ce00b7202da31ea18a590d01d323002d9091550709586700606",
+      "mode": "grammar",
+      "limit": 256,
+      "report": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:17c3796214542ce00b7202da31ea18a590d01d323002d9091550709586700606",
+        "hole": "change",
+        "status": "verified",
+        "tested": 256,
+        "witnesses": 3,
+        "passing_candidates_seen": 8,
+        "candidate_limit": 256,
+        "grammar_truncated": true,
+        "guidance": {
+          "contract_runs": 0,
+          "examples": 0,
+          "value_vectors": 0,
+          "branch_joins": 0,
+          "proposals": 0
+        },
+        "probe_calls_per_passing_candidate": 12,
+        "selected": "s.armed != s.lit",
+        "verification": {
+          "schema": "gpp.verify/1",
+          "revision": "sha256:ac01991aab488bd9cbd80393fe0924d1c9ef8d6119fb7fe8295e0bb6b1d21fbd",
+          "status": "passed",
+          "checked": 5,
+          "budget": 10000,
+          "contracts": [
+            {
+              "name": "visible_0",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_1",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_2",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_3",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_4",
+              "status": "passed",
+              "checked": 1
+            }
+          ]
+        }
+      },
+      "hidden": {
+        "total": 1087,
+        "wrong": 0,
+        "outcomes_sha256": "a366312a91a719463aab941856eba0308e8197e094af00a6469ccd35f26692cb",
+        "first_failure": null
+      }
+    },
+    {
+      "task": "armed_toggle",
+      "source_sha256": "17c3796214542ce00b7202da31ea18a590d01d323002d9091550709586700606",
+      "mode": "hybrid",
+      "limit": 64,
+      "report": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:17c3796214542ce00b7202da31ea18a590d01d323002d9091550709586700606",
+        "hole": "change",
+        "status": "verified",
+        "tested": 64,
+        "witnesses": 3,
+        "passing_candidates_seen": 1,
+        "candidate_limit": 64,
+        "grammar_truncated": true,
+        "guidance": {
+          "contract_runs": 0,
+          "examples": 0,
+          "value_vectors": 0,
+          "branch_joins": 0,
+          "proposals": 0
+        },
+        "probe_calls_per_passing_candidate": 12,
+        "selected": "s.armed != s.lit",
+        "verification": {
+          "schema": "gpp.verify/1",
+          "revision": "sha256:ac01991aab488bd9cbd80393fe0924d1c9ef8d6119fb7fe8295e0bb6b1d21fbd",
+          "status": "passed",
+          "checked": 5,
+          "budget": 10000,
+          "contracts": [
+            {
+              "name": "visible_0",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_1",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_2",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_3",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_4",
+              "status": "passed",
+              "checked": 1
+            }
+          ]
+        }
+      },
+      "hidden": {
+        "total": 1087,
+        "wrong": 0,
+        "outcomes_sha256": "a366312a91a719463aab941856eba0308e8197e094af00a6469ccd35f26692cb",
+        "first_failure": null
+      }
+    },
+    {
+      "task": "armed_toggle",
+      "source_sha256": "17c3796214542ce00b7202da31ea18a590d01d323002d9091550709586700606",
+      "mode": "hybrid",
+      "limit": 256,
+      "report": {
+        "schema": "gpp.complete/1",
+        "revision": "sha256:17c3796214542ce00b7202da31ea18a590d01d323002d9091550709586700606",
+        "hole": "change",
+        "status": "verified",
+        "tested": 256,
+        "witnesses": 3,
+        "passing_candidates_seen": 8,
+        "candidate_limit": 256,
+        "grammar_truncated": true,
+        "guidance": {
+          "contract_runs": 0,
+          "examples": 0,
+          "value_vectors": 0,
+          "branch_joins": 0,
+          "proposals": 0
+        },
+        "probe_calls_per_passing_candidate": 12,
+        "selected": "s.armed != s.lit",
+        "verification": {
+          "schema": "gpp.verify/1",
+          "revision": "sha256:ac01991aab488bd9cbd80393fe0924d1c9ef8d6119fb7fe8295e0bb6b1d21fbd",
+          "status": "passed",
+          "checked": 5,
+          "budget": 10000,
+          "contracts": [
+            {
+              "name": "visible_0",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_1",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_2",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_3",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "visible_4",
+              "status": "passed",
+              "checked": 1
+            }
+          ]
+        }
+      },
+      "hidden": {
+        "total": 1087,
+        "wrong": 0,
+        "outcomes_sha256": "a366312a91a719463aab941856eba0308e8197e094af00a6469ccd35f26692cb",
+        "first_failure": null
+      }
+    }
+  ]
+}

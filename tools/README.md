@@ -23,6 +23,39 @@ target/debug/gpp run --interpreter target/larger-preview.gpp
 
 Compiler validation covers parsing, types and checked IR. Run your behavioral tests against the proposed module. An edit using an outdated base revision fails if the source changed during generation or after review.
 
+## Repair an expression against source contracts
+
+The offline contract repair tool takes a module with finite contracts and a target function. It searches for a single-expression edit and checks candidates against the module’s contracts. A failing input comes from executing the source predicate. An agent can use it even when nobody has supplied a list of expected return values.
+
+The queue example has eight slots. Start by preparing the full-queue preview in the [finite contract walkthrough](../docs/scalar-language.md#verify-a-finite-contract), then run the repair tool on that preview.
+
+```sh
+python3 tools/contract_repair.py target/full-queue.gpp --function can_admit
+```
+
+For the published queue example, the search replaces the occurrence of `queued` inside the faulty test with `queued + 1`. The resulting comparison `(queued + 1) <= 8` passes all nine inputs. Search stops at the first candidate that passes every input of every source contract. To save that replacement to a new file, add `-o target/queue-repair.expr`. The `gpp.contract-repair/1` response supplies the target range, source revision and guarded apply arguments. Applying the saved fragment uses `gpp edit --expect … --verify --budget …` to recheck the complete edited module before installing it. The source remains available for review.
+
+Set `--edits N` to bound the number of candidates and `--budget N` to bound the assignments in each candidate verification. With `--menu FILE`, pass an existing `gpp.repair/1` menu for the same target and revision. The tool checks the supplied entries. Multiple fully verified entries produce an ambiguous result because different expressions may agree on the entire declared domain. Incomplete checks and unsuccessful searches do not publish a replacement.
+
+An agent can inspect the original counterexample in the target function, including through helper calls.
+
+```sh
+target/debug/gpp trace target/full-queue.gpp --function can_admit --contract respects_capacity 8
+```
+
+The contract covers nine queue sizes. Review the chosen predicate and bounds before relying on the edit for other inputs.
+
+### Ask a local model to edit from the source contract
+
+With a local Ollama server and a pinned model installed, the experimental agent editor can use the contracts already in the module as the task specification.
+
+```sh
+python3 tools/agent_edit.py target/full-queue.gpp --function can_admit \
+  --contracts --model qwen2.5-coder:7b -o target/agent-queue.expr
+```
+
+The model receives the source contracts and the first counterexample. It can propose a single expression, then revise it once after a failed check. A proposal must pass every selected input of every source contract. The saved fragment’s guarded apply command repeats that verification on the exact edit. In a six-assignment development study, Qwen2.5-Coder 7B repaired the capacity task on its first attempt and completed one of three tasks. StarCoder2 3B completed none of the three. [Model outcomes and cost](../bench/contracts/model-results.md)
+
 ## Search for an edit with public examples
 
 `repair.py` accepts the same cases file as the other authoring tools. Give it the target function and any checked examples, including calls to other functions in the module. The [quick start](../README.md#find-an-edit-from-examples) creates `target/difference.json`. Save an offline menu or let a local model choose from it.

@@ -2,7 +2,11 @@
 
 The benchmark suite measures how much model work GPT++, typed Python, and Rust require to produce an accepted change. An accepted change passes the language checker, public examples, and withheld cases. Tokens per accepted edit includes input and output tokens from every attempt, including failures and retries. Reports include acceptance counts, timings, and paired uncertainty where available.
 
-## Latest language and workflow measurements
+## Finite-contract verification and repair
+
+On three scalar tasks, exhaustive verification rejected six of ten curated edits that passed the sparse examples. Separate contract-guided search produced a verified repair on each task. Direct execution in GPT++, Python and Rust agreed on all 373 curated program/input outcomes per language. In the supplemental model study, Qwen solved one task and StarCoder2 solved none. [Finite-domain results](contracts/results.md) · [Model results](contracts/model-results.md) · [Reproduction](contracts/README.md)
+
+## Earlier language and workflow measurements
 
 A matched expression-generation study gave two models equivalent task information and one public-test retry in GPT++, typed Python and Rust. It covers three historical tasks and three new scalar contracts. The new-task failures identified useful expressions that GPT++ could not yet represent. After adding typed integer operations and explicit Boolean conversion, replaying the same replies recovered all three Qwen arithmetic repairs. The report records the adaptation and charges every original token. [New contracts](expression/results/fresh-agent.md) · [Historical tasks](expression/results/agent.md) · [Language-extension replay](expression/results/compat.md)
 
@@ -39,6 +43,8 @@ The eight-task policy study found lower token costs for Qwen's native GPT++ body
 | [Matched expression generation](expression/agent-protocol.md) | How do caller context, observations and one retry compare across languages? | [Historical report](expression/results/agent.md) | [JSONL](expression/results/agent.jsonl) |
 | [New arithmetic contracts](expression/agent-fresh-protocol.md) | Which edits transfer to three new scalar contracts? | [Report](expression/results/fresh-agent.md) | [JSONL](expression/results/fresh-agent.jsonl) |
 | [Native scalar operations](expression/compat-protocol.md) | Which saved model proposals become correct with the added operations? | [Report](expression/results/compat.md) | [JSONL](expression/results/compat.jsonl) |
+| [Finite contracts](contracts/protocol.md) | Which example-passing edits survive every declared input? | [Report](contracts/results.md) | [JSONL](contracts/results.jsonl) |
+| [Contract-guided model edits](contracts/model-protocol.md) | Can local models generate a checked edit with at most one counterexample retry? | [Report](contracts/model-results.md) | [JSONL](contracts/model-results.jsonl) |
 | [Compiler session latency](expression/probe-protocol.md) | How much work does batching remove with identical outcomes? | [Report](expression/results/probe.md) | [JSONL](expression/results/probe.jsonl) |
 | [Scalar runtime](runtime/README.md) | How do correct compiled and interpreted programs use time and memory? | [Report](runtime/results.md) | [JSONL](runtime/results.jsonl) |
 | [Example-filtered repair](expression/repair-protocol.md) | What changes when the model chooses from tested replacement expressions? | [Report](expression/results/repair.md) | [JSONL](expression/results/repair.jsonl) |

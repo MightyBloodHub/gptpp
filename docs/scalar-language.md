@@ -10,6 +10,7 @@ This page describes the language implemented by the current `gpp` compiler. [Gra
 | Values | `I64` is signed 64-bit. `Bool` has the values `true` and `false`. `Unit` has the value `()`. Equality compares values of the same type. Ordering requires integers. |
 | Integer conversion | `flag as I64` converts `false` to 0 and `true` to 1. An `I64` operand keeps its value. A cast binds more tightly than multiplication and less tightly than unary operators. For example, `!flag as I64` converts the negated flag. |
 | Integer functions | `min(a, b)` and `max(a, b)` return the smaller and larger signed values. `clamp(x, low, high)` returns the closest value to `x` in the inclusive interval and faults with `InvalidBounds` if `low > high`. Operands are I64 and evaluate once, left to right, before the operation. A module declaration of the same name supplies the full signature and behavior. A local of the same name shadows the callable. |
+| Finite contracts | A named Boolean predicate can be checked over a declared combination of integer ranges and Boolean inputs. The verifier reports a result for the supplied source revision. |
 | Bindings and calls | Parameters and `let` bindings are immutable. Use `var` for mutable locals. Mutable integer bindings support `+=`, `-=`, `*=`, `/=`, and `%=`. A nested block can shadow a name. Functions support forward calls and recursion. |
 | Control flow | Use `if`, `else if`, `else`, `while`, and `return`. Conditions require `Bool`. Conditional values have two arms of the same type, and only the chosen arm runs. The checker verifies non-Unit return paths and recognizes literal Boolean conditions. A Unit function may fall through. |
 | Evaluation order | Operands and arguments evaluate left to right. `&&` and `\|\|` short-circuit. Discarded expressions still execute. |
@@ -35,6 +36,71 @@ Arithmetic overflow, division by zero and inverted clamp bounds exit with status
 The interpreter evaluates checked source. The native backend lowers the program to typed basic blocks and verifies operands, control-flow targets, and slot initialization. LLVM verifies the emitted IR before and after optimization. Native builds use `-O0` by default and link a small C entry point. The executable runs independently of Cargo, LLVM, Python, and the GPT++ compiler.
 
 The native driver searches `GPP_LLVM_BIN`, `PATH`, and the Apple Silicon and Intel Homebrew LLVM locations. On macOS it uses `SDKROOT` when set and otherwise asks `xcrun` for the SDK.
+
+## Verify a finite contract
+
+A top-level `contract` declaration binds inputs and contains one Boolean expression. In this example a queue of eight items is full, so accepting one more would break the capacity rule.
+
+```gpp
+fn can_admit(queued: I64) -> Bool !{} {
+    return queued < 8;
+}
+
+contract respects_capacity(queued: I64 in 0..=8) {
+    can_admit(queued) == (queued + 1 <= 8)
+}
+```
+
+Build the compiler and run the complete module from the repository root.
+
+```sh
+cargo build --locked --offline
+target/debug/gpp verify examples/capacity.gpp --contract respects_capacity --format=json
+```
+
+The interval includes **both** endpoints. The verifier checks `queued = 0` through `queued = 8`. An `I64` binder requires literal bounds. A `Bool` binder takes `false` then `true`. With multiple binders the verifier checks their Cartesian product, varying the last binder fastest. A contract with `()` checks its predicate once. The predicate can call ordinary module functions, including unchanged callers of the function being edited. A passing report covers exactly the predicate and declared inputs. [Full module](../examples/capacity.gpp)
+
+To see a counterexample, preview a change that also admits an item to a full queue.
+
+```sh
+printf '%s\n' 'queued <= 8' > target/full-queue.expr
+target/debug/gpp edit examples/capacity.gpp --function can_admit \
+  --expr target/full-queue.expr --stdout > target/full-queue.gpp
+target/debug/gpp verify target/full-queue.gpp --format=json
+```
+
+At `queued = 8` the edited function returns true and the contract expects false. The following command checks the valid module with a budget of eight assignments. It reports an incomplete check because the ninth input is still outstanding.
+
+```sh
+target/debug/gpp verify examples/capacity.gpp --budget 8 --format=json
+```
+
+Without `--contract`, verification visits declarations in source order until all pass or the first failure or limit stops it. The default budget of 10,000 assignments is shared across selected contracts. `check` type-checks every predicate. Native builds omit the verification predicates, and running the program executes the ordinary `main`.
+
+| `gpp.verify/1` status | Exit | Meaning |
+|---|---:|---|
+| `passed` | 0 | Every assignment in every selected contract completed with `true`. |
+| `counterexample` | 1 | The first failing assignment returned `false` or raised an arithmetic fault. Its report includes named inputs, positional arguments and either the false result or the fault. |
+| `incomplete` | 3 | The assignment budget or interpreter resource limit stopped verification, or the module has no contracts. The report gives the reason. |
+
+The JSON includes the source revision and the number of assignments attempted. For the faulty queue, pass the witness directly to the tracer to see target values during evaluation of the predicate.
+
+```sh
+target/debug/gpp trace target/full-queue.gpp --function can_admit --contract respects_capacity 8
+```
+
+In the trace, the target expression `queued <= 8` returned `true` with `queued = 8`. The enclosing contract returned `false`. [Use contracts to select an edit](../tools/README.md#repair-an-expression-against-source-contracts)
+
+### Require the proposed edit to pass
+
+Add `--verify` to the ordinary checked-edit command to verify the exact proposed module before producing a preview or writing the source. For example, this command rejects the faulty expression from the walkthrough and reports the full-queue counterexample on stderr.
+
+```sh
+target/debug/gpp edit examples/capacity.gpp --function can_admit \
+  --expr target/full-queue.expr --stdout --verify
+```
+
+For an in-place change, supply the original source revision with `--expect` and keep `--verify`. The verifier checks every declared contract on the proposed source, including contracts that exercise this function through a caller. A false predicate, arithmetic fault or incomplete verification rejects the edit before installation. Set `--budget N` alongside `--verify` to bound the shared assignment count. The default is 10,000. The apply command emitted by contract repair includes both the revision and verification budget.
 
 ## Trace a call
 
@@ -72,6 +138,7 @@ The first JSON line contains `schema` (`gpp.probe/1`), `revision` and the number
 | Outcome response | A checked edit produces `{"status":"ok","outcomes":[…]}` with one `{"result":value}` or `{"fault":"FaultName"}` per call. Each call gets its own default fuel budget and call stack. |
 | Checked candidates only | Append ` check` before the header's LF to validate the edit and receive an empty outcomes array. |
 | `--filter` | A checked edit returns `{"status":"ok","matches":true}` if every call matches its expected scalar. The first mismatch or runtime fault returns `false`. |
+| `--contract-cases FILE.tsv` | Use this option in place of `--cases`. Each row contains a contract name and in-domain arguments in declaration order. For `--filter`, append the expected Boolean result. The compiler evaluates the contract for each supplied tuple. |
 | `--wrapped` | Evaluate each call through the authoring tools’ I64 entry wrapper. This preserves the public-example runner’s fuel and nesting behavior, including its conversion of Bool and Unit results. The response exposes the original scalar type. |
 | Errors | An invalid span, rejected fragment or type error returns `{"status":"invalid","error":"…"}` and the session accepts the next frame. A stale revision or invalid case prevents startup. A malformed or truncated frame terminates the process with a nonzero exit. |
 

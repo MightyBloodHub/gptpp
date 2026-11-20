@@ -18,7 +18,21 @@ if [ -n "$revision" ]; then
   fi
 fi
 
-mkdir -p "$output_dir/assets/benchmarks"
+if ! (
+  cd "$repo_dir"
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum -c website/playground/verify.sha256
+  else
+    shasum -a 256 -c website/playground/verify.sha256
+  fi
+) >/dev/null; then
+  echo 'Browser compiler source or binary changed. Rebuild with sh website/playground/build.sh.' >&2
+  exit 1
+fi
+
+mkdir -p "$output_dir/assets/benchmarks" "$output_dir/playground"
+install -m 644 "$source_dir/contract-worker.js" "$output_dir/"
+install -m 644 "$source_dir/playground/verify.wasm" "$output_dir/playground/"
 install -m 644 "$source_dir/index.html" "$source_dir/styles.css" "$source_dir/site.js" "$output_dir/"
 if [ -n "$revision" ]; then
   short_revision=$(printf '%.7s' "$revision")

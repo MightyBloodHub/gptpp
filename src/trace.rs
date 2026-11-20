@@ -1,6 +1,6 @@
 //! Revision-bound expression observations from one call in the reference interpreter.
 use crate::interpreter::{self, Fault, Observer, Scope, Value};
-use crate::syntax::{self, Expr, ExprSite, Function, Span, Type};
+use crate::syntax::{self, Contract, Expr, ExprSite, Function, Module, Span, Type};
 use crate::{check, diagnostic, edit, json_string};
 use std::collections::{BTreeMap, HashMap};
 use std::ffi::OsString;
@@ -8,13 +8,15 @@ use std::fs;
 use std::io::{self, Write};
 use std::path::PathBuf;
 
-const USAGE: &str = "gpp trace FILE --function TARGET --call ENTRY [ARG ...] [--fuel N]";
+const USAGE: &str =
+    "gpp trace FILE --function TARGET (--call ENTRY|--contract NAME) [ARG ...] [--fuel N]";
 const SAMPLE_LIMIT: usize = 3;
 
 pub struct Request {
     path: PathBuf,
     target: String,
     entry: String,
+    contract: bool,
     args: Vec<String>,
     fuel: u64,
 }
@@ -22,16 +24,22 @@ pub struct Request {
 impl Request {
     pub fn parse(mut args: impl Iterator<Item = OsString>) -> Result<Self, String> {
         let path = PathBuf::from(args.next().ok_or(USAGE)?);
-        let mut take_name = |flag: &str| -> Result<String, String> {
-            if args.next().as_deref() != Some(flag.as_ref()) {
-                return Err(USAGE.into());
-            }
-            args.next()
-                .and_then(|s| s.into_string().ok())
-                .ok_or(USAGE.into())
+        if args.next().as_deref() != Some("--function".as_ref()) {
+            return Err(USAGE.into());
+        }
+        let target = args
+            .next()
+            .and_then(|s| s.into_string().ok())
+            .ok_or(USAGE)?;
+        let contract = match args.next().as_deref().and_then(|s| s.to_str()) {
+            Some("--call") => false,
+            Some("--contract") => true,
+            _ => return Err(USAGE.into()),
         };
-        let target = take_name("--function")?;
-        let entry = take_name("--call")?;
+        let entry = args
+            .next()
+            .and_then(|s| s.into_string().ok())
+            .ok_or(USAGE)?;
         let mut values = Vec::new();
         let mut fuel = interpreter::DEFAULT_FUEL;
         while let Some(arg) = args.next() {
@@ -51,6 +59,7 @@ impl Request {
             path,
             target,
             entry,
+            contract,
             args: values,
             fuel,
         })
@@ -62,7 +71,6 @@ impl Request {
         let report = |err| diagnostic(&self.path, &source, err, false);
         let module = syntax::parse(&source).map_err(report)?;
         let target = edit::target(&module, &self.target)?;
-        let entry = edit::target(&module, &self.entry)?;
         let mut trace = Trace::default();
         check::check_with_types(&module, |expr, ty| {
             if target.body_span.start <= expr.span.start
@@ -80,8 +88,19 @@ impl Request {
             }
         })
         .map_err(report)?;
-        let args = parse_values(entry, &self.args)?;
-        let result = interpreter::invoke(&module, &self.entry, args.clone(), self.fuel, &mut trace);
+        let (args, result) = if self.contract {
+            let predicate = find_contract(&module, &self.entry)?;
+            let args = parse_witness(predicate, &self.args)?;
+            let result =
+                interpreter::eval_contract(&module, predicate, args.clone(), self.fuel, &mut trace);
+            (args, result)
+        } else {
+            let entry = edit::target(&module, &self.entry)?;
+            let args = parse_values(entry, &self.args)?;
+            let result =
+                interpreter::invoke(&module, &self.entry, args.clone(), self.fuel, &mut trace);
+            (args, result)
+        };
         let revision = edit::revision(source.as_bytes())?;
         let mut out = io::BufWriter::new(io::stdout().lock());
         let mut emit = || -> io::Result<()> {
@@ -101,6 +120,9 @@ impl Request {
                 write_value(&mut out, *v)?;
             }
             write!(out, "],")?;
+            if self.contract {
+                write!(out, "\"entry_kind\":\"contract\",")?;
+            }
             write_result(&mut out, "result", result)?;
             write!(out, ",\"expressions\":[")?;
             for (i, expr) in edit::expressions(target).iter().enumerate() {
@@ -109,9 +131,15 @@ impl Request {
                 }
                 let site = &trace.sites[&expr.span];
                 let Span { start, end } = expr.span;
+                let binary_gap = match &expr.kind {
+                    syntax::ExprKind::Binary(_, left, right) if self.contract => {
+                        format!("\"binary_gap\":[{},{}],", left.span.end, right.span.start)
+                    }
+                    _ => String::new(),
+                };
                 write!(
                     out,
-                    "{{\"start_byte\":{start},\"end_byte\":{end},\"text\":{},\"type\":\"{}\",\"hits\":{},\"observations\":[",
+                    "{{\"start_byte\":{start},\"end_byte\":{end},{binary_gap}\"text\":{},\"type\":\"{}\",\"hits\":{},\"observations\":[",
                     json_string(&source[start..end]),
                     site.ty,
                     site.hits
@@ -139,6 +167,33 @@ impl Request {
         };
         emit().map_err(|e| e.to_string())
     }
+}
+
+pub(crate) fn find_contract<'a>(module: &'a Module, name: &str) -> Result<&'a Contract, String> {
+    module
+        .contracts
+        .iter()
+        .find(|c| c.predicate.name == name)
+        .ok_or_else(|| format!("unknown contract '{name}'"))
+}
+
+pub(crate) fn parse_witness(contract: &Contract, raw: &[String]) -> Result<Vec<Value>, String> {
+    let values = parse_values(&contract.predicate, raw)?;
+    for ((param, domain), value) in contract
+        .predicate
+        .params
+        .iter()
+        .zip(&contract.domains)
+        .zip(&values)
+    {
+        if !interpreter::in_domain(*domain, *value) {
+            return Err(format!(
+                "value outside contract domain for '{}'",
+                param.name
+            ));
+        }
+    }
+    Ok(values)
 }
 
 pub(crate) fn parse_values(entry: &Function, raw: &[String]) -> Result<Vec<Value>, String> {
@@ -174,7 +229,7 @@ pub(crate) fn parse_value(ty: Type, text: &str) -> Option<Value> {
     }
 }
 
-fn write_value(out: &mut impl Write, value: Value) -> io::Result<()> {
+pub(crate) fn write_value(out: &mut impl Write, value: Value) -> io::Result<()> {
     match value {
         Value::Int(n) => write!(out, "{n}"),
         Value::Bool(b) => write!(out, "{b}"),

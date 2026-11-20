@@ -3,7 +3,9 @@
 use std::collections::HashMap;
 use std::fmt;
 
-use crate::syntax::{BinOp, Expr, ExprKind, Function, Intrinsic, Module, Stmt, StmtKind, UnOp};
+use crate::syntax::{
+    BinOp, Contract, Domain, Expr, ExprKind, Function, Intrinsic, Module, Stmt, StmtKind, UnOp,
+};
 
 pub const DEFAULT_FUEL: u64 = 1_000_000;
 const MAX_NESTING: usize = 128;
@@ -82,6 +84,49 @@ pub fn invoke<'a>(
     Interpreter::new(module, fuel, observer).call(entry, args, 0)
 }
 
+pub fn in_domain(domain: Domain, value: Value) -> bool {
+    match (domain, value) {
+        (Domain::Bool, Value::Bool(_)) => true,
+        (Domain::I64 { low, high }, Value::Int(n)) => (low..=high).contains(&n),
+        _ => false,
+    }
+}
+
+/// Evaluate a checked contract without installing it as a callable name.
+pub fn eval_contract<'a>(
+    module: &'a Module,
+    contract: &'a Contract,
+    values: Vec<Value>,
+    fuel: u64,
+    observer: &mut impl Observer<'a>,
+) -> Result<Value, Fault> {
+    contract_evaluator(module, contract, fuel, observer)(&values)
+}
+
+/// Reuse the function index across tuples. Each tuple starts with fresh
+/// bindings and the full interpreter fuel budget.
+pub fn contract_evaluator<'a>(
+    module: &'a Module,
+    contract: &'a Contract,
+    fuel: u64,
+    observer: &mut impl Observer<'a>,
+) -> impl FnMut(&[Value]) -> Result<Value, Fault> {
+    let mut interpreter = Interpreter::new(module, fuel, observer);
+    move |values| {
+        if values.len() != contract.domains.len()
+            || !values
+                .iter()
+                .zip(&contract.domains)
+                .all(|(&v, &d)| in_domain(d, v))
+        {
+            return Err(Fault::InvalidCheckedProgram);
+        }
+        interpreter.fuel = fuel;
+        interpreter.step(0)?;
+        interpreter.body(&contract.predicate, values, 0)
+    }
+}
+
 /// Execute a private entry wrapper against the checked source functions.
 pub fn invoke_wrapper<'a>(module: &'a Module, wrapper: &'a Function) -> Result<Value, Fault> {
     let mut observer = ();
@@ -127,11 +172,20 @@ impl<'a, 'o, O: Observer<'a>> Interpreter<'a, 'o, O> {
                 _ => Err(Fault::InvalidCheckedProgram),
             };
         };
+        self.body(function, &args, depth)
+    }
+
+    fn body(
+        &mut self,
+        function: &'a Function,
+        args: &[Value],
+        depth: usize,
+    ) -> Result<Value, Fault> {
         let params = function
             .params
             .iter()
             .map(|p| p.name.as_str())
-            .zip(args)
+            .zip(args.iter().copied())
             .collect();
         let mut frame = vec![params];
         Ok(self

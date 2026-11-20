@@ -8,8 +8,7 @@ use std::fs;
 use std::io::{self, BufRead, Read, Write};
 use std::path::{Path, PathBuf};
 
-const USAGE: &str =
-    "gpp probe FILE --function TARGET --expect REVISION --cases CASES.tsv [--wrapped] [--filter]";
+const USAGE: &str = "gpp probe FILE --function TARGET --expect REVISION (--cases CASES.tsv [--wrapped]|--contract-cases CASES.tsv) [--filter]";
 const MAX_HEADER_BYTES: u64 = 96;
 const MAX_FRAGMENT_BYTES: usize = 4 * 1024 * 1024;
 
@@ -18,6 +17,7 @@ pub struct Request {
     function: String,
     expected: String,
     cases: PathBuf,
+    contracts: bool,
     wrapped: bool,
     filter: bool,
 }
@@ -33,11 +33,16 @@ impl Request {
         };
         let function = option("--function")?.into_string().map_err(|_| USAGE)?;
         let expected = option("--expect")?.into_string().map_err(|_| USAGE)?;
-        let cases = PathBuf::from(option("--cases")?);
+        let contracts = match args.next().as_deref().and_then(|s| s.to_str()) {
+            Some("--cases") => false,
+            Some("--contract-cases") => true,
+            _ => return Err(USAGE.into()),
+        };
+        let cases = PathBuf::from(args.next().ok_or(USAGE)?);
         let (mut wrapped, mut filter) = (false, false);
         for flag in args {
             match flag.to_str() {
-                Some("--wrapped") if !wrapped => wrapped = true,
+                Some("--wrapped") if !wrapped && !contracts => wrapped = true,
                 Some("--filter") if !filter => filter = true,
                 _ => return Err(USAGE.into()),
             }
@@ -47,6 +52,7 @@ impl Request {
             function,
             expected,
             cases,
+            contracts,
             wrapped,
             filter,
         })
@@ -66,7 +72,13 @@ impl Request {
         let module = syntax::parse(&source).map_err(report)?;
         check::check(&module).map_err(report)?;
         let function = edit::target(&module, &self.function)?;
-        let cases = read_cases(&self.cases, &module, self.wrapped, self.filter)?;
+        let cases = read_cases(
+            &self.cases,
+            &module,
+            self.wrapped,
+            self.filter,
+            self.contracts,
+        )?;
         let mut input = io::stdin().lock();
         let mut out = io::BufWriter::new(io::stdout().lock());
         let mut serve = || -> io::Result<()> {
@@ -124,6 +136,7 @@ impl Request {
 
 enum Invocation {
     Direct(String, Vec<Value>),
+    Contract(String, Vec<Value>),
     Wrapped(Function, Type),
 }
 
@@ -135,6 +148,17 @@ struct Call {
 impl Call {
     fn execute(&self, module: &Module) -> Result<Value, Fault> {
         match &self.invoke {
+            Invocation::Contract(name, args) => {
+                let contract =
+                    trace::find_contract(module, name).map_err(|_| Fault::InvalidCheckedProgram)?;
+                interpreter::eval_contract(
+                    module,
+                    contract,
+                    args.clone(),
+                    interpreter::DEFAULT_FUEL,
+                    &mut (),
+                )
+            }
             Invocation::Direct(name, args) => interpreter::invoke(
                 module,
                 name,
@@ -158,6 +182,7 @@ fn read_cases(
     module: &Module,
     wrapped: bool,
     filter: bool,
+    contracts: bool,
 ) -> Result<Vec<Call>, String> {
     let entries = fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
     let mut prefix = String::from("__gpp_probe");
@@ -170,6 +195,28 @@ fn read_cases(
         let name = fields.next().unwrap_or_default();
         let expected_text = if filter { fields.next_back() } else { None };
         let args = fields.map(str::to_owned).collect::<Vec<_>>();
+        if contracts {
+            let contract =
+                trace::find_contract(module, name).map_err(|e| format!("case {}: {e}", i + 1))?;
+            let values = trace::parse_witness(contract, &args)
+                .map_err(|e| format!("case {}: {e}", i + 1))?;
+            let expected = if filter {
+                Some(
+                    expected_text
+                        .and_then(|s| trace::parse_value(Type::Bool, s))
+                        .ok_or_else(|| {
+                            format!("case {}: expected a Bool in the final field", i + 1)
+                        })?,
+                )
+            } else {
+                None
+            };
+            cases.push(Call {
+                invoke: Invocation::Contract(name.to_owned(), values),
+                expected,
+            });
+            continue;
+        }
         let entry = edit::target(module, name).map_err(|e| format!("case {}: {e}", i + 1))?;
         let values =
             trace::parse_values(entry, &args).map_err(|e| format!("case {}: {e}", i + 1))?;

@@ -6,6 +6,7 @@ mod native;
 mod probe;
 mod syntax;
 mod trace;
+mod verify;
 
 use std::env;
 use std::ffi::OsString;
@@ -21,8 +22,9 @@ Usage:
   gpp build [-O0|-O2] [-o EXECUTABLE] FILE
   gpp ast FILE
   gpp emit-llvm FILE
-  gpp trace FILE --function TARGET --call ENTRY [ARG ...] [--fuel N]
-  gpp probe FILE --function TARGET --expect REVISION --cases CASES.tsv [--wrapped] [--filter]";
+  gpp verify FILE [--contract NAME] [--budget N] [--format=json]
+  gpp trace FILE --function TARGET (--call ENTRY|--contract NAME) [ARG ...] [--fuel N]
+  gpp probe FILE --function TARGET --expect REVISION (--cases CASES.tsv [--wrapped]|--contract-cases CASES.tsv) [--filter]";
 
 #[derive(PartialEq)]
 enum Action {
@@ -194,6 +196,16 @@ fn main() -> ExitCode {
     if args.peek().is_some_and(|s| s == "-h" || s == "--help") {
         println!("{USAGE}\n{}", edit::USAGE);
         return ExitCode::SUCCESS;
+    }
+    if args.peek().is_some_and(|s| s == "verify") {
+        args.next();
+        return match verify::run(args) {
+            Ok(code) => ExitCode::from(code),
+            Err(message) => {
+                eprintln!("{message}");
+                ExitCode::from(2)
+            }
+        };
     }
     enum Invocation {
         Compile(Options),

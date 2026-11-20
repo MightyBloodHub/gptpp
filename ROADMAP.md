@@ -4,6 +4,7 @@ GPT++ is a programming language designed for agents that write and maintain soft
 
 ## Available today
 
+- Named finite contracts and a bounded verifier. A contract declares the integer or Boolean inputs it covers. The compiler evaluates its predicate for each assignment, reports a counterexample when the property fails and distinguishes complete checks from exhausted budgets. The edit tool can use the same contracts while searching for one replacement expression. [Finite contract walkthrough](docs/scalar-language.md#verify-a-finite-contract) · [Contract-guided editing](tools/README.md#repair-an-expression-against-source-contracts)
 - A parser and type checker, a reference interpreter, and an LLVM native backend for a single-module profile with checked scalar arithmetic. [Scalar language guide](docs/scalar-language.md) · [Grammar](spec/grammar.ebnf)
 - Native scalar operations for rounding, bounds and predicates. An agent can write `(elapsed != 0) as I64` to obtain 0 or 1, nest checked integer `min` and `max` calls, or express a closed bound as `clamp(value, low, high)`. The interpreter and native backend implement the same semantics. [Scalar language reference](docs/scalar-language.md)
 - Persistent compiler evaluation through `gpp probe`. The repair tools can check many independent edits and run their example cases using one open compiler process. Across six repair searches and three distinguishing-input searches, the sum of median command times fell from 28.143 to 1.334 seconds on the test host. Both versions returned identical menus and questions. [Authoring tools](tools/README.md) · [Timing study](bench/expression/results/probe.md)
@@ -11,6 +12,10 @@ GPT++ is a programming language designed for agents that write and maintain soft
 - Typed execution traces and example-guided repair. Agents can query an expression's observed inputs, result and fault through a caller, then search a bounded grammar for replacements that pass public examples. When candidates disagree, an agent can request a concrete input to clarify the desired behavior. [Trace reference](docs/scalar-language.md#trace-a-call) · [Repair guide](tools/README.md#search-for-an-edit-with-public-examples)
 - Local-model proposals with public example checks. The maintenance preset starts with the target and can add caller excerpts after a failing public caller test. The experimental catalog method exposes each expression as a numbered choice and checks a single structured model response. [Authoring tools](tools/README.md)
 - Matched benchmarks in GPT++, typed Python and Rust, with historical sources, raw model responses and replay programs. [Study index](bench/README.md)
+
+## What finite contracts added
+
+Two public examples per task admitted all ten hand-authored expression edits in a three-task development study. The complete predicates covered 73 tuples and rejected six of those edits. For signed carry, two edits agreed on the entire declared domain. A capped implementation failed three of five additional inputs outside it. The repair menu retained the ambiguity. In a separate search on the same tasks, the first contract-verified edit passed all three domains and the first example-only edit passed two. The search grammars and their ordering differed. No model made a selection. In a separate six-assignment run on those tasks, Qwen repaired capacity and StarCoder2 returned no accepted edit. [Model-generated edits](bench/contracts/model-results.md) [Frozen protocol](bench/contracts/protocol.md) · [Results and limitations](bench/contracts/results.md)
 
 ## What changed when the compiler learned the missing operations
 

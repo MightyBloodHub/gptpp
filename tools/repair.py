@@ -75,7 +75,7 @@ def distinct_variants(site):
             yield replacement
 
 
-def search_order(traces, failures):
+def search_order(traces, failures, replacements=distinct_variants):
     # Changing an unvisited site cannot affect that failing deterministic execution.
     # Prefer sites that ran on fewer already-correct examples. Give each eligible
     # site one turn per round so a large scope cannot monopolize the edit budget.
@@ -85,7 +85,7 @@ def search_order(traces, failures):
     for index, site in enumerate(failing[0]):
         if site["type"] != "Unit" and all(sites[index]["observations"] for sites in failing):
             ranked.append((sum(sites[index]["hits"] > 0 for sites in passing), index, site))
-    pending = deque((site, distinct_variants(site)) for _, _, site in sorted(ranked))
+    pending = deque((site, replacements(site)) for _, _, site in sorted(ranked))
     while pending:
         site, fragments = pending.popleft()
         fragment = next(fragments, None)

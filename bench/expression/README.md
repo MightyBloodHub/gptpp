@@ -101,7 +101,7 @@ The repair archive’s `capture_provenance` field preserves the original capture
 
 The free-generation editor proposes one new native expression and can retry once after a public diagnostic. The matched GPT++, typed Python and Rust study includes the earlier project extracts and a separate block of three new scalar contracts. Each language uses the same structured response, change specification, public examples and retry limit. The GPT++ trials invoke the actual product CLI. [Historical task results](results/agent.md) · [New-task results](results/fresh-agent.md) · [Historical protocol](agent-protocol.md) · [New-task protocol](agent-fresh-protocol.md)
 
-Recreate both reports with Python. Behavioral replay uses the macOS benchmark environment and the checked edit adapters. Fresh inference uses the pinned local models and requires a new archive path. Replay these two original blocks with the pre-extension compiler from revision `245cb7e`, which implements their expression editor and trace interface.
+Recreate both reports with Python. Behavioral replay uses the macOS benchmark environment and the checked edit adapters. Fresh inference uses the pinned local models and requires a new archive path. For reproducible replay, use the runner and authoring tools from Git revision `d5ccb17` with the pre-extension compiler from revision `245cb7e`. The older runner fingerprints its authoring sources. The current contract-mode CLI has a different fingerprint. Run the following replay commands in the `d5ccb17` checkout.
 
 ```sh
 python3 -B bench/expression/agent_study.py --report bench/expression/results/agent.jsonl
@@ -117,6 +117,8 @@ During the historical block, the live compiler build path changed as the batch p
 ### Rechecking frozen GPT++ answers after extending the language
 
 The explicit `as I64` conversion and native integer `min`, `max` and `clamp` calls were motivated by expressions generated in the arithmetic block. A separate retrospective applied all 24 archived GPT++ answers from both blocks to their original source bytes. No new model responses were generated. On the three new contracts, Qwen’s original answer sequence went from zero to three accepted changes. Its signed-saturation expression passed on the first answer. Half-open windows and timeout quantization passed with the originally saved retry. The three selected patches also passed 879 additional direct checks. Neither model repaired a historical fixture in this replay, and StarCoder2 repaired none of the new tasks. [Retrospective results](results/compat.md) · [Scoring protocol](compat-protocol.md) · [Patch and response hashes](results/compat.jsonl)
+
+Run this compiler-compatibility replay from the `d5ccb17` checkout using the compiler built in that same checkout. The archive checks the compiler source fingerprints.
 
 ```sh
 cargo build --locked --offline

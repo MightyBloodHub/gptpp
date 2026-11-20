@@ -1,5 +1,5 @@
 //! Resolve a single scalar module and lower checked expressions to typed blocks.
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::ir::{self, Instr, Op, Term};
 use crate::syntax::{
@@ -43,6 +43,16 @@ pub fn check_with_types(
     let mut functions = Vec::with_capacity(module.functions.len());
     for function in &module.functions {
         functions.push(Builder::new(module, &names, function, &mut record_type).lower()?);
+    }
+    let mut contract_names = HashSet::new();
+    for contract in &module.contracts {
+        let predicate = &contract.predicate;
+        if !contract_names.insert(&predicate.name) {
+            return Err(duplicate(&predicate.name, predicate.span));
+        }
+        // Resolve references against the production module. Predicates never
+        // occupy a runtime function ID and are excluded from native output.
+        Builder::new(module, &names, predicate, &mut record_type).lower()?;
     }
     let program = ir::Program { entry, functions };
     ir::validate(&program)

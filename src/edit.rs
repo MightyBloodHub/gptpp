@@ -1,6 +1,6 @@
 //! Checked single-function edits against an exact source revision.
 use crate::syntax::{Expr, ExprKind, ExprSite, Function, Module, Span, Stmt, StmtKind};
-use crate::{check, diagnostic, json_string, syntax};
+use crate::{check, diagnostic, json_string, syntax, verify};
 use std::ffi::OsString;
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, Write};
@@ -10,7 +10,7 @@ use std::process::{Command, Stdio};
 pub const USAGE: &str = "\
   gpp revision FILE
   gpp expressions FILE --function NAME
-  gpp edit FILE --function NAME ([--at START:END] --expr|--body) FRAGMENT_FILE (--expect REVISION|--stdout [--expect REVISION])
+  gpp edit FILE --function NAME ([--at START:END] --expr|--body) FRAGMENT_FILE (--expect REVISION|--stdout [--expect REVISION]) [--verify [--budget N]]
 
 Use gpp revision FILE to obtain the sha256:... token for an in-place edit.
 --stdout writes the checked candidate to stdout and leaves FILE untouched.";
@@ -29,6 +29,7 @@ pub struct Edit {
     at: Option<Span>,
     expected: Option<String>,
     preview: bool,
+    verify_budget: Option<u64>,
 }
 
 #[derive(Clone, Copy)]
@@ -65,6 +66,8 @@ pub fn parse(args: impl IntoIterator<Item = OsString>) -> Result<Request, String
     let mut fragment = None;
     let mut expected = None;
     let mut preview = false;
+    let mut verify = false;
+    let mut budget = None;
     while let Some(option) = args.next() {
         match option.to_str() {
             Some("--function") if function.is_none() => {
@@ -102,6 +105,14 @@ pub fn parse(args: impl IntoIterator<Item = OsString>) -> Result<Request, String
                 expected = Some(rev);
             }
             Some("--stdout") if !preview => preview = true,
+            Some("--verify") if !verify => verify = true,
+            Some("--budget") if budget.is_none() => {
+                budget = Some(
+                    args.next()
+                        .and_then(|n| n.to_str()?.parse::<u64>().ok())
+                        .ok_or("--budget needs a nonnegative integer")?,
+                );
+            }
             _ => return Err(USAGE.into()),
         }
     }
@@ -110,6 +121,9 @@ pub fn parse(args: impl IntoIterator<Item = OsString>) -> Result<Request, String
             "in-place edits require --expect; obtain the base revision with gpp revision FILE"
                 .into(),
         );
+    }
+    if budget.is_some() && !verify {
+        return Err("edit --budget requires --verify".into());
     }
     let (kind, fragment) = fragment.ok_or(USAGE)?;
     if at.is_some() && matches!(kind, FragmentKind::Body) {
@@ -123,6 +137,7 @@ pub fn parse(args: impl IntoIterator<Item = OsString>) -> Result<Request, String
         at,
         expected,
         preview,
+        verify_budget: verify.then(|| budget.unwrap_or(verify::DEFAULT_BUDGET)),
     }))
 }
 
@@ -331,12 +346,11 @@ pub(crate) fn replace_node(
     checked_source(path, splice(&grouped))
 }
 
-fn candidate(edit: &Edit, source: &str, fragment: &str) -> Result<String, String> {
+fn candidate(edit: &Edit, source: &str, fragment: &str) -> Result<(String, Module), String> {
     let module = syntax::parse(source).map_err(|e| diagnostic(&edit.file, source, e, false))?;
     let function = target(&module, &edit.function)?;
     if let Some(span) = edit.at {
-        return replace_node(&edit.file, &edit.fragment, source, function, span, fragment)
-            .map(|(text, _)| text);
+        return replace_node(&edit.file, &edit.fragment, source, function, span, fragment);
     }
     let fragment_error = |e| diagnostic(&edit.fragment, fragment, e, false);
     let newline = if source.contains("\r\n") {
@@ -368,7 +382,7 @@ fn candidate(edit: &Edit, source: &str, fragment: &str) -> Result<String, String
         result.push_str(newline);
     }
     result.push_str(&source[span.end - 1..]);
-    checked_source(&edit.file, result).map(|(text, _)| text)
+    checked_source(&edit.file, result)
 }
 
 fn checked_source(path: &Path, result: String) -> Result<(String, Module), String> {
@@ -419,7 +433,17 @@ fn replace(edit: Edit) -> Result<(), String> {
     }
     let fragment = fs::read_to_string(&edit.fragment)
         .map_err(|e| format!("{}: {e}", edit.fragment.display()))?;
-    let result = candidate(&edit, &source, &fragment)?;
+    let (result, module) = candidate(&edit, &source, &fragment)?;
+    if let Some(budget) = edit.verify_budget {
+        let mut report = Vec::new();
+        let revision = revision(result.as_bytes())?;
+        if verify::verify_module(&module, &revision, None, budget, &mut report)? != 0 {
+            return Err(String::from_utf8(report)
+                .map_err(|e| e.to_string())?
+                .trim_end()
+                .to_owned());
+        }
+    }
     if let Some(directory) = directory {
         commit(&path, parent, &source, &result)?;
         directory

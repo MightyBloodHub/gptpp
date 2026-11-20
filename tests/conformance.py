@@ -306,6 +306,99 @@ fn spin(n: I64) -> I64 !{} { (); (); var i = 0; while i < n { i += 1; } return i
             self.assertNotEqual(p.returncode, 0)
             self.assertEqual(json.loads(p.stderr)["code"], code)
 
+    def verify(self, code, *flags):
+        p = invoke(GPP, "verify", self.source, *flags, "--format=json", timeout=10)
+        self.assertEqual(p.returncode, code, (p.stdout, p.stderr))
+        result = json.loads(p.stdout)
+        self.assertEqual(result["schema"], "gpp.verify/1")
+        self.assertEqual(result["revision"], invoke(GPP, "revision", self.source).stdout.strip())
+        return result
+
+    def test_verify_exhaustion_witness_order_and_runtime_isolation(self):
+        production = module("return 42;", "fn accept(x: I64, b: Bool) -> Bool !{} { return x != -1 || !b; }")
+        # The contract and ordinary function share a name. Calls still resolve
+        # exclusively against program functions, and declarations may precede them.
+        contracts = """
+contract yes() { true }
+contract accept(x: I64 in -2..=2, b: Bool) { accept(x, b) }
+contract never_run() { 1 / 0 == 0 }
+"""
+        source = production.replace("fn accept", contracts + "fn accept", 1)
+        self.source.write_text(source)
+        result = self.verify(1)
+        self.assertEqual((result["status"], result["checked"]), ("counterexample", 5))
+        self.assertEqual(result["contracts"][0], {"name": "yes", "status": "passed", "checked": 1})
+        self.assertEqual(result["contracts"][1], {
+            "name": "accept", "status": "counterexample", "checked": 4,
+            "counterexample": {"inputs": {"x": -1, "b": True}, "args": [-1, True], "result": False}})
+        self.assertEqual(len(result["contracts"]), 2)
+        limited = self.verify(3, "--budget", "4")
+        self.assertEqual((limited["reason"], limited["checked"]), ("budget", 4))
+        self.assertEqual(limited["contracts"][1]["checked"], 3)
+        selected = self.verify(0, "--contract", "yes", "--budget", "1")
+        self.assertEqual((selected["status"], selected["checked"]), ("passed", 1))
+        self.assertEqual(self.source.read_text(), source)
+        self.assert_engines(source, "result", 42)
+        compiled = invoke(GPP, "emit-llvm", self.source).stdout
+        normalized = invoke(GPP, "ast", self.source).stdout
+        self.source.write_text(normalized)
+        self.assertEqual(self.verify(1)["contracts"], result["contracts"])
+        self.assertEqual(invoke(GPP, "ast", self.source).stdout, normalized)
+        self.source.write_text(production)
+        self.assertEqual(invoke(GPP, "emit-llvm", self.source).stdout, compiled)
+
+    def test_verify_budget_full_width_arithmetic_faults_and_resources(self):
+        source = module("return 1;", "fn spins() -> Bool !{} { while true {} }")
+        self.source.write_text(source)
+        self.assertEqual(self.verify(3)["reason"], "no_contracts")
+        hi, lo = 2**63 - 1, -(2**63)
+        self.source.write_text(source + f"""
+contract huge(x: I64 in {lo}..={hi}, y: I64 in {lo}..={hi}) {{ x == x && y == y }}
+contract last(x: I64 in {hi-1}..={hi}) {{ true }}
+contract overflow(x: I64 in {hi}..={hi}) {{ x + 1 > x }}
+contract invalid() {{ clamp(1, 4, 3) > 0 }}
+contract divzero(b: Bool) {{ !b || 0 / 0 == 1 }}
+contract resource() {{ spins() }}
+""")
+        for n in (0, 1, 7):
+            limited = self.verify(3, "--contract", "huge", "--budget", str(n))
+            self.assertEqual((limited["reason"], limited["checked"]), ("budget", n))
+        self.assertEqual(self.verify(0, "--contract", "last", "--budget", "2")["checked"], 2)
+        for name, values, fault, count in [("overflow", [hi], "IntegerOverflow", 1),
+                                           ("invalid", [], "InvalidBounds", 1),
+                                           ("divzero", [True], "DivisionByZero", 2)]:
+            report = self.verify(1, "--contract", name)
+            witness = report["contracts"][0]["counterexample"]
+            self.assertEqual((witness["args"], witness["fault"], report["checked"]), (values, fault, count))
+            self.assertNotIn("result", witness)
+        exhausted = self.verify(3, "--contract", "resource")
+        self.assertEqual((exhausted["reason"], exhausted["checked"]), ("resource_limit", 1))
+        self.assertNotIn("counterexample", exhausted["contracts"][0])
+
+    def test_contract_typechecking_scope_and_domain_errors(self):
+        for declarations, code in [
+                ("contract p(x: I64) { true }", "GPP-PARSE-001"),
+                ("contract p(x: I64 in 1..=0) { true }", "GPP-DOMAIN-001"),
+                ("contract p(x: I64 in -9223372036854775809..=0) { true }", "GPP-PARSE-003"),
+                ("contract p(x: Unit) { true }", "GPP-DOMAIN-001"),
+                ("contract p(x: Bool, x: Bool) { x }", "GPP-NAME-002"),
+                ("contract p() { true } contract p() { true }", "GPP-NAME-002"),
+                ("contract p() { 1 }", "GPP-TYPE-001"),
+                ("contract p() { true || missing }", "GPP-NAME-001"),
+                ("contract p() { true } contract q() { p() }", "GPP-NAME-001")]:
+            self.source.write_text(module("return 0;") + declarations)
+            for cmd, flags in [("check", ["--format=json", self.source]), ("verify", [self.source, "--format=json"])]:
+                p = invoke(GPP, cmd, *flags)
+                self.assertNotEqual(p.returncode, 0)
+                self.assertEqual(p.stdout, "")
+                d = json.loads(p.stderr)
+                self.assertEqual(d["code"], code)
+                self.assertLess(d["location"]["start_byte"], d["location"]["end_byte"])
+        self.source.write_text(module("return 0;") + "contract p() { true }")
+        unknown = invoke(GPP, "verify", self.source, "--contract", "absent")
+        self.assertEqual(unknown.returncode, 2)
+        self.assertIn("unknown contract", unknown.stderr)
+
     def test_arithmetic(self):
         hi, lo = "9223372036854775807", "-9223372036854775808"
         cases = [

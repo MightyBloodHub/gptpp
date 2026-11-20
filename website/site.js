@@ -81,3 +81,140 @@ copyButton.addEventListener("click", async () => {
 selectTab(0);
 tabList.hidden = false;
 copyButton.hidden = false;
+
+function enableContractVerifier() {
+  const form = document.getElementById("contract-playground");
+  if (!window.Worker || !window.WebAssembly || !window.TextEncoder) return;
+
+  const source = form.querySelector("#contract-source");
+  const budget = form.querySelector("#contract-budget");
+  const submit = form.querySelector("[type=submit]");
+  const result = form.querySelector(".contract-result");
+  const title = result.querySelector("[data-result-title]");
+  const detail = result.querySelector("[data-result-detail]");
+  const reportBox = form.querySelector(".contract-json");
+  const example = source.defaultValue;
+  let worker = null;
+  let deadline;
+  let hasInteracted = false;
+
+  function stopWorker() {
+    clearTimeout(deadline);
+    if (worker) worker.terminate();
+    worker = null;
+    submit.disabled = false;
+    submit.textContent = "Verify source";
+    result.removeAttribute("aria-busy");
+  }
+
+  function show(state, heading, description, rawReport) {
+    result.dataset.state = state;
+    title.textContent = heading;
+    detail.textContent = description;
+    reportBox.hidden = !rawReport;
+    reportBox.querySelector("pre").textContent = rawReport || "";
+  }
+
+  function showReport(report, rawReport) {
+    if (report.schema === "gpp.bootstrap-diagnostic/1") {
+      show("error", "Compiler diagnostic", report.code + " · " + report.message, rawReport);
+      return;
+    }
+    if (report.schema !== "gpp.verify/1" || !Array.isArray(report.contracts)) {
+      show("error", "Verification failed", "The compiler returned an unexpected report.", rawReport);
+      return;
+    }
+
+    const coverage = report.checked + (report.checked === 1 ? " assignment checked." : " assignments checked.");
+    if (report.status === "passed") {
+      const contracts = report.contracts.length === 1 ? report.contracts[0].name : report.contracts.length + " contracts";
+      show("passed", "Passed", contracts + " · " + coverage, rawReport);
+    } else if (report.status === "counterexample") {
+      const row = report.contracts.find((entry) => entry.counterexample);
+      const witness = row.counterexample;
+      const inputs = Object.entries(witness.inputs).map(([name, value]) => name + " = " + value);
+      const outcome = witness.fault ? " raised " + witness.fault : " returned false";
+      show("counterexample", "Counterexample", row.name + "(" + inputs.join(", ") + ")" + outcome + ". " + coverage, rawReport);
+    } else if (report.status === "incomplete") {
+      const reasons = {
+        budget: "Assignment budget exhausted.",
+        resource_limit: "Interpreter resource limit reached.",
+        no_contracts: "The module declares no contracts.",
+      };
+      show("incomplete", "Incomplete", (reasons[report.reason] || "Verification stopped.") + " " + coverage, rawReport);
+    } else {
+      show("error", "Verification failed", "The compiler returned an unknown status.", rawReport);
+    }
+  }
+
+  function verify() {
+    hasInteracted = true;
+    stopWorker();
+    if (!form.reportValidity()) return;
+    if (new TextEncoder().encode(source.value).length > 32768) {
+      show("error", "Source too large", "The browser verifier accepts up to 32 KiB of UTF-8 source.");
+      return;
+    }
+
+    try {
+      const current = new Worker("/contract-worker.js", { type: "module" });
+      worker = current;
+      submit.disabled = true;
+      submit.textContent = "Verifying…";
+      result.setAttribute("aria-busy", "true");
+      show("running", "Verifying…", "Checking the current source in your browser.");
+      current.onmessage = ({ data }) => {
+        if (worker !== current) return;
+        stopWorker();
+        if (data.report) showReport(data.report, data.raw);
+        else show("error", "Verification failed", data.error || "No compiler report was returned.");
+      };
+      current.onerror = () => {
+        if (worker !== current) return;
+        stopWorker();
+        show("error", "Verifier unavailable", "The compiler worker could not run. Try the terminal command below.");
+      };
+      deadline = setTimeout(() => {
+        stopWorker();
+        show("incomplete", "Browser time limit", "The worker stopped after 8 seconds. Try fewer assignments or run the terminal verifier.");
+      }, 8000);
+      current.postMessage({ source: source.value, budget: budget.valueAsNumber });
+    } catch (error) {
+      stopWorker();
+      show("error", "Verifier unavailable", error.message);
+    }
+  }
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    verify();
+  });
+  form.addEventListener("input", () => {
+    hasInteracted = true;
+    stopWorker();
+    show("ready", "Ready to verify", "Run the verifier to check these changes.");
+  });
+  form.querySelector("[data-load-bug]").addEventListener("click", () => {
+    source.value = example.replace("return queued < 8;", "return queued <= 8;");
+    verify();
+  });
+  form.querySelector("[data-reset-source]").addEventListener("click", () => {
+    source.value = example;
+    budget.value = budget.defaultValue;
+    verify();
+  });
+
+  form.hidden = false;
+  document.querySelector(".contract-terminal").open = false;
+  if (window.IntersectionObserver) {
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        observer.disconnect();
+        if (!hasInteracted) verify();
+      }
+    });
+    observer.observe(form);
+  }
+}
+
+enableContractVerifier();

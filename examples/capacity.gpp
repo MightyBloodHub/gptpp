@@ -1,0 +1,16 @@
+module demo.capacity;
+
+fn can_admit(queued: I64) -> Bool !{} {
+    return queued < 8;
+}
+
+contract respects_capacity(
+    queued: I64 in 0..=8,
+) {
+    can_admit(queued)
+        == (queued + 1 <= 8)
+}
+
+pub fn main() -> I64 !{} {
+    return can_admit(7) as I64;
+}

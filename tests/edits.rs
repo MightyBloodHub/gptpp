@@ -398,3 +398,55 @@ fn arbitrary_ranges_cross_function_edits_and_invalid_fragments_are_rejected() {
         assert_eq!(fs::read_to_string(&fixture.source).unwrap(), source);
     }
 }
+
+#[test]
+fn verified_edit_checks_the_exact_preview_before_writing() {
+    let fixture = Fixture::new();
+    let original = format!(
+        "{PREFIX} return x; {SUFFIX}contract next(x: I64 in -1..=2) {{ solve(x) == x + 1 }}\n"
+    );
+    fs::write(&fixture.source, &original).unwrap();
+    let revision = fixture.revision();
+    for (fragment, budget, expected) in [
+        ("x", "4", "\"status\":\"counterexample\""),
+        ("x / 0", "4", "DivisionByZero"),
+        ("x + 1", "3", "\"reason\":\"budget\""),
+    ] {
+        fs::write(&fixture.fragment, fragment).unwrap();
+        let run = fixture
+            .edit("--expr", &fixture.fragment)
+            .args(["--verify", "--budget", budget, "--expect", &revision])
+            .output()
+            .unwrap();
+        assert!(!run.status.success());
+        assert!(run.stdout.is_empty());
+        assert!(String::from_utf8_lossy(&run.stderr).contains(expected));
+        assert_eq!(fs::read_to_string(&fixture.source).unwrap(), original);
+    }
+    fs::write(&fixture.fragment, "return x + 1;").unwrap();
+    let cmd = || {
+        let mut cmd = fixture.edit("--body", &fixture.fragment);
+        cmd.args(["--verify", "--budget", "4", "--expect", &revision]);
+        cmd
+    };
+    let preview = cmd().arg("--stdout").output().unwrap();
+    success(&preview);
+    assert_eq!(fs::read_to_string(&fixture.source).unwrap(), original);
+    success(&cmd().output().unwrap());
+    assert_eq!(fs::read(&fixture.source).unwrap(), preview.stdout);
+    assert!(!cmd().output().unwrap().status.success());
+}
+
+#[test]
+fn verified_edit_requires_an_executable_contract() {
+    let fixture = Fixture::new();
+    fs::write(&fixture.fragment, "x + 7").unwrap();
+    let run = fixture
+        .edit("--expr", &fixture.fragment)
+        .args(["--verify", "--stdout"])
+        .output()
+        .unwrap();
+    assert!(!run.status.success());
+    assert!(run.stdout.is_empty());
+    assert!(String::from_utf8_lossy(&run.stderr).contains("no_contracts"));
+}

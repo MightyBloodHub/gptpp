@@ -2,9 +2,9 @@
 ## A general-purpose programming language and compiler optimized for AI-authored software
 
 **Document:** `docs/design.md`<br>
-**Design revision:** 0.5<br>
-**Date:** 20 November 2026<br>
-**Status:** The scalar language supports explicit Boolean-to-integer conversion and checked integer `min`, `max` and `clamp`. The compiler exposes runtime values at revision-bound expression sites and can validate a stream of edits against one source snapshot. [Scalar language reference](scalar-language.md) · [Build and run](../README.md)
+**Design revision:** 0.6<br>
+**Date:** 21 November 2026<br>
+**Status:** The scalar language has named finite contracts. An agent can check a Boolean predicate over a declared domain, inspect a concrete counterexample and verify a candidate edit against the same property. [Executable contract](../examples/capacity.gpp) · [Scalar language reference](scalar-language.md#verify-a-finite-contract)
 
 > **Mission:** Give AI agents the language and compiler operations they need to construct, understand and revise correct programs. Compiled programs run independently of a model.
 
@@ -422,7 +422,9 @@ The executable's requested capabilities and the host's grants must both allow th
 
 ### 7.10 Contracts
 
-Contracts are an optional later language feature with reserved syntax:
+A top-level `contract` binds integer inputs over inclusive finite intervals and Boolean inputs over both truth values. Its body is a Boolean expression that can call checked module functions. The offline verifier enumerates the declared inputs. When evaluating a contract for an edit, the user-supplied source predicate stays fixed. A passing result covers the declared finite domain and the predicate that was written. A repair menu retains multiple edits when all satisfy the stated rules. In a development study, two signed-carry edits behaved identically on the declared domain and differed on inputs outside it. [Domain-scope measurement](../bench/contracts/results.md) [Current contract syntax and verification](scalar-language.md#verify-a-finite-contract)
+
+A separate proposed feature would attach preconditions and postconditions to function signatures:
 
 ```gpp
 fn clamp(value: I64, lower: I64, upper: I64) -> I64 !{}
@@ -437,7 +439,7 @@ ensures result >= lower && result <= upper
 
 `requires` defines a caller obligation. `ensures` defines a property of normal return. The identifier `result` is available only in a postcondition. Runtime checks remain enabled unless a supported verification process justifies their removal under the exact build assumptions.
 
-The initial contract sublanguage is restricted to side-effect-free, terminating scalar expressions and explicitly approved total intrinsics. General recursive calls, unbounded quantifiers, I/O, and arbitrary loops are excluded. Verification uses the same bounded integer semantics as execution, including overflow obligations.
+The proposed precondition and postcondition sublanguage would be restricted to side-effect-free, terminating scalar expressions and explicitly approved total intrinsics. General recursive calls, unbounded quantifiers, I/O, and arbitrary loops are excluded. Verification uses the same bounded integer semantics as execution, including overflow obligations.
 
 ### 7.11 Source holes during editing
 
@@ -1031,6 +1033,7 @@ Maintain regression fixtures for stable codes, correct locations, causal groupin
 | Checked | Type, match, and effect rules satisfied | Does not establish intended behavior |
 | Runtime-guarded | Checks fail on exercised violations | Unexercised paths remain |
 | Tested | Independent examples/properties pass | Coverage is finite |
+| Exhaustively checked finite contract | The scalar interpreter evaluated the predicate successfully on every declared input | The predicate and domain determine the guarantee |
 | Verified subset | Supported obligations proved under listed assumptions | Does not cover unsupported features or mistaken requirements |
 | Audited | Human/security review of important boundaries | Review can miss defects |
 
@@ -1044,7 +1047,7 @@ Keep author-visible tests separate from sealed acceptance tests. An AI may add u
 
 The compiler/runtime test suite includes parsing negatives, type/effect negatives, enum exhaustiveness, arithmetic boundaries, UTF-8 errors, large nesting, recursion limits, generic expansion limits, GC stress, FFI layout, capability denials, and platform behavior.
 
-### 15.3 Optional verification scope
+### 15.3 Proposed solver-based verification
 
 Start with scalar arithmetic and branching contracts, then consider bounded collection properties. Use a solver adapter with explicit time/memory limits and four distinct outcomes: `proved`, `refuted`, `unknown`, and `unsupported`.
 
@@ -1052,7 +1055,7 @@ Machine integers require bit-vector or otherwise justified bounded-arithmetic en
 
 A `proved` status is relative to the translation, solver, and trusted implementation. Do not call it an independently checked proof certificate unless a certificate checker actually exists. Dafny's documentation is a useful reference for contract/verification design, but GPT++ needs its own correct semantics and translation. [R10]
 
-### 15.4 Verification modes
+### 15.4 Proposed solver modes
 
 `gpp verify --mode=report` reports supported obligations and leaves runtime checks intact where needed. `--mode=required` fails on any unproved required obligation, including `unknown`; it must not reinterpret solver timeouts as success.
 

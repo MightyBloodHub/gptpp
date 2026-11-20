@@ -1,15 +1,20 @@
-(* GPT++ scalar bootstrap profile, revision 3.
+(* GPT++ scalar bootstrap profile, revision 4.
    Input is one UTF-8 source file. A successful parse consumes the entire file.
    Double quotes enclose terminals. Square brackets indicate an optional part,
    braces indicate repetition, and a comma denotes concatenation. *)
 
-module          = "module", path, ";", { function } ;
+module          = "module", path, ";", { function | contract } ;
 path            = identifier, { ".", identifier } ;
 function        = [ "pub" ], "fn", identifier, "(", [ parameters ], ")",
                   "->", scalar_type, "!", "{", "}", block ;
 parameters      = parameter, { ",", parameter }, [ "," ] ;
 parameter       = identifier, ":", scalar_type ;
 scalar_type     = "I64" | "Bool" | "Unit" ;
+contract        = "contract", identifier, "(", [ binders ], ")",
+                  "{", expression, "}" ;
+binders         = binder, { ",", binder }, [ "," ] ;
+binder          = identifier, ":", ( "Bool" | "I64", "in", bound, "..=", bound ) ;
+bound           = [ "-" ], decimal ;
 
 block           = "{", { statement }, "}" ;
 statement       = binding | assignment | return_stmt | if_stmt | while_stmt
@@ -39,10 +44,10 @@ arguments       = expression, { ",", expression }, [ "," ] ;
 
 (* Lexical productions have no intervening trivia. Identifiers and decimal
    digits are scanned to maximal length. A reserved word must match the entire
-   identifier token. The two-character operators are scanned before their
-   single-character prefixes. Annotation type names also work as identifiers
-   wherever the grammar expects an identifier. The contextual "as" token
-   can still name a local or function. *)
+   identifier token. The lexer recognizes "..=" and the two-character
+   operators before their shorter prefixes. Annotation type names also
+   work as identifiers wherever the grammar expects an identifier.
+   "as" and "contract" are contextual and may also name locals or functions. *)
 identifier      = identifier_word - reserved ;
 identifier_word = ( letter | "_" ), { letter | "_" | digit } ;
 letter          = ? ASCII A through Z or a through z ? ;
@@ -68,6 +73,9 @@ line_comment    = "//", { ? Unicode scalar other than CR or LF ? } ;
      admitted as a primary is 9223372036854775807. The magnitude 9223372036854775808
      is accepted only immediately after a prefix minus token. This pair forms
      the I64 minimum literal. Trivia may occur between those two tokens.
+   - Contract bounds must fit I64 and the lower bound must be at most the
+     upper bound. A contract body must evaluate to Bool. Contract names
+     are unique among contracts and are separate from function names.
    - The parser bounds recursive nesting at 64. Each nested branch/loop block
      or else-if, grouped expression, call argument, prefix operand and descent
      into the right operand of a binary operator consumes one nesting level.

@@ -45,6 +45,21 @@ impl fmt::Display for Type {
 pub struct Module {
     pub name: String,
     pub functions: Vec<Function>,
+    pub contracts: Vec<Contract>,
+}
+
+#[derive(Clone, Debug)]
+pub struct Contract {
+    /// A private Bool predicate with one return expression. Contract names are
+    /// in a separate namespace and never enter the runtime function table.
+    pub predicate: Function,
+    pub domains: Vec<Domain>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Domain {
+    Bool,
+    I64 { low: i64, high: i64 },
 }
 
 #[derive(Clone, Debug)]
@@ -315,6 +330,8 @@ fn lex(source: &str) -> Result<Vec<Token<'_>>, Diagnostic> {
             while pos < bytes.len() && bytes[pos].is_ascii_digit() {
                 pos += 1;
             }
+        } else if byte == b'.' && bytes.get(pos..pos + 2) == Some(b".=") {
+            pos += 2;
         } else if matches!(
             (byte, bytes.get(pos)),
             (b'-', Some(b'>'))
@@ -511,10 +528,105 @@ impl<'a> Parser<'a> {
         }
         self.require(";")?;
         let mut functions = Vec::new();
+        let mut contracts = Vec::new();
         while !self.peek().text.is_empty() {
-            functions.push(self.function()?);
+            if self.peek().text == "contract" {
+                contracts.push(self.contract()?);
+            } else {
+                functions.push(self.function()?);
+            }
         }
-        Ok(Module { name, functions })
+        Ok(Module {
+            name,
+            functions,
+            contracts,
+        })
+    }
+
+    fn bound(&mut self) -> Result<i64, Diagnostic> {
+        let start = self.peek().span.start;
+        let negative = self.eat("-");
+        let token = self.peek();
+        if token.text.is_empty() || !token.text.bytes().all(|b| b.is_ascii_digit()) {
+            return Err(self.expected("an integer range bound"));
+        }
+        self.bump();
+        let sign = if negative { "-" } else { "" };
+        format!("{sign}{}", token.text).parse().map_err(|_| {
+            Diagnostic::new(
+                "GPP-PARSE-003",
+                "contract bound is outside I64",
+                self.span_from(start),
+            )
+        })
+    }
+
+    fn contract(&mut self) -> Result<Contract, Diagnostic> {
+        let start = self.bump().span.start;
+        let name = self.identifier()?;
+        self.require("(")?;
+        let mut params = Vec::new();
+        let mut domains = Vec::new();
+        while self.peek().text != ")" {
+            let param_start = self.peek().span.start;
+            let name = self.identifier()?;
+            self.require(":")?;
+            let ty = self.ty()?;
+            let domain = match ty {
+                Type::Bool => Domain::Bool,
+                Type::I64 => {
+                    self.require("in")?;
+                    let low = self.bound()?;
+                    self.require("..=")?;
+                    let high = self.bound()?;
+                    if low > high {
+                        return Err(Diagnostic::new(
+                            "GPP-DOMAIN-001",
+                            "contract range has inverted bounds",
+                            self.span_from(param_start),
+                        ));
+                    }
+                    Domain::I64 { low, high }
+                }
+                Type::Unit => {
+                    return Err(Diagnostic::new(
+                        "GPP-DOMAIN-001",
+                        "contract parameters require Bool or a bounded I64",
+                        self.span_from(param_start),
+                    ));
+                }
+            };
+            params.push(Param {
+                name,
+                ty,
+                span: self.span_from(param_start),
+            });
+            domains.push(domain);
+            if !self.eat(",") {
+                break;
+            }
+        }
+        self.require(")")?;
+        let body_start = self.peek().span.start;
+        self.require("{")?;
+        let expr = self.expression(0)?;
+        self.require("}")?;
+        let span = expr.span;
+        Ok(Contract {
+            predicate: Function {
+                public: false,
+                name,
+                params,
+                result: Type::Bool,
+                body: vec![Stmt {
+                    kind: StmtKind::Return(expr),
+                    span,
+                }],
+                body_span: self.span_from(body_start),
+                span: self.span_from(start),
+            },
+            domains,
+        })
     }
 
     fn function(&mut self) -> Result<Function, Diagnostic> {
@@ -890,6 +1002,24 @@ pub fn print(module: &Module) -> String {
         write!(text, ") -> {} !{{}} ", function.result).unwrap();
         print_block(&function.body, 0, &mut text);
         text.push('\n');
+    }
+    for c in &module.contracts {
+        write!(text, "\ncontract {}(", c.predicate.name).unwrap();
+        for (i, (param, domain)) in c.predicate.params.iter().zip(&c.domains).enumerate() {
+            if i != 0 {
+                text.push_str(", ");
+            }
+            write!(text, "{}: {}", param.name, param.ty).unwrap();
+            if let Domain::I64 { low, high } = domain {
+                write!(text, " in {low}..={high}").unwrap();
+            }
+        }
+        text.push_str(") { ");
+        let StmtKind::Return(expr) = &c.predicate.body[0].kind else {
+            unreachable!("contract predicate")
+        };
+        print_expr(expr, 0, &mut text);
+        text.push_str(" }\n");
     }
     text
 }

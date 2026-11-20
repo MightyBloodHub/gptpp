@@ -11,14 +11,16 @@ import propose
 
 
 @contextmanager
-def session(binary, snapshot, function, revision, work, calls, *, wrapped=False, expected=None):
+def session(binary, snapshot, function, revision, work, calls, *, wrapped=False, expected=None,
+            contracts=False):
     cases_file = work / "calls.tsv"
     fields = [[name, *args] for name, args in calls]
     if expected is not None:
         for row, value in zip(fields, expected, strict=True):
             row.append(value)
     cases_file.write_text("".join("\t".join(row) + "\n" for row in fields), encoding="utf-8")
-    command = [binary, "probe", snapshot, "--function", function, "--expect", revision, "--cases", cases_file]
+    option = "--contract-cases" if contracts else "--cases"
+    command = [binary, "probe", snapshot, "--function", function, "--expect", revision, option, cases_file]
     if wrapped:
         command.append("--wrapped")
     if expected is not None:

@@ -1,6 +1,6 @@
 # Multi-caller maintenance benchmark
 
-**GPT++ missed the 20% token target against typed Python. It came within 7.1 percentage points of the target against Rust.** With matched caller context, GPT++ accepted 4/8 at 1,850 tokens per accepted edit, Python accepted 6/8 at 760.33, and Rust accepted 3/8 at 2,124.33. GPT++ was 2.43× as costly as Python and 12.9% cheaper than Rust by this measure. Matching the 20% point target at unchanged acceptance requires another 67.1% token reduction against Python or 8.1% against Rust. The small sample did not clear both thresholds against either comparator. [Full results and paired intervals](results/maintenance.md)
+With matched caller context, GPT++ accepted 4/8 at 1,850 tokens per accepted edit, Python accepted 6/8 at 760.33, and Rust accepted 3/8 at 2,124.33. GPT++ was 2.43× as costly as Python and 12.9% cheaper than Rust by this measure. [Full results and paired intervals](results/maintenance.md)
 
 The benchmark tests edits to shared scalar functions with multiple application consumers. Four fixtures reproduce documented rule changes in USPS, Amazon S3, Kubernetes, and IFAB. Four others correct behavior against published contracts for calendar dates, PCM audio, DNS serial ordering, and HTTP ranges. The repository contains independently written reproductions with small application modules and regression suites. Each task preserves its caller code, and withheld tests check both updated and previously correct behavior through at least two callers.
 

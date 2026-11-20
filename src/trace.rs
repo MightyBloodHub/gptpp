@@ -141,7 +141,7 @@ impl Request {
     }
 }
 
-fn parse_values(entry: &Function, raw: &[String]) -> Result<Vec<Value>, String> {
+pub(crate) fn parse_values(entry: &Function, raw: &[String]) -> Result<Vec<Value>, String> {
     if raw.len() != entry.params.len() {
         return Err(format!(
             "'{}' expects {} arguments, found {}",
@@ -155,13 +155,7 @@ fn parse_values(entry: &Function, raw: &[String]) -> Result<Vec<Value>, String> 
         .iter()
         .zip(raw)
         .map(|(param, s)| {
-            match param.ty {
-                Type::I64 => s.parse::<i64>().ok().map(Value::Int),
-                Type::Bool => s.parse::<bool>().ok().map(Value::Bool),
-                Type::Unit if s == "()" => Some(Value::Unit),
-                _ => None,
-            }
-            .ok_or_else(|| {
+            parse_value(param.ty, s).ok_or_else(|| {
                 format!(
                     "expected {} for argument '{}', found {s}",
                     param.ty, param.name
@@ -169,6 +163,15 @@ fn parse_values(entry: &Function, raw: &[String]) -> Result<Vec<Value>, String> 
             })
         })
         .collect()
+}
+
+pub(crate) fn parse_value(ty: Type, text: &str) -> Option<Value> {
+    match ty {
+        Type::I64 => text.parse::<i64>().ok().map(Value::Int),
+        Type::Bool => text.parse::<bool>().ok().map(Value::Bool),
+        Type::Unit if text == "()" => Some(Value::Unit),
+        _ => None,
+    }
 }
 
 fn write_value(out: &mut impl Write, value: Value) -> io::Result<()> {
@@ -179,7 +182,11 @@ fn write_value(out: &mut impl Write, value: Value) -> io::Result<()> {
     }
 }
 
-fn write_result(out: &mut impl Write, key: &str, result: Result<Value, Fault>) -> io::Result<()> {
+pub(crate) fn write_result(
+    out: &mut impl Write,
+    key: &str,
+    result: Result<Value, Fault>,
+) -> io::Result<()> {
     match result {
         Ok(value) => {
             write!(out, "\"{key}\":")?;

@@ -9,6 +9,7 @@ _Noreturn void gpp_fault(int32_t category) {
     switch (category) {
     case 1: name = "IntegerOverflow"; break;
     case 2: name = "DivisionByZero"; break;
+    case 3: name = "InvalidBounds"; break;
     default: name = "InternalError"; break;
     }
     fprintf(stderr, "fault: %s\n", name);

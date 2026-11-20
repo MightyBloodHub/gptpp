@@ -1,7 +1,7 @@
 //! LLVM lowering for the bootstrap ABI. Each IR slot starts as a stack cell.
 //! LLVM's optimization pipeline may promote these cells to SSA registers.
 
-use crate::ir::{self, BinOp, Function, Op, Program, Term, Type, UnOp};
+use crate::ir::{self, BinOp, Function, Intrinsic, Op, Program, Term, Type, UnOp};
 use std::env;
 use std::fmt::Write as _;
 use std::fs;
@@ -109,6 +109,22 @@ impl FunctionEmitter<'_> {
             Op::Bool(b) => b.to_string(),
             Op::Unit => "false".into(),
             Op::Copy(slot) => self.load(*slot),
+            Op::BoolToI64(slot) => {
+                let bit = self.load(*slot);
+                self.register(&format!("zext i1 {bit} to i64"))
+            }
+            Op::Intrinsic(op, args) => {
+                let callee = match op {
+                    Intrinsic::Min => "llvm.smin.i64",
+                    Intrinsic::Max => "llvm.smax.i64",
+                    Intrinsic::Clamp => "checked_clamp",
+                };
+                let operands = args
+                    .iter()
+                    .map(|&s| format!("i64 {}", self.load(s)))
+                    .collect::<Vec<_>>();
+                self.register(&format!("call i64 @{callee}({})", operands.join(", ")))
+            }
             Op::Unary(op, slot) => {
                 let a = self.load(*slot);
                 match op {
@@ -207,6 +223,31 @@ pub fn emit_llvm(program: &Program) -> Result<String, String> {
     ir::validate(program)?;
     let mut out = String::new();
     emit_arithmetic_helpers(&mut out);
+    out.push_str("declare i64 @llvm.smin.i64(i64, i64)\ndeclare i64 @llvm.smax.i64(i64, i64)\n");
+    if program
+        .functions
+        .iter()
+        .flat_map(|f| &f.blocks)
+        .flat_map(|b| &b.instructions)
+        .any(|i| matches!(i.op, Op::Intrinsic(Intrinsic::Clamp, _)))
+    {
+        out.push_str(
+            "
+define internal i64 @checked_clamp(i64 %x, i64 %lo, i64 %hi) {
+entry:
+  %inverted = icmp sgt i64 %lo, %hi
+  br i1 %inverted, label %fault, label %ok
+fault:
+  call void @gpp_fault(i32 3)
+  unreachable
+ok:
+  %lower = call i64 @llvm.smax.i64(i64 %x, i64 %lo)
+  %result = call i64 @llvm.smin.i64(i64 %lower, i64 %hi)
+  ret i64 %result
+}
+",
+        );
+    }
     for (id, function) in program.functions.iter().enumerate() {
         FunctionEmitter {
             out: &mut out,

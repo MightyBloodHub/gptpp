@@ -206,7 +206,7 @@ pub(crate) fn expressions(function: &Function) -> Vec<&Expr> {
                 walk_expr(lhs, nodes);
                 walk_expr(rhs, nodes);
             }
-            ExprKind::Unary(_, arg) => walk_expr(arg, nodes),
+            ExprKind::Unary(_, arg) | ExprKind::AsI64(arg) => walk_expr(arg, nodes),
             ExprKind::Call(_, args) => {
                 for arg in args {
                     walk_expr(arg, nodes);
@@ -281,13 +281,14 @@ fn list_expressions(path: &Path, name: &str) -> Result<(), String> {
     emit().map_err(|err| err.to_string())
 }
 
-fn replace_node(
-    edit: &Edit,
+pub(crate) fn replace_node(
+    path: &Path,
+    fragment_path: &Path,
     source: &str,
     function: &Function,
     span: Span,
     fragment: &str,
-) -> Result<String, String> {
+) -> Result<(String, Module), String> {
     let selected = expressions(function)
         .into_iter()
         .find(|expr| expr.span == span)
@@ -298,7 +299,7 @@ fn replace_node(
             )
         })?;
     let frag = syntax::expression_span(fragment)
-        .map_err(|err| diagnostic(&edit.fragment, fragment, err, false))?;
+        .map_err(|err| diagnostic(fragment_path, fragment, err, false))?;
     let text = &fragment[frag.start..frag.end];
     let splice = |value: &str| {
         let mut result = source.to_owned();
@@ -318,8 +319,8 @@ fn replace_node(
             .iter()
             .any(|node| node.span == replacement)
         {
-            check::check(&module).map_err(|err| diagnostic(&edit.file, &bare, err, false))?;
-            return Ok(bare);
+            check::check(&module).map_err(|err| diagnostic(path, &bare, err, false))?;
+            return Ok((bare, module));
         }
     }
     let grouped = if selected.site == ExprSite::ElseIf {
@@ -327,14 +328,15 @@ fn replace_node(
     } else {
         format!("({text})")
     };
-    check_candidate(edit, splice(&grouped))
+    checked_source(path, splice(&grouped))
 }
 
 fn candidate(edit: &Edit, source: &str, fragment: &str) -> Result<String, String> {
     let module = syntax::parse(source).map_err(|e| diagnostic(&edit.file, source, e, false))?;
     let function = target(&module, &edit.function)?;
     if let Some(span) = edit.at {
-        return replace_node(edit, source, function, span, fragment);
+        return replace_node(&edit.file, &edit.fragment, source, function, span, fragment)
+            .map(|(text, _)| text);
     }
     let fragment_error = |e| diagnostic(&edit.fragment, fragment, e, false);
     let newline = if source.contains("\r\n") {
@@ -366,14 +368,14 @@ fn candidate(edit: &Edit, source: &str, fragment: &str) -> Result<String, String
         result.push_str(newline);
     }
     result.push_str(&source[span.end - 1..]);
-    check_candidate(edit, result)
+    checked_source(&edit.file, result).map(|(text, _)| text)
 }
 
-fn check_candidate(edit: &Edit, result: String) -> Result<String, String> {
-    let report = |e| diagnostic(&edit.file, &result, e, false);
+fn checked_source(path: &Path, result: String) -> Result<(String, Module), String> {
+    let report = |e| diagnostic(path, &result, e, false);
     let checked = syntax::parse(&result).map_err(report)?;
     check::check(&checked).map_err(report)?;
-    Ok(result)
+    Ok((result, checked))
 }
 
 pub fn execute(request: Request) -> Result<(), String> {

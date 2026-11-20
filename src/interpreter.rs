@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 use std::fmt;
 
-use crate::syntax::{BinOp, Expr, ExprKind, Function, Module, Stmt, StmtKind, UnOp};
+use crate::syntax::{BinOp, Expr, ExprKind, Function, Intrinsic, Module, Stmt, StmtKind, UnOp};
 
 pub const DEFAULT_FUEL: u64 = 1_000_000;
 const MAX_NESTING: usize = 128;
@@ -19,6 +19,7 @@ pub enum Value {
 pub enum Fault {
     IntegerOverflow,
     DivisionByZero,
+    InvalidBounds,
     ResourceLimit,
     InvalidCheckedProgram,
 }
@@ -78,19 +79,30 @@ pub fn invoke<'a>(
     fuel: u64,
     observer: &mut impl Observer<'a>,
 ) -> Result<Value, Fault> {
-    let mut interpreter = Interpreter {
-        observer,
-        functions: module
-            .functions
-            .iter()
-            .map(|f| (f.name.as_str(), f))
-            .collect(),
-        fuel,
-    };
-    interpreter.call(entry, args, 0)
+    Interpreter::new(module, fuel, observer).call(entry, args, 0)
 }
 
-impl<'a, O: Observer<'a>> Interpreter<'a, '_, O> {
+/// Execute a private entry wrapper against the checked source functions.
+pub fn invoke_wrapper<'a>(module: &'a Module, wrapper: &'a Function) -> Result<Value, Fault> {
+    let mut observer = ();
+    let mut interpreter = Interpreter::new(module, DEFAULT_FUEL, &mut observer);
+    interpreter.functions.insert(&wrapper.name, wrapper);
+    interpreter.call(&wrapper.name, Vec::new(), 0)
+}
+
+impl<'a, 'o, O: Observer<'a>> Interpreter<'a, 'o, O> {
+    fn new(module: &'a Module, fuel: u64, observer: &'o mut O) -> Self {
+        Self {
+            observer,
+            functions: module
+                .functions
+                .iter()
+                .map(|f| (f.name.as_str(), f))
+                .collect(),
+            fuel,
+        }
+    }
+
     fn step(&mut self, depth: usize) -> Result<(), Fault> {
         if depth > MAX_NESTING || self.fuel == 0 {
             return Err(Fault::ResourceLimit);
@@ -101,10 +113,20 @@ impl<'a, O: Observer<'a>> Interpreter<'a, '_, O> {
 
     fn call(&mut self, name: &str, args: Vec<Value>, depth: usize) -> Result<Value, Fault> {
         self.step(depth)?;
-        let function = *self
-            .functions
-            .get(name)
-            .ok_or(Fault::InvalidCheckedProgram)?;
+        let Some(&function) = self.functions.get(name) else {
+            return match (Intrinsic::named(name), args.as_slice()) {
+                (Some(Intrinsic::Min), [Value::Int(a), Value::Int(b)]) => Ok(Value::Int(*a.min(b))),
+                (Some(Intrinsic::Max), [Value::Int(a), Value::Int(b)]) => Ok(Value::Int(*a.max(b))),
+                (Some(Intrinsic::Clamp), [Value::Int(n), Value::Int(lo), Value::Int(hi)]) => {
+                    if lo > hi {
+                        Err(Fault::InvalidBounds)
+                    } else {
+                        Ok(Value::Int((*n).clamp(*lo, *hi)))
+                    }
+                }
+                _ => Err(Fault::InvalidCheckedProgram),
+            };
+        };
         let params = function
             .params
             .iter()
@@ -221,6 +243,11 @@ impl<'a, O: Observer<'a>> Interpreter<'a, '_, O> {
                     .collect::<Result<_, _>>()?;
                 self.call(name, values, depth + 1)
             }
+            ExprKind::AsI64(inner) => match self.expr(inner, frame, depth + 1)? {
+                Value::Bool(b) => Ok(Value::Int(i64::from(b))),
+                v @ Value::Int(_) => Ok(v),
+                Value::Unit => Err(Fault::InvalidCheckedProgram),
+            },
             ExprKind::Unary(op, inner) => {
                 let value = self.expr(inner, frame, depth + 1)?;
                 match op {

@@ -2,9 +2,9 @@
 ## A general-purpose programming language and compiler optimized for AI-authored software
 
 **Document:** `docs/design.md`<br>
-**Design revision:** 0.4<br>
+**Design revision:** 0.5<br>
 **Date:** 20 November 2026<br>
-**Status:** The scalar compiler and checked editor now share revision-bound expression addresses with a typed execution trace. Authoring tools search those expressions against examples and can identify a call on which proposed edits disagree. [Build instructions](../README.md) · [Measured repair outcomes](../bench/expression/results/repair.md)
+**Status:** The scalar language supports explicit Boolean-to-integer conversion and checked integer `min`, `max` and `clamp`. The compiler exposes runtime values at revision-bound expression sites and can validate a stream of edits against one source snapshot. [Scalar language reference](scalar-language.md) · [Build and run](../README.md)
 
 > **Mission:** Give AI agents the language and compiler operations they need to construct, understand and revise correct programs. Compiled programs run independently of a model.
 
@@ -61,7 +61,13 @@ The proposed implementation is a Rust compiler frontend, a GPT++-owned typed int
 
 **Make an expression addressable by behavior as well as by source.** A caller's wrong result is often the only clue an agent gets. In the scalar profile, the compiler can follow that call, identify the expressions it visited and report their types, visible bindings and observed results. An agent can submit a checked edit at the same revision and byte range. The authoring tool can search a bounded expression grammar and offer only changes that satisfy supplied examples. If several changes fit, it can identify a call for which an additional expected result would disambiguate them. These operations also work offline.
 
-Evaluate each operation by what an agent can correctly accomplish with it. For repair, measure accepted changes, unanswered cases, tool time, model usage and any additional expected results supplied. The comparative cost target in Section 19.7 governs claims about savings. [Trace reference](scalar-language.md#trace-a-call) · [Authoring interface](../tools/README.md#search-for-an-edit-with-public-examples) · [Development evidence](../bench/expression/results/repair.md)
+Evaluate each operation by what an agent can correctly accomplish with it. For repair, measure accepted changes, unanswered cases, tool time, model usage and any additional expected results supplied. Report each measure alongside the comparator, the task and the evidence that supports it. [Trace reference](scalar-language.md#trace-a-call) · [Authoring interface](../tools/README.md#search-for-an-edit-with-public-examples) · [Development evidence](../bench/expression/results/repair.md)
+
+### Scalar operations prompted by models’ failed edits
+
+Qwen2.5-Coder 7B proposed a correct rounding expression that converted a remainder test to an integer. It also proposed integer minimum and maximum for a bounded accumulator. The earlier compiler rejected both forms. Explicit conversion with `as I64` now yields 0 for false and 1 for true. The integer functions `min`, `max` and `clamp` evaluate their arguments under the same checked arithmetic rules as other calls.
+
+Adding these forms let the same Qwen replies solve all three locally authored contracts. One first reply and two saved retries passed every withheld test. The six historical GPT++ trials and StarCoder2’s three locally authored trials still had zero accepted changes. The operators were chosen after the failures were inspected. A fresh matched study can test how often a model independently chooses useful expressions on other tasks. [Original trials](../bench/expression/results/fresh-agent.md) · [Replay including extra direct checks](../bench/expression/results/compat.md)
 
 ### What the execution-guided study established
 
@@ -76,7 +82,7 @@ On Redis, the search generated a change that passed independent caller tests. A 
 | 3. Make failure feedback actionable | The 40 retries in the reviewed arms added two accepted edits. Another 11 terminal failures involved incorrect arithmetic or cyclic mapping. | Expose one-shot authoring and a retry triggered by an actual caller failure. The compiler can invert an unchanged caller’s checked arithmetic to give the model a necessary target result. Count the cost and acceptance yield of each retry. |
 | 4. Attribute gains to the right layer | Existing task sets favor small, single-module scalar edits. | Give Python and Rust the same protected edit scope, information and validation. Track native GPT++ body edits separately from the optional rule frontend. Replicate promising results on identified upstream changes and a second model before widening the claim. |
 
-**Decision after the upstream transfer.** Keep the compact native maintenance preset. Treat ordered rules as an opt-in surface for explicit exceptions. The Qwen development result of 500.20 tokens per accepted native GPT++ edit did not establish a repeatable 20% advantage. On three upstream changes, the selected GPT++ workflow passed one while selected Python and Rust passed zero. The best observed GPT++ and Python alternatives each passed one, at 1,120 and 1,121 tokens. StarCoder2 passed none of the transfer cases. The next language experiment should protect unchanged expressions *inside* a target. For example, a changed border comparison should not require writing a whole geometry predicate. Compare the same expression-level operation in Python and Rust on new upstream changes. [Development and transfer results](../bench/policy/README.md)
+**Decision after the upstream transfer.** Keep the compact native maintenance preset. Treat ordered rules as an opt-in surface for explicit exceptions. Qwen used 500.20 tokens per accepted native GPT++ edit on the development tasks. On three upstream changes, the selected GPT++ workflow passed one while selected Python and Rust passed zero. The best observed GPT++ and Python alternatives each passed one, at 1,120 and 1,121 tokens. StarCoder2 passed none of the transfer cases. The next language experiment should protect unchanged expressions *inside* a target. For example, a changed border comparison should not require writing a whole geometry predicate. Compare the same expression-level operation in Python and Rust on new upstream changes. [Development and transfer results](../bench/policy/README.md)
 
 The language retains a human-reviewable native representation. A checked editing surface can succeed on a workload even if native syntax is relatively expensive for an existing model. Keep the measured choice reversible while the general-purpose language grows. [Failure review](../bench/policy/diagnosis.md) · [Experiment protocol](../bench/policy/protocol.md) · [Ordered-rule authoring](../tools/policy.md)
 
@@ -135,9 +141,9 @@ Model-token savings are tokenizer-specific. Tokenization includes normalization,
 
 **Type-correct is not specification-correct.** A perfectly typed function can implement the wrong business rule. Contracts can also encode the wrong rule. Independent tests and review remain necessary.
 
-### 2.4 Optimize under constraints, not through one magic score
+### 2.4 Compare correctness, resources and maintainability
 
-Use cost as the primary optimization objective subject to explicit constraints on acceptance rate, security, runtime limits, and maintainability. Publish the resulting trade-offs rather than hiding them in an arbitrary weighted score.
+Evaluate acceptance, model and tool costs, latency, runtime behavior and maintainability on the same workload. A change that saves tokens while increasing retries or reducing acceptance should report all three effects. Report the applicable safety and resource constraints.
 
 Fine-tuning and ecosystem-building have fixed costs. Report both marginal inference cost and an amortized estimate:
 
@@ -1178,27 +1184,27 @@ Generate ordinary formatted source and meaningful diffs for accepted changes. Ex
 
 ### 19.1 Research question
 
-At equal task requirements and bounded resources, does GPT++ produce accepted software and accepted changes at lower total cost than strong existing-language workflows, without unacceptable losses in runtime, safety, or reviewability?
+At equal task requirements and bounded resources, which workflow produces more correct changes? What does each accepted change cost in model usage, tool time, feedback and review, and how does the resulting program perform?
 
 This question has two distinct answers to measure: the benefit of the **language** and the benefit of the **language plus tooling**. A good agent protocol should not be misreported as proof that a new syntax was necessary.
 
-The first scalar pilot completed 72 matched trials on 12 tasks with two local models. GPT++ accepted 0 of 24 submissions, Rust accepted 0 of 24, and typed Python accepted 3 of 24. GPT++ consumed 44.5% more total tokens than Python and 15.3% more than Rust. Eighteen GPT++ submissions ended with syntax errors. This evidence leaves the efficiency target unmet under the tested budget. Further testing should first establish a baseline with enough accepted work to compare cost per accepted change. [Pilot report](../bench/empirical/results/2026-11-19.md)
+The first scalar pilot completed 72 matched trials on 12 tasks with two local models. GPT++ accepted 0 of 24 submissions, Rust accepted 0 of 24, and typed Python accepted 3 of 24. GPT++ consumed 44.5% more total tokens than Python and 15.3% more than Rust. Eighteen GPT++ submissions ended with syntax errors. GPT++ and Rust had no finite token cost per accepted submission in that pilot. Further testing should first establish a baseline with enough accepted work to compare cost per accepted change. [Pilot report](../bench/empirical/results/2026-11-19.md)
 
 In a fresh 64-trial study, supplying a fixed declaration and asking for one edit raised GPT++ acceptance from 1/16 to 4/16 on identical task/model pairs. Typed Python accepted 8/16 and Rust accepted 4/16. GPT++ fragments consumed 3.32 times the tokens per accepted change of typed Python, with a paired 95% interval of 1.20–13.35. Correctness remained the main cost driver. Nine of twelve terminal GPT++ fragment failures produced the wrong answer. Require behavioral checks on model-authored edits whenever examples are available. [Paired fragment results](../bench/iterate/results/paired.md)
 
 A second study ran 40 matched trials with Qwen2.5-Coder 7B on eight different tasks. Native GPT++ infill, typed Rust infill and a restricted Python-to-GPT++ input each accepted 0/8. GPT++ chat accepted 1/8 and typed Python infill accepted 4/8. Inspection showed both missing scalar operations and generation continuing past the intended function. Replaying identical saved text after implementing checked integer `abs`, `min` and `max` recovered one task. Evaluate model-side stopping prospectively in each language before attributing costs to syntax. [Infill results](../bench/iterate/results/infill.md) · [Same-output replay](../bench/iterate/results/projection-replay.json)
 
-The prospective boundary-stop study completed all 56 assignments. Stopping at the function boundary cut native GPT++ token use by 14.5% and acceptance stayed at 1/8. Rust rose from 1/8 to 3/8 with the same intervention. Stopped typed Python accepted 4/8 at 765 tokens per accepted change, compared with 4,481 for native GPT++. The revised Python-syntax input to GPT++ accepted 1/8 at 4,272 tokens. These results leave the 20% target unmet on pure scalars. [Boundary-stop results](../bench/iterate/results/boundary.md)
+The prospective boundary-stop study completed all 56 assignments. Stopping at the function boundary cut native GPT++ token use by 14.5% and acceptance stayed at 1/8. Rust rose from 1/8 to 3/8 with the same intervention. Stopped typed Python accepted 4/8 at 765 tokens per accepted change, compared with 4,481 for native GPT++. The revised Python-syntax input to GPT++ accepted 1/8 at 4,272 tokens. [Boundary-stop results](../bench/iterate/results/boundary.md)
 
-**Decision after the three follow-ups.** Keep revision-guarded edits, example-based validation, and bounded generation. The scalar data justify those implementation choices but give no basis for advancing to a large qualification run or investing in a new tokenizer. Move the next development comparison to changes in existing programs with multiple callers. Measure the cost of finding the right function, generating the change and preserving caller behavior. Give typed Python and Rust equivalent local context, scoped edits, public feedback and stopping rules. Freeze the comparator, task families and a monetary or compute cost model before using the 20% threshold to make a product claim.
+**Decision after the three follow-ups.** Keep revision-guarded edits, example-based validation, and bounded generation. The scalar data justify those implementation choices but give no basis for advancing to a large qualification run or investing in a new tokenizer. Move the next development comparison to changes in existing programs with multiple callers. Measure the cost of finding the right function, generating the change and preserving caller behavior. Give typed Python and Rust equivalent local context, scoped edits, public feedback and stopping rules. Freeze the comparator, task families and a monetary or compute cost model before making a comparative cost claim.
 
-**Multi-caller maintenance result.** Eight authored scalar reproductions of documented application changes and standards produced 40 matched trials on Qwen2.5-Coder 7B. With the same caller selection, GPT++ accepted 4/8 at 1,850 tokens per accepted edit, typed Python accepted 6/8 at 760.33, and Rust accepted 3/8 at 2,124.33. The observed 12.9% savings against Rust fell 7.1 points short. GPT++ used 2.43 times Python's tokens per accepted edit. A GPT++ control omitted caller excerpts and retained caller examples and tests. It accepted 4/8 with 1,325.50 tokens per accepted edit. Keep excerpts opt-in and validate through callers whenever cases are available. This benchmark supplied the target location, so repository navigation remains a separate experiment. [Multi-caller benchmark](../bench/maintenance/README.md)
+**Multi-caller maintenance result.** Eight authored scalar reproductions of documented application changes and standards produced 40 matched trials on Qwen2.5-Coder 7B. With the same caller selection, GPT++ accepted 4/8 at 1,850 tokens per accepted edit, typed Python accepted 6/8 at 760.33, and Rust accepted 3/8 at 2,124.33. GPT++ used 12.9% fewer tokens per accepted change than Rust in this comparison. GPT++ used 2.43 times Python's tokens per accepted edit. A GPT++ control omitted caller excerpts and retained caller examples and tests. It accepted 4/8 with 1,325.50 tokens per accepted edit. Keep excerpts opt-in and validate through callers whenever cases are available. This benchmark supplied the target location, so repository navigation remains a separate experiment. [Multi-caller benchmark](../bench/maintenance/README.md)
 
-**Caller context triggered by a public failure.** A fresh 40-trial run on eight other tasks gave adaptive GPT++ 2/8 at 2,955.50 tokens per accepted edit, typed Python 3/8 at 1,608, and Rust 1/8 at 6,346. Adaptive GPT++ beat the Rust 20% point target by 33.4 percentage points and missed both the Python cost and acceptance targets. The small sample failed to qualify against either comparator. Five GPT++ retries received caller excerpts after a caller failure and none passed. The target-only control accepted the same two tasks at 2,595 tokens per accepted edit. Keep the trigger opt-in and retain caller validation regardless of prompt mode. [Adaptive benchmark](../bench/adaptive/results/adaptive.md)
+**Caller context triggered by a public failure.** A fresh 40-trial run on eight other tasks gave adaptive GPT++ 2/8 at 2,955.50 tokens per accepted edit, typed Python 3/8 at 1,608, and Rust 1/8 at 6,346. Adaptive GPT++ ranked between typed Python and Rust on both observed acceptance and tokens per accepted edit. The eight-task sample leaves substantial uncertainty. Five GPT++ retries received caller excerpts after a caller failure and none passed. The target-only control accepted the same two tasks at 2,595 tokens per accepted edit. Keep the trigger opt-in and retain caller validation regardless of prompt mode. [Adaptive benchmark](../bench/adaptive/results/adaptive.md)
 
 **Maintenance qualification status, 20 November 2026.** The next 154 paired assignments used two models on eight decision-policy fixtures and three historical upstream changes. A separate 15-call intervention reused the first failed outputs to isolate the value of exact target feedback. The studies report native replacement, protected insertion and ordered rules separately, including one-shot costs, zero-success arms, tokenization and offline replay. The current plan uses these results in Sections 1 and 20. [Complete maintenance report](../bench/policy/README.md)
 
-**Expression-level maintenance.** On three new upstream scalar fixes, a 72-trial experiment compared whole bodies, supplied expression ranges and two ways to ask the model to find a site. The prespecified Qwen locate-and-edit workflows accepted zero changes in GPT++, typed Python and Rust. With the correct site supplied, StarCoder2 repaired Redis in GPT++ and Rust at 908 and 897 tokens per accepted edit respectively across the three tasks. A follow-up exposed each syntax node under a numbered ID. All 18 model calls selected a real node, and zero changes passed all behavioral checks. Prioritize locating the faulty computation using public execution values and guiding the replacement with its expected type. [Results and limitations](../bench/expression/README.md) · [Next milestone](../ROADMAP.md#next-milestone--use-failing-examples-to-guide-the-edit)
+**Expression-level maintenance.** On three new upstream scalar fixes, a 72-trial experiment compared whole bodies, supplied expression ranges and two ways to ask the model to find a site. The prespecified Qwen locate-and-edit workflows accepted zero changes in GPT++, typed Python and Rust. With the correct site supplied, StarCoder2 repaired Redis in GPT++ and Rust at 908 and 897 tokens per accepted edit respectively across the three tasks. A follow-up exposed each syntax node under a numbered ID. All 18 model calls selected a real node, and zero changes passed all behavioral checks. Prioritize locating the faulty computation using public execution values and guiding the replacement with its expected type. [Results and limitations](../bench/expression/README.md) · [Next milestone](../ROADMAP.md#next-milestone)
 
 ### 19.2 Baselines and controls
 
@@ -1266,21 +1272,17 @@ Do not use `pass@k` to label a feedback-driven repair process. Report first-atte
 
 Report complete failure categories. Do not discard difficult tasks from one condition after seeing its output.
 
-### 19.7 Proposed go/no-go thresholds
+### 19.7 Evidence for comparative claims
 
-These are engineering targets to validate or adjust through a pre-registered pilot, not measured results.
+Select comparators and budgets on development data, then freeze them before qualification. State the question being tested. A claim about faster validation uses identical checked inputs and compares elapsed time and outputs. A claim about more effective agent repairs uses paired tasks, model configurations and independent behavioral oracles.
 
-**Correctness gate.** Use the enhanced comparator selected on development data for both acceptance and cost. The lower end of the pre-registered paired 95% interval for GPT++ acceptance minus comparator acceptance must be at least −0.02. If the sample is insufficient, report inconclusive rather than success.
+**Correctness.** Publish first-pass and final accepted counts, their denominators and paired differences against each comparator. Include failing, abstained, invalid and timed-out runs. Estimate uncertainty across independent tasks or repository families and check whether the result holds across model configurations.
 
-**Efficiency gate.** Preselect the strongest enhanced comparator on development data and freeze it before qualification. For a claim of at least 20% savings, require the upper end of the pre-registered 95% paired interval for the GPT++/comparator cost ratio to be at most 0.80. An interval entirely below 1.0 with an upper end above 0.80 supports an improvement whose magnitude remains uncertain relative to the target. Treat zero-acceptance runs as failures and report an unestimable ratio if the denominator prevents a finite comparison. Report whether the gain holds across task families and more than one model configuration.
+**Cost and latency.** Report input and output tokens, calls, retries, tool work, elapsed time and external information obtained. Calculate tokens per accepted task only for workflows with at least one accepted task. When either side has zero accepted tasks, the comparison of that ratio is undefined. Preserve total costs and acceptance counts in those cases.
 
-**Safety gate:** No known unresolved critical compiler/runtime escape or policy bypass; all required negative tests pass. Passing a finite suite is not proof that no vulnerability exists.
+**Operational quality.** Run conformance and negative tests for the published profile. Measure application runtime and memory on the declared platform. Test interface-preserving changes through unchanged callers. Record regressions, unrelated changes and the work a reviewer must perform.
 
-**Practicality gate:** Each demonstration application works within a declared runtime/memory envelope on supported targets. Choose workload-specific envelopes before qualification; do not promise blanket Rust-level speed for a managed language.
-
-**Maintenance gate:** Interface-preserving changes must not require repeated whole-project regeneration, and regression rates must meet the same acceptance specification as the baseline.
-
-The language may meet operational usefulness without winning the efficiency experiment. In that case, describe it as a usable experimental language, not a proven AI-efficiency advance.
+A comparative result should name the observed advantage and its limits. Faster compiler checks, fewer model tokens and more correct edits answer different questions.
 
 ### 19.8 Evaluation cost containment
 
@@ -1309,7 +1311,7 @@ The scalar compiler, interpreter, native backend and scoped editor already run. 
 3. An ablation on all 15 eligible caller retries found that substituting a derived target result reduced retry tokens by 24–26%. Both variants recovered zero edits. Spend further effort on the initial edit and distinguishing boundary conditions. [Matched alternate retries](../bench/policy/results/retry-obligations.md)
 4. Test transfer using actual historical code changes and identifiable consumers. Track the work lost in extracting or porting each case and report any gap to full-repository maintenance. Expand beyond scalar decisions before a general language claim.
 5. Select each language's strongest combination of edit surface **and retry policy** on development data before the next qualification run. Compare against a one-shot baseline whenever retries recover few or zero edits. On the Qwen policy tasks the same five Rust edits cost 465 tokens each with one call and 783.40 with caller-triggered retries. This choice reverses the observed GPT++ versus Rust ordering.
-6. Ship operations with reproducible correctness evidence and state their limits. For a comparative cost claim, evaluate against a frozen baseline on fresh work and apply the thresholds in Section 19.7. Use observed authoring failures to decide which information or operation the language should expose next.
+6. Ship operations with reproducible correctness evidence and state their limits. For a comparative cost claim, evaluate against a frozen baseline on fresh work and publish the measurements and paired uncertainty described in Section 19.7. Use observed authoring failures to decide which information or operation the language should expose next.
 
 ### Phase 0 — Establish the experiment and semantic contract
 
@@ -1319,7 +1321,7 @@ The first public calibration changes a member shipping threshold in GPT++, Pytho
 
 **First authoring pilot.** After scalar conformance, run a small paired development set of fresh implementations and maintenance changes. Start with pure functions over bounded integers. Use common inputs, edge-case oracles, and the same model version, call ceiling, context policy, and repair budget across GPT++, typed Python, and Rust. Include setup and guide tokens even on a failed attempt. Record every assigned task, its acceptance, usage by call, tool time, and failure reason. Execute model-authored submissions under the isolation rules in Section 16.
 
-**Decision after the pilot.** Check that each oracle catches intentionally incorrect solutions and that usage and acceptance are available for every assigned condition. Use the cost breakdown to choose the next experiment. If retrieval or patch size dominates, test the same tooling on an existing language before expanding GPT++. If essential tasks cannot be expressed, add the smallest missing feature required by those tasks. Small public samples guide engineering and pilot sizing. Qualification uses fresh task families, a locked comparator, and the thresholds in Section 19.7.
+**Decision after the pilot.** Check that each oracle catches intentionally incorrect solutions and that usage and acceptance are available for every assigned condition. Use the cost breakdown to choose the next experiment. If retrieval or patch size dominates, test the same tooling on an existing language before expanding GPT++. If essential tasks cannot be expressed, add the smallest missing feature required by those tasks. Small public samples guide engineering and pilot sizing. Qualification uses fresh task families, a locked comparator and the reporting criteria in Section 19.7.
 
 **Scalar workflow now implemented.** The compiler owns the declaration and validates replacement expressions or statement lists. It can preview the edit and apply it against a source revision. The local proposal tool accepts behavioral examples, runs them on the checked proposal, and can send a failing input back for one repair. This brings the single-function part of Phase 3 forward. Multi-module edits and the larger language features still have their own exit criteria. [Working editor](../tools/README.md) · [Paired studies](../bench/iterate/README.md)
 
@@ -1363,7 +1365,7 @@ Run existing-language controls and ablations. Treat advanced type-constrained de
 
 **Deliverables:** complete sequential profile documentation; reviewed synchronous network APIs; scoped resource handling; restricted C-ABI interop; Windows x86-64 port; package provenance; reproducible offline builds; upgrade policy; security reporting; all demonstration applications.
 
-**Exit gate:** the definition of done in Section 26 passes. Publish supported target/profile combinations, known limitations, benchmark artifacts, and whether efficiency targets were met, missed, or inconclusive.
+**Exit gate:** the definition of done in Section 26 passes. Publish supported target/profile combinations, known limitations, benchmark artifacts, and the outcomes and uncertainty for each comparison.
 
 Do not call the language production-ready simply because the examples compile or because the compiler has been rewritten in GPT++.
 
@@ -1674,13 +1676,13 @@ An AI can obtain a compiler-derived context bundle, propose a symbol-level edit,
 | Evaluation | Independent baseline-controlled results and complete cost accounting are available |
 | Operations | Installation, debugging, upgrade, incident reporting, and limitations are documented |
 
-Efficiency qualification is a separate claim: a functioning language can reach technical release quality without meeting the proposed 20% cost-improvement target. A release should say exactly which of those milestones it has achieved.
+Each release identifies the supported profile, the conformance evidence for it and the comparisons performed on specific tasks. Publish the cost in tokens, wall time and extra information alongside acceptance for each workflow.
 
 ### 26.4 Claims that must not appear without evidence
 
 Do not claim that GPT++ is universally optimal for LLMs, automatically secure, bug-free because it compiles, faster than all established languages, compatible with every model, or the first project to combine AI and language design. Do not claim that a textual syntax shortens inference based only on character counts.
 
-The defensible goal is narrower and useful: **a measured improvement in accepted software and maintenance changes per unit of AI-workflow cost on declared tasks, models, and operating conditions.**
+The project aims to make agents better at writing and maintaining working programs. Each comparative claim names the measured advantage, the task families, models and operating conditions where it was observed, and the accompanying costs.
 
 ---
 

@@ -234,24 +234,12 @@ def plot_cost(output, stats, model):
     gpp = stats["given", model, "gpp"].first
     python = stats["given", model, "python"].first
     rust = stats["given", model, "rust"].first
-    budget = rust.tokens_per_accepted() * 0.8
 
     ax = fig.add_axes([0.065, 0.20, 0.87, 0.48], facecolor=PAPER)
     limit = max(gpp.tokens_per_accepted(), rust.tokens_per_accepted()) * 1.16
-    ax.set(xlim=(0, limit), ylim=(-0.11, 3.05))
+    ax.set(xlim=(0, limit), ylim=(-0.11, 2.68))
     ax.set_axis_off()
     ax.axvline(0, ymin=0.11, ymax=0.91, color=RULE, lw=1, clip_on=False)
-    ax.axvline(budget, ymin=0.11, ymax=0.93, color=VIOLET, lw=1.35, ls=(0, (4, 3)))
-    ax.text(
-        budget,
-        2.95,
-        f"20% goal · {budget:,.1f}",
-        va="center",
-        ha="center",
-        size=11,
-        color=VIOLET,
-        weight="bold",
-    )
     for y, language, usage, color in ((1.93, "gpp", gpp, VIOLET), (0.60, "rust", rust, SLATE)):
         cost = usage.tokens_per_accepted()
         assigned = stats["given", model, language].assigned

@@ -527,6 +527,51 @@ section[id] { scroll-margin-block-start: 1.5rem; }
 .repair-evidence p { margin-block: 1rem .6rem; }
 .repair-evidence .text-link { margin-inline-end: .75rem; }
 
+.comparison-intro {
+  padding-block-start: clamp(2rem, 4vw, 4rem);
+  border-top: 1px solid var(--dark-rule);
+}
+
+.comparison-intro p { max-width: 48rem; }
+.comparison-studies { margin-top: 1.5rem; }
+.comparison-studies details { border-top: 1px solid var(--dark-rule); }
+.comparison-studies details:last-child { border-bottom: 1px solid var(--dark-rule); }
+.comparison-studies summary {
+  padding: .9rem .2rem;
+  color: var(--gpp-paper);
+  font-size: 1.15rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.comparison-studies summary::marker { color: var(--gpp-signal); }
+.comparison-studies details > p { color: var(--gpp-mist); }
+.comparison-tables {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(2rem, 5vw, 4rem);
+  margin-block: 1.4rem 1.8rem;
+}
+
+.comparison-tables thead th:not(:first-child),
+.comparison-tables td { text-align: end; }
+.comparison-notes {
+  max-width: 62rem;
+  padding-bottom: clamp(3.5rem, 7vw, 6rem);
+}
+
+.repair-copy > p + p,
+.runtime-evidence table + table { margin-top: 1rem; }
+.repair-copy > .text-link { margin-top: .7rem; }
+.replay-code {
+  margin: 1rem 0;
+  padding: .9rem 1rem;
+  overflow-x: auto;
+  border-inline-start: 2px solid var(--gpp-signal);
+  background: var(--gpp-graphite);
+  font: .875rem/1.6 var(--gpp-font-mono);
+}
+
 .benchmarks {
   color-scheme: light;
   background: var(--gpp-paper);
@@ -611,10 +656,12 @@ section[id] { scroll-margin-block-start: 1.5rem; }
 
 .footer-inner {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 1rem;
   align-items: center;
   min-height: 5rem;
+  padding-block: 1rem;
 }
 
 .footer-inner .text-link {
@@ -632,6 +679,7 @@ section[id] { scroll-margin-block-start: 1.5rem; }
   .quickstart-grid,
   .research-inner,
   .repair-result,
+  .comparison-tables,
   .benchmark-heading,
   .benchmark-pair,
   .benchmark-notes {

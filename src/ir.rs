@@ -2,7 +2,7 @@
 //! Every instruction assigns one slot; a call always has a destination, even for Unit.
 use std::collections::HashSet;
 
-pub use crate::syntax::{BinOp, Type, UnOp};
+pub use crate::syntax::{BinOp, Intrinsic, Type, UnOp};
 
 #[derive(Debug)]
 pub struct Program {
@@ -38,6 +38,8 @@ pub enum Op {
     Bool(bool),
     Unit,
     Copy(usize),
+    BoolToI64(usize),
+    Intrinsic(Intrinsic, Vec<usize>),
     Unary(UnOp, usize),
     Binary(BinOp, usize, usize),
     Call(usize, Vec<usize>),
@@ -111,6 +113,23 @@ fn validate_function(program: &Program, function: &Function) -> Result<(), Strin
                 Op::Bool(_) => Type::Bool,
                 Op::Unit => Type::Unit,
                 Op::Copy(source) => operand(*source)?,
+                Op::BoolToI64(source) => {
+                    if operand(*source)? != Type::Bool {
+                        return Err("invalid Bool-to-I64 operand".into());
+                    }
+                    Type::I64
+                }
+                Op::Intrinsic(op, args) => {
+                    if args.len() != op.arity() {
+                        return Err("incorrect intrinsic arity".into());
+                    }
+                    for &arg in args {
+                        if operand(arg)? != Type::I64 {
+                            return Err("intrinsic operand must be I64".into());
+                        }
+                    }
+                    Type::I64
+                }
                 Op::Unary(op, source) => {
                     let (expected, result) = unary_types(*op);
                     if operand(*source)? != expected {

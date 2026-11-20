@@ -2,9 +2,15 @@
 
 The benchmark suite measures how much model work GPT++, typed Python, and Rust require to produce an accepted change. An accepted change passes the language checker, public examples, and withheld cases. Tokens per accepted edit includes input and output tokens from every attempt, including failures and retries. Reports include acceptance counts, timings, and paired uncertainty where available.
 
-## Start with example-filtered repair
+## Latest language and workflow measurements
 
-The repair study tests a different division of work. The compiler traces the supplied calls and the tool tests bounded expression edits. A local model chooses from the edits that satisfy the public examples. The same independent scorer then checks that choice and a deterministic first-choice control on withheld cases. [Repair results](expression/results/repair.md) · [Study protocol](expression/repair-protocol.md)
+A matched expression-generation study gave two models equivalent task information and one public-test retry in GPT++, typed Python and Rust. It covers three historical tasks and three new scalar contracts. The new-task failures identified useful expressions that GPT++ could not yet represent. After adding typed integer operations and explicit Boolean conversion, replaying the same replies recovered all three Qwen arithmetic repairs. The report records the adaptation and charges every original token. [New contracts](expression/results/fresh-agent.md) · [Historical tasks](expression/results/agent.md) · [Language-extension replay](expression/results/compat.md)
+
+A compiler session now checks and executes many candidate edits from one source snapshot. The latency study compares complete commands before and after that implementation change and requires identical menus and questions. A separate native execution study compares correct scalar programs in the three languages. [Compiler latency](expression/results/probe.md) · [Runtime and memory](runtime/results.md)
+
+## Example-filtered repair
+
+The repair study tests a division of work in which the compiler traces supplied calls, a tool searches bounded expressions, and a local model chooses among edits that satisfy public examples. Its independent scorer tests both the model choice and a deterministic first choice. [Repair results](expression/results/repair.md) · [Study protocol](expression/repair-protocol.md)
 
 ## Earlier expression-edit study
 
@@ -12,7 +18,7 @@ The v9 study compares checked expression edits with whole-function edits in GPT+
 
 ## Earlier maintenance results
 
-The eight-task policy study found lower token costs for Qwen's native GPT++ body edits under the caller-retry workflow. On the three upstream fixes, the cheapest observed GPT++ and typed Python workflows each accepted one different fix and cost 1,120 and 1,121 tokens per accepted edit respectively. The upstream fixtures extract scalar code from Linux, Moment.js, and Godot, keep identifiable upstream consumers, and supply the target function. The 20% efficiency goal remains open. [Maintenance results](policy/README.md) · [Upstream sources and fixture boundaries](policy/upstream-sources.md) · [Qualification criteria](../docs/design.md#197-proposed-gono-go-thresholds)
+The eight-task policy study found lower token costs for Qwen's native GPT++ body edits under the caller-retry workflow. On the three upstream fixes, the cheapest observed GPT++ and typed Python workflows each accepted one different fix and cost 1,120 and 1,121 tokens per accepted edit respectively. The upstream fixtures extract scalar code from Linux, Moment.js, and Godot, keep identifiable upstream consumers, and supply the target function. [Maintenance results](policy/README.md) · [Upstream sources and fixture boundaries](policy/upstream-sources.md) · [Qualification criteria](../docs/design.md#197-evidence-for-comparative-claims)
 
 ## Study index
 
@@ -30,6 +36,11 @@ The eight-task policy study found lower token costs for Qwen's native GPT++ body
 | [Caller-retry comparison](policy/retry-obligations-protocol.md) | What happens when a retry gets a derived target result in place of caller excerpts? | [Report](policy/results/retry-obligations.md) | [JSONL](policy/results/retry-obligations.jsonl) |
 | [Expression edits (v9)](expression/protocol.md) | Can a model locate and replace one expression more cheaply? | [Report](expression/results/expression.md) | [JSONL](expression/results/expression.jsonl) |
 | [Compiler-listed selections](expression/catalog-protocol.md) | What changes when the decoder requires an existing site ID? | [Report](expression/results/catalog.md) | [JSONL](expression/results/catalog.jsonl) |
+| [Matched expression generation](expression/agent-protocol.md) | How do caller context, observations and one retry compare across languages? | [Historical report](expression/results/agent.md) | [JSONL](expression/results/agent.jsonl) |
+| [New arithmetic contracts](expression/agent-fresh-protocol.md) | Which edits transfer to three new scalar contracts? | [Report](expression/results/fresh-agent.md) | [JSONL](expression/results/fresh-agent.jsonl) |
+| [Native scalar operations](expression/compat-protocol.md) | Which saved model proposals become correct with the added operations? | [Report](expression/results/compat.md) | [JSONL](expression/results/compat.jsonl) |
+| [Compiler session latency](expression/probe-protocol.md) | How much work does batching remove with identical outcomes? | [Report](expression/results/probe.md) | [JSONL](expression/results/probe.jsonl) |
+| [Scalar runtime](runtime/README.md) | How do correct compiled and interpreted programs use time and memory? | [Report](runtime/results.md) | [JSONL](runtime/results.jsonl) |
 | [Example-filtered repair](expression/repair-protocol.md) | What changes when the model chooses from tested replacement expressions? | [Report](expression/results/repair.md) | [JSONL](expression/results/repair.jsonl) |
 | [Choosing a distinguishing input](expression/distinguish-protocol.md) | How many new answers from a specification oracle isolate a patch? | [Report](expression/results/distinguish.md) | [JSONL](expression/results/distinguish.jsonl) |
 

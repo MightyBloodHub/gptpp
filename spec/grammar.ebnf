@@ -1,4 +1,4 @@
-(* GPT++ scalar bootstrap profile, revision 2.
+(* GPT++ scalar bootstrap profile, revision 3.
    Input is one UTF-8 source file. A successful parse consumes the entire file.
    Double quotes enclose terminals. Square brackets indicate an optional part,
    braces indicate repetition, and a comma denotes concatenation. *)
@@ -28,7 +28,8 @@ logical_and     = equality, { "&&", equality } ;
 equality        = comparison, { ( "==" | "!=" ), comparison } ;
 comparison      = sum, { ( "<" | "<=" | ">" | ">=" ), sum } ;
 sum             = product, { ( "+" | "-" ), product } ;
-product         = unary, { ( "*" | "/" | "%" ), unary } ;
+product         = cast, { ( "*" | "/" | "%" ), cast } ;
+cast            = unary, { "as", "I64" } ;
 unary           = ( "!" | "-" ), unary | primary ;
 primary         = decimal | "true" | "false" | "(", [ expression ], ")"
                 | identifier, [ "(", [ arguments ], ")" ] | if_value ;
@@ -40,7 +41,8 @@ arguments       = expression, { ",", expression }, [ "," ] ;
    digits are scanned to maximal length. A reserved word must match the entire
    identifier token. The two-character operators are scanned before their
    single-character prefixes. Annotation type names also work as identifiers
-   wherever the grammar expects an identifier. *)
+   wherever the grammar expects an identifier. The contextual "as" token
+   can still name a local or function. *)
 identifier      = identifier_word - reserved ;
 identifier_word = ( letter | "_" ), { letter | "_" | digit } ;
 letter          = ? ASCII A through Z or a through z ? ;

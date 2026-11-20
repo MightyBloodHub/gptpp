@@ -35,13 +35,13 @@ python3 tools/repair.py examples/add.gpp --function add \
   --model qwen2.5-coder:7b -o target/difference.expr
 ```
 
-Each example runs through the reference interpreter. The search considers integer and Boolean sites reached on **every** failing example, including visits reached through callers. It orders sites by how many passing examples visited them, then tries one replacement per site per round. It tries local names, small constants, neighboring operators, integer increments and decrements (optionally gated by a Boolean), and arithmetic and comparisons among visible locals. The grammar generates single-expression edits and uses no language model. The compiler checks each preview and runs the public examples. A fault on any case eliminates the candidate. The defaults limit the search to 512 tested edits and a menu of 12 passing candidates. `--budget N` changes the work limit.
+Each example runs through the reference interpreter. The search considers integer and Boolean sites reached on **every** failing example, including visits reached through callers. It orders sites by how many passing examples visited them, then tries one replacement per site per round. It tries local names, small constants, neighboring operators, integer increments and decrements (optionally gated by a Boolean), and arithmetic and comparisons among visible locals. The grammar generates single-expression edits and uses no language model. The search streams candidates to one compiler process. For each checked preview it tests the original failures first, then the remaining examples. A mismatch or fault eliminates the candidate immediately. All calls use the public-example runner’s entry-wrapper semantics. The defaults limit the search to 512 tested edits and a menu of 12 passing candidates. `--budget N` changes the work limit.
 
 The `gpp.repair/1` JSON includes the original observations, revision, list of edits, number tested and `stop_reason`. Each edit contains the exact old text, source byte range and replacement. `--list` returns `listed`, `already_passes` or `no_candidates`. A one-based selection from a model returns `selected`, writes a new fragment file and gives an `apply` argument array for the checked editor. A model can return zero and the tool reports `abstained`. For an agent integration, inspect the selected edit and pass the argument array directly to a subprocess when ready to apply it. Every candidate in the menu passed the supplied examples. Withheld tests can still reject it. [Development comparison](../bench/expression/results/repair.md)
 
 ### Ask for an example that distinguishes candidate edits
 
-A single example can describe several different programs. Suppose the only known requirement is that `add(3, 3)` should return zero. The search finds nine edits that satisfy it. Give the following command a small pool of valid, **unlabeled** calls. It checks every candidate against the source revision and runs the previews locally.
+A single example can describe several different programs. Suppose the only known requirement is that `add(3, 3)` should return zero. The search finds nine edits that satisfy it. Give the following command a small pool of valid, **unlabeled** calls. It streams the menu to one compiler process bound to the source revision. Each selected candidate runs directly on the supplied calls, with a fresh interpreter budget for each. [Compiler probe protocol](../docs/scalar-language.md#check-several-candidate-edits-in-one-process)
 
 ```sh
 printf '%s\n' '[{"args":[3,3],"expected":0}]' > target/one-example.json
@@ -211,3 +211,23 @@ These tests exercise the CLI with a deterministic loopback HTTP stub and the rea
 ### Derive a target result from a failed caller
 
 Build the optional caller analyzer and pass its path with `--caller-obligation target/caller-obligation --cases cases.json`. The first prompt uses the target and public examples. A failing caller test can trigger one retry. For example, if the unchanged caller returns `30 - 2 * discount(4)` and its public test expects 26, the retry can ask for `discount(4) = 2`. The analyzer checks this result against the caller’s integer operations. If the caller branches on that unknown result or combines different target inputs, the retry receives the bounded caller excerpts. [Build instructions, supported operations and limits](caller_obligation.md)
+
+### Generate an expression after an empty search
+
+When bounded repair search runs out of candidates, `agent_edit.py` can generate a new expression at a compiler-listed site. The model receives the requested behavior, caller excerpts, and what the starter returned on the supplied examples. A compiler error or failing example allows one retry on the original source. The tool checks every supplied case before saving a fragment. The JSON result includes the attempt outcomes, usage, and a revision-guarded `apply` argument list for a passing proposal. Add `--transcript` to include model prompts and responses.
+
+For example, convert the sample addition to subtraction. The visible checks exercise a direct call and its existing caller.
+
+```sh
+cargo build --locked --offline
+cat > target/subtraction-cases.json <<'JSON'
+[{"args":[8,3],"expected":5},{"function":"main","args":[],"expected":-2}]
+JSON
+python3 tools/agent_edit.py examples/add.gpp --function add \
+  --task 'Return left minus right.' --cases target/subtraction-cases.json \
+  --model qwen2.5-coder:7b -o target/subtraction.expr
+```
+
+A `proposed` status means the fragment passed those examples. A `rejected` status records both failed attempts and leaves no fragment. [Matched generation protocol](../bench/expression/agent-protocol.md)
+
+GPT++ expressions may use an explicit `as I64` conversion and native `min`, `max` and `clamp` integer operations. In a retrospective on the three arithmetic tasks, the compiler accepted previously generated Qwen expressions using those spellings. The saved model prompts and responses were unchanged. [Replay results](../bench/expression/results/compat.md)

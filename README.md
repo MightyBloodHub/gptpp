@@ -4,7 +4,9 @@
 
 GPT++ is an experimental programming language designed for coding agents. An agent can ask the compiler what an expression did on a particular call, which local values it could use, and which source revision it can safely edit. It can search for a change by specifying examples of the behavior it wants. The same scalar program runs in the offline reference interpreter or compiles to a native executable through LLVM.
 
-**Current result.** On three historical maintenance tasks, two local models each repaired Redis with the new example-guided search. The earlier expression catalog accepted zero repairs. Taking the first search result also solved Redis. For FastLED, the search offered a correct fix alongside five that failed withheld checks. Both models abstained. Two additional expected results from a reference calculation let the tool identify the FastLED fix. The Go task produced no candidate. These are development results on three programs. [Trial data and timings](bench/expression/results/repair.md) · [Distinguishing-input study](bench/expression/results/distinguish.md) · [Roadmap](ROADMAP.md)
+**Latest language changes.** GPT++ now supports explicit Boolean-to-integer conversion with `as I64` and checked integer `min`, `max` and `clamp`. These operations let Qwen's saved proposals repair all three new arithmetic tasks, after the earlier compiler rejected them. The selected changes passed 36 withheld tests and 879 additional checks. The operations were chosen after reviewing those failures. [Exact proposals and outcomes](bench/expression/results/compat.md)
+
+Agents can also test a stream of independent expression edits through one revision-bound compiler session. The repair search and distinguishing-input tool use this interface. Across nine workloads, the sum of median command times fell from 28.143 to 1.334 seconds, a 21.10× speedup, with identical menus and questions. [Latency measurements](bench/expression/results/probe.md) · [Runtime and memory](bench/runtime/results.md) · [Batch protocol](docs/scalar-language.md#check-several-candidate-edits-in-one-process) · [Roadmap](ROADMAP.md)
 
 ## Quick start
 

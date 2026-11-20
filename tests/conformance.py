@@ -150,6 +150,162 @@ fn empty() -> Unit !{} { return (); }"""))
             else:
                 self.assertEqual(int(run.stdout), trace["result"])
 
+    def test_probe_stream_editor_parity_and_validation(self):
+        source = module("return target(3, false);", """// π
+fn target(x: I64, b: Bool) -> I64 !{} { return 2 * x; }
+fn positive() -> Bool !{} { return target(3, true) > 0; }
+fn discard(v: Unit) -> Unit !{} { target(3, true); return v; }
+fn __gpp_probe0() -> I64 !{} { return 77; }""")
+        self.source.write_bytes(source.replace("\n", "\r\n").encode())
+        base = invoke(GPP, "revision", self.source).stdout.strip()
+        end = self.source.read_bytes().index(b"x;") + 1
+        span = f"{end-1}:{end}"
+        calls = self.work / "calls.tsv"
+        command = [GPP, "probe", self.source, "--function", "target", "--expect", base, "--cases", calls]
+
+        def frame(text, where=span, check=False):
+            data = text.encode()
+            return f"{where} {len(data)}{' check' if check else ''}\n".encode() + data
+
+        def probe(data, *flags):
+            p = subprocess.run([*command, *flags], input=data, capture_output=True, timeout=10)
+            self.assertEqual(p.returncode, 0, p.stderr)
+            hello, *rows = [json.loads(line) for line in p.stdout.splitlines()]
+            self.assertEqual(hello, dict(schema="gpp.probe/1", revision=base, cases=len(calls.read_text().splitlines())))
+            return rows
+
+        calls.write_text("main\npositive\ndiscard\t()\n__gpp_probe0\n")
+        fragments = ["x + // π\n1", "b", "1 / (x - x)", "if b { -2 } else { 9 }"]
+        payload = b"".join(frame(f) for f in fragments) + frame("1", "1:2") + frame("1", check=True)
+        for flags in [(), ("--wrapped",)]:
+            good, bad, fault, conditional, outside, check = probe(payload, *flags)
+            self.assertEqual(good["outcomes"], [{"result": 8}, {"result": True}, {"result": None}, {"result": 77}])
+            self.assertEqual((bad["status"], outside["status"]), ("invalid", "invalid"))
+            self.assertEqual(fault["outcomes"], [{"fault": "DivisionByZero"}] * 3 + [{"result": 77}])
+            self.assertEqual(conditional["outcomes"], [{"result": 18}, {"result": False}, {"result": None}, {"result": 77}])
+            self.assertEqual(check, {"status": "ok", "outcomes": []})
+        calls.write_text("main\t8\npositive\ttrue\ndiscard\t()\t()\n")
+        rows = probe(payload, "--wrapped", "--filter")
+        self.assertEqual([r.get("matches") for r in rows], [True, None, False, False, None, None])
+        original = self.source.read_bytes()
+        for broken in [b"1:2 9\nx", b"header\n", b"1:2 5000000000\n", b"1:2 1\n\xff", b"1:2 1", b"0" * 97]:
+            p = subprocess.run([*command, "--filter"], input=broken, capture_output=True, timeout=5)
+            self.assertNotEqual(p.returncode, 0)
+            self.assertEqual(len(p.stdout.splitlines()), 1)  # Only the successful opening handshake.
+        calls.write_text("target\t3\t2\n")
+        for flags in [(), ("--wrapped", "--wrapped")]:
+            p = subprocess.run([*command, *flags], input=payload, capture_output=True, timeout=5)
+            self.assertNotEqual(p.returncode, 0)
+            self.assertEqual(p.stdout, b"")
+        calls.write_text("positive\t9\n")
+        p = subprocess.run([*command, "--filter"], input=payload, capture_output=True, timeout=5)
+        self.assertNotEqual(p.returncode, 0)
+        self.assertEqual(p.stdout, b"")
+        self.assertEqual(self.source.read_bytes(), original)
+        self.source.write_bytes(original + b"// changed\n")
+        p = subprocess.run(command, input=payload, capture_output=True, timeout=5)
+        self.assertNotEqual(p.returncode, 0)
+        self.assertIn(b"stale revision", p.stderr)
+        self.assertEqual(p.stdout, b"")
+
+    def test_probe_preserves_wrapped_call_depth_and_fuel(self):
+        self.source.write_text(module("return 7;", """
+fn depth(n: I64) -> I64 !{} { if n == 0 { return 0; } return depth(n - 1); }
+fn spin(n: I64) -> I64 !{} { (); (); var i = 0; while i < n { i += 1; } return i; }
+"""))
+        revision = invoke(GPP, "revision", self.source).stdout.strip()
+        pos = self.source.read_bytes().index(b"7;")
+        payload = f"{pos}:{pos+1} 1\n7".encode()
+        cases = self.work / "calls.tsv"
+        names = [("depth", n) for n in range(36, 45)] + [("spin", 142855)] * 2
+        cases.write_text("".join(f"{name}\t{n}\n" for name, n in names))
+        cmd = [GPP, "probe", self.source, "--function", "main", "--expect", revision, "--cases", cases]
+
+        def results(flags):
+            p = subprocess.run([*cmd, *flags], input=payload, capture_output=True, timeout=10, check=True)
+            return json.loads(p.stdout.splitlines()[1])["outcomes"]
+
+        direct, wrapped = results([]), results(["--wrapped"])
+        # The outer entry consumes depth and steps of its own. Evaluate the
+        # identical public-case entry independently through the original CLI.
+        original = self.source.read_text()
+        for (name, n), result in zip(names, wrapped):
+            self.source.write_text(original.replace("return 7;", f"return {name}({n});"))
+            actual = invoke(GPP, "run", "--interpreter", self.source)
+            expected = {"fault": "ResourceLimit"} if actual.returncode else {"result": int(actual.stdout)}
+            self.assertEqual(result, expected)
+        self.assertNotEqual(direct, wrapped)
+        self.assertEqual(direct[-2:], [{"result": 142855}] * 2)  # Each call gets fresh fuel.
+        self.assertEqual(wrapped[-2:], [{"fault": "ResourceLimit"}] * 2)
+
+    def test_scalar_casts_and_intrinsics_across_engines(self):
+        source = module("""
+            if false as I64 != 0 || !false as I64 != 1 { return 1; }
+            if -(true as I64) != -1 || 8 * (3 > 2) as I64 != 8 { return 2; }
+            if -127 as I64 as I64 != -127 || as(as(3)) != 3 { return 3; }
+            if min(-9223372036854775808, 9223372036854775807) != -9223372036854775808 { return 4; }
+            if max(-9223372036854775808, 9223372036854775807) != 9223372036854775807 { return 5; }
+            if clamp(-11, -10, 7) != -10 || clamp(8, -10, 7) != 7 { return 6; }
+            if clamp(5, -10, 7) != 5 || clamp(12, 0, 0) != 0 { return 7; }
+            return 42;""", "fn as(as: I64) -> I64 !{} { return as as I64; }")
+        self.assert_engines(source, "result", 42)
+        printed = invoke(GPP, "ast", self.source).stdout
+        self.assertIn("-(true as I64)", printed)
+        self.assert_engines(printed, "result", 42)
+        for expr, fault in [
+            ("clamp(1, 4, -3)", "InvalidBounds"),
+            ("min(0, 1 / 0)", "DivisionByZero"),
+            ("max(9223372036854775807 + 1, 1 / 0)", "IntegerOverflow"),
+            ("clamp(1 / 0, 3, 2)", "DivisionByZero"),
+            ("clamp(1, 9223372036854775807, 9223372036854775807 + 1)", "IntegerOverflow"),
+        ]:
+            with self.subTest(expr=expr):
+                self.assert_engines(module(f"return {expr};"), "fault", fault)
+        self.assert_engines(module("return min(true) + max(3) + clamp();", """
+            fn min(flag: Bool) -> I64 !{} { return flag as I64; }
+            fn max(max: I64) -> I64 !{} { return max; }
+            fn clamp() -> I64 !{} { return 6; }"""), "result", 10)
+
+    def test_intrinsic_argument_visits_and_cast_edit_spans(self):
+        self.source.write_text(module("return clamp(visit(false as I64), visit(1), visit(3));",
+                                      "fn visit(x: I64) -> I64 !{} { return x; }"))
+        trace = self.trace("visit", "main")
+        expr, = trace["expressions"]
+        self.assertEqual(expr["hits"], 3)
+        self.assertEqual([obs["value"] for obs in expr["observations"]], [0, 1, 3])
+        trace = self.trace("main", "main")
+        self.assertEqual(trace["result"], 1)
+        cast = next(r for r in trace["expressions"] if r["text"] == "false as I64")
+        self.assertEqual(cast["type"], "I64")
+        before = self.source.read_bytes()
+        a, b = cast["start_byte"], cast["end_byte"]
+        self.assertEqual(before[a:b], b"false as I64")
+        fragment = self.work / "change"
+        fragment.write_text("max(1, 2)")
+        edited = invoke(GPP, "edit", self.source, "--function", "main", "--at", f"{a}:{b}", "--expr",
+                        fragment, "--expect", trace["revision"], "--stdout")
+        self.assert_ok(edited)
+        self.assertEqual(edited.stdout.encode(), before[:a] + fragment.read_bytes() + before[b:])
+        self.assertEqual(self.source.read_bytes(), before)
+        self.assert_engines(edited.stdout, "result", 2)
+
+    def test_rejects_unsupported_casts_and_intrinsic_signatures(self):
+        for source, code in [
+            (module("return () as I64;"), "GPP-TYPE-001"),
+            (module("return 1 as Bool;"), "GPP-PARSE-001"),
+            (module("return true as Unit;"), "GPP-PARSE-001"),
+            (module("return true as U32;"), "GPP-PARSE-001"),
+            (module("return true as I64" + " as I64" * 65 + ";"), "GPP-PARSE-004"),
+            (module("return clamp(true, 0, 4);"), "GPP-TYPE-001"),
+            (module("return max(2);"), "GPP-CALL-001"),
+            (module("return min(0, 2);", "fn min() -> I64 !{} { return 9; }"), "GPP-CALL-001"),
+            (module("let min = 7; return min(0, 3);"), "GPP-TYPE-001"),
+        ]:
+            self.source.write_text(source)
+            p = invoke(GPP, "check", "--format=json", self.source)
+            self.assertNotEqual(p.returncode, 0)
+            self.assertEqual(json.loads(p.stderr)["code"], code)
+
     def test_arithmetic(self):
         hi, lo = "9223372036854775807", "-9223372036854775808"
         cases = [

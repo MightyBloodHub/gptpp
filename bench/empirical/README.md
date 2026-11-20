@@ -16,9 +16,9 @@ The evaluator uses scratch directories, a reduced environment and macOS sandbox 
 
 ## Measurements
 
-The JSONL records every completed trial, prompt, model output, token count, public feedback, hidden acceptance and elapsed time. Ollama supplies model-specific input and output token counts. Time includes model calls and public tool feedback. Model load and held-out evaluation times are recorded separately. GPT++ launches the interpreter once per case, while Rust and Python batch cases. Timing describes these concrete adapters, including that overhead. [Ollama generation API](https://docs.ollama.com/api/generate)
+The JSONL records every completed trial, prompt, model output, token count, public feedback, hidden acceptance and elapsed time. Ollama supplies model-specific input and output token counts. Time includes model calls and public tool feedback. Model load and held-out evaluation times are recorded separately. In this pilot, GPT++ launched the interpreter once per case, while the Rust and Python adapters batched their cases. Timing describes these concrete adapters, including that overhead. [Ollama generation API](https://docs.ollama.com/api/generate)
 
-Report acceptance before and after the public repair and compute tokens and seconds per accepted trial across all assigned trials, including failures. The analysis pairs the same model and task across languages and resamples whole task families to estimate uncertainty. Tokens and elapsed seconds are separate measures of computational effort. The 20% target and two-point acceptance margin in the design plan describe later qualification. This pilot has 12 task families, two local models and one seed per condition.
+Report acceptance before and after the public repair and compute tokens and seconds per accepted trial across all assigned trials, including failures. The analysis pairs the same model and task across languages and resamples whole task families to estimate uncertainty. Tokens and elapsed seconds are separate measures of computational effort. This pilot has 12 task families, two local models and one seed per condition.
 
 ## Reproduce
 

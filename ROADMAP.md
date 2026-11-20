@@ -5,10 +5,16 @@ GPT++ is a programming language designed for agents that write and maintain soft
 ## Available today
 
 - A parser and type checker, a reference interpreter, and an LLVM native backend for a single-module profile with checked scalar arithmetic. [Scalar language guide](docs/scalar-language.md) · [Grammar](spec/grammar.ebnf)
+- Native scalar operations for rounding, bounds and predicates. An agent can write `(elapsed != 0) as I64` to obtain 0 or 1, nest checked integer `min` and `max` calls, or express a closed bound as `clamp(value, low, high)`. The interpreter and native backend implement the same semantics. [Scalar language reference](docs/scalar-language.md)
+- Persistent compiler evaluation through `gpp probe`. The repair tools can check many independent edits and run their example cases using one open compiler process. Across six repair searches and three distinguishing-input searches, the sum of median command times fell from 28.143 to 1.334 seconds on the test host. Both versions returned identical menus and questions. [Authoring tools](tools/README.md) · [Timing study](bench/expression/results/probe.md)
 - Compiler-checked edits to entire functions or individual expressions. Editors can list the exact source ranges against a revision, preview a replacement, and apply it with a stale-source guard. Surrounding bytes and operator grouping are preserved. [Expression editor](docs/scalar-language.md#preview-an-edit-inside-a-function)
 - Typed execution traces and example-guided repair. Agents can query an expression's observed inputs, result and fault through a caller, then search a bounded grammar for replacements that pass public examples. When candidates disagree, an agent can request a concrete input to clarify the desired behavior. [Trace reference](docs/scalar-language.md#trace-a-call) · [Repair guide](tools/README.md#search-for-an-edit-with-public-examples)
 - Local-model proposals with public example checks. The maintenance preset starts with the target and can add caller excerpts after a failing public caller test. The experimental catalog method exposes each expression as a numbered choice and checks a single structured model response. [Authoring tools](tools/README.md)
 - Matched benchmarks in GPT++, typed Python and Rust, with historical sources, raw model responses and replay programs. [Study index](bench/README.md)
+
+## What changed when the compiler learned the missing operations
+
+Two models attempted three new scalar contracts in each of GPT++, typed Python and Rust. In the original runs, Qwen solved two Python tasks and one Rust task. The GPT++ compiler rejected expressions that used `as I64` and ordinary integer bounds operations. The language now implements those forms. Keeping all the saved replies and their original token charges, Qwen GPT++ went from zero of three accepted changes to three of three. Its three patches passed 36 withheld checks and 879 additional direct inputs. StarCoder2 accepted none, and neither model repaired the older Redis, FastLED or Go extracts with these saved expressions. [Original matched results](bench/expression/results/fresh-agent.md) · [Retrospective replay](bench/expression/results/compat.md)
 
 ## What the expression milestone established
 
@@ -22,17 +28,22 @@ Running the public examples yields exact expressions and visible bindings for a 
 
 A separate follow-up asked for two expected FastLED outputs from a reference calculation. Those answers narrowed six choices to the one that passed all 14 withheld checks. The workflow also accepted Redis and returned no Go candidate. It made 912 candidate executions across the three tasks. [Distinguishing inputs, answers and outcomes](bench/expression/results/distinguish.md)
 
+## Current performance measurements
+
+Persistent evaluation preserved every repair menu and distinguishing question across nine workloads and three repeated measurements. The sum of command medians fell from 28.143 to 1.334 seconds. Correct scalar executables used about 1.3 MiB peak resident memory and ran in about 7 ms on this host. Rust used about 1.5 MiB and 8 ms, while Python used about 11.6 MiB and 0.3 seconds. Native times include startup and are sensitive to scheduling. GPT++ native builds took about 0.25 seconds, compared with about 0.11 seconds for Rust. [Authoring latency](bench/expression/results/probe.md) · [Program measurements](bench/runtime/results.md)
+
 ## Next milestone
 
 1. **Test distinguishing inputs on new specifications.** Measure how many additional expected results it takes to distinguish otherwise plausible edits. Charge separately for obtaining that answer from a human, a specification or a reference program. Record cases where all candidates are wrong or none of the available inputs distinguishes them.
 2. **Test transfer.** Freeze the search grammar, type information, budgets and public-example policy. Run on new project families and give Python and Rust comparable tracing, search and edit controls. Include a no-model selection baseline and record tool time alongside inference cost.
-3. **Extend the language past scalar edits.** Introduce structured values or explicit errors with machine-readable types and trace observations. Demonstrate a caller-sensitive edit on that feature with interpreter and native conformance.
+3. **Reduce native build cost.** Profile tool discovery, LLVM optimization, C runtime compilation and linking against the measured Rust build times. Verify compiler output and fault behavior after every optimization.
+4. **Extend the language past scalar edits.** Introduce structured values or explicit errors with machine-readable types and trace observations. Demonstrate a caller-sensitive edit on that feature with interpreter and native conformance.
 
-## Evidence for efficiency claims
+## How we compare workflows
 
-Measure input and output tokens per accepted change, including all failed attempts and retries. Report first-attempt acceptance, acceptance within the full budget, and tool time separately. Report the ratio as unestimable if either workflow has zero accepted edits.
+Compare GPT++ with typed Python and Rust on the same change requests, public feedback, budgets and withheld checks. Publish first-pass and final acceptance, input and output tokens, model calls and retries, tool time, and any additional answers supplied by people or reference programs. Report compiler throughput and program runtime separately, with the workloads and hardware used to measure them.
 
-The historical 20% target qualifies a specific comparative cost claim. It sets no threshold for implementing a useful language operation. That claim requires both a paired 95% upper cost-ratio bound of **0.80 or lower** and a paired 95% lower acceptance-difference bound of **−2 percentage points or higher** against the comparator chosen before qualification. Check that the findings hold across task families and more than one model configuration. Compiler release quality has its own conformance and reliability criteria. [Decision thresholds](docs/design.md#197-proposed-gono-go-thresholds) · [Release criteria](docs/design.md#26-definition-of-done)
+For cost per accepted change, count the resources spent on every assigned task and divide by the number accepted. Zero accepted changes leave this cost undefined. For a broader claim, fix the comparator before evaluation, use fresh task families and multiple models, and publish paired uncertainty estimates. Releases document which language operations work, where a comparator does better and which measures still need evidence. [Evidence for comparative claims](docs/design.md#197-evidence-for-comparative-claims) · [Release criteria](docs/design.md#26-definition-of-done)
 
 ## Later milestones
 

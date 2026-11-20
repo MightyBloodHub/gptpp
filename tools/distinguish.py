@@ -9,8 +9,8 @@ import subprocess
 import sys
 from tempfile import TemporaryDirectory
 
+import probe
 import propose
-from repair import patch_args
 
 
 def load_json(path):
@@ -53,13 +53,11 @@ def read_probes(path, target, declarations):
     return probes
 
 
-def previews(binary, work, snapshot, menu, subset):
-    target, revision, candidates = menu["function"], menu["revision"], menu["candidates"]
+def validated_candidates(binary, snapshot, menu):
+    target, revision = menu["function"], menu["revision"]
     catalog = propose.expression_catalog(binary, snapshot, target, revision)
     spans = {(row["start_byte"], row["end_byte"]): row["text"] for row in catalog["expressions"]}
-    paths = {}
-    fragment = work / "candidate.expr"
-    for i, row in enumerate(candidates, 1):
+    for i, row in enumerate(menu["candidates"], 1):
         if not isinstance(row, dict) or set(row) != {"start_byte", "end_byte", "old", "replacement"}:
             raise ValueError(f"Candidate {i} needs its byte range, original text and replacement.")
         start, end = row["start_byte"], row["end_byte"]
@@ -68,23 +66,7 @@ def previews(binary, work, snapshot, menu, subset):
             raise ValueError(f"Candidate {i} disagrees with the checked expression catalog.")
         if not isinstance(row["replacement"], str) or not row["replacement"].strip():
             raise ValueError(f"Candidate {i} requires a nonempty replacement expression.")
-        fragment.write_text(row["replacement"], encoding="utf-8")
-        source = propose.checked(*patch_args(binary, snapshot, target, row), fragment, "--expect", revision, "--stdout")
-        if i in subset:
-            file = work / f"candidate-{i}.gpp"
-            file.write_bytes(source.encode())
-            paths[i] = file
-    return paths
-
-
-def outcome(binary, file, target, call, literals, result_type):
-    data = json.loads(propose.checked(binary, "trace", file, "--function", target, "--call", call, *literals))
-    if data.get("schema") != "gpp.trace/1" or ("result" in data) == ("fault" in data):
-        raise ValueError("Expected a compiler trace with exactly one result or fault.")
-    if "fault" in data:
-        return "fault", data["fault"]
-    propose.case_literal(data["result"], result_type, "trace result")
-    return "result", data["result"]
+        yield i, row
 
 
 def distinguish(args):
@@ -104,24 +86,28 @@ def distinguish(args):
         dump = propose.checked(args.gpp, "ast", snapshot)
         declarations = {fn["name"]: fn for fn in propose.FUNCTION.finditer(dump)}
         probes = read_probes(args.probes, target, declarations)
-        paths = previews(args.gpp, work, snapshot, menu, subset)
-        best, best_score, tested = None, 0, 0
-        if len(paths) >= 2:
-            for call, values, literals in probes:
-                groups = {}
-                pairs = 0
-                for seen, (i, file) in enumerate(paths.items()):
-                    key = outcome(args.gpp, file, target, call, literals, declarations[call]["result"])
-                    group = groups.setdefault(key, [])
-                    # All earlier candidates outside this outcome group disagree.
-                    pairs += seen - len(group)
-                    group.append(i)
-                tested += 1
-                if pairs > best_score:
-                    best_score = pairs
-                    best = dict(function=call, args=values, separated_pairs=pairs,
-                                outcomes=[{kind: value, "candidates": ids}
-                                          for (kind, value), ids in groups.items()])
+        calls = [(name, literals) for name, _, literals in probes]
+        columns = [{} for _ in probes]
+        with probe.session(args.gpp, snapshot, target, base, work, calls) as evaluate:
+            for i, candidate in validated_candidates(args.gpp, snapshot, menu):
+                reply = evaluate(candidate, check_only=i not in subset or len(subset) < 2)
+                if reply["status"] == "invalid":
+                    raise ValueError(f"Candidate {i}: {reply['error']}")
+                for groups, out, (name, _, _) in zip(columns, reply["outcomes"], probes):
+                    (kind, value), = out.items()
+                    if kind == "result":
+                        propose.case_literal(value, declarations[name]["result"], "probe result")
+                    groups.setdefault((kind, value), []).append(i)
+        tested = len(probes) if len(subset) >= 2 else 0
+        best, best_score = None, 0
+        for groups, (call, values, _) in zip(columns, probes):
+            # Every candidate pairs with each candidate outside its own group twice.
+            pairs = sum(len(ids) * (len(subset) - len(ids)) for ids in groups.values()) // 2
+            if pairs > best_score:
+                best_score = pairs
+                best = dict(function=call, args=values, separated_pairs=pairs,
+                            outcomes=[{kind: value, "candidates": ids}
+                                      for (kind, value), ids in groups.items()])
         if propose.checked(args.gpp, "revision", args.file).strip() != base:
             raise ValueError("Stale revision: source changed during the comparison.")
     return dict(schema="gpp.distinguish/1", revision=base, function=target,

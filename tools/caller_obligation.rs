@@ -12,7 +12,7 @@ mod syntax;
 use ir::{Op, Program, Term};
 use std::io::Read;
 use std::{env, fs, process};
-use syntax::{BinOp, Type, UnOp};
+use syntax::{BinOp, Intrinsic, Type, UnOp};
 
 type Analysis<T> = Result<T, &'static str>;
 const LIMIT: &str = "analysis limit reached";
@@ -220,6 +220,23 @@ impl Execution {
                     Op::Bool(b) => Value::Bool(*b),
                     Op::Unit => Value::Unit,
                     Op::Copy(s) => slots[*s],
+                    Op::BoolToI64(s) => Value::int(i64::from(slots[*s].boolean()?)),
+                    Op::Intrinsic(op, args) => {
+                        // Selection is piecewise, so infer only with concrete operands.
+                        let a = slots[args[0]].scalar()?;
+                        let b = slots[args[1]].scalar()?;
+                        Value::int(match op {
+                            Intrinsic::Min => a.min(b),
+                            Intrinsic::Max => a.max(b),
+                            Intrinsic::Clamp => {
+                                let hi = slots[args[2]].scalar()?;
+                                if b > hi {
+                                    return Err("invalid clamp bounds");
+                                }
+                                a.clamp(b, hi)
+                            }
+                        })
+                    }
                     Op::Unary(op, s) => unary(*op, slots[*s])?,
                     Op::Binary(op, l, r) => binary(*op, slots[*l], slots[*r])?,
                     Op::Call(callee, params) => {

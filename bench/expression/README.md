@@ -18,7 +18,7 @@ A separate follow-up gave the tool a pool of unlabeled inputs and access to an i
 
 ![Valid expression selections across 18 trials per workflow. Separate selection found 1, combined selection found 0, and the numbered catalog found 18. All three workflows accepted zero changes.](community/selection.png)
 
-![Given the site and one attempt per task, GPT++ used 908 tokens per accepted fix and Rust used 897. The 20 percent target was 717.6 tokens. Typed Python had zero accepted fixes.](community/token-cost.png)
+![Given the site and one attempt per task, GPT++ used 908 tokens per accepted fix and Rust used 897. GPT++ and Rust each accepted one of three fixes. Typed Python accepted none, so its cost per accepted fix is undefined.](community/token-cost.png)
 
 The CSV has one row per workflow, model and language. It gives model calls, input and output tokens, and accepted edits both through the first edit and through the full budget. A blank tokens-per-accept value means no change passed the checks. [Download CSV](community/benchmark-summary.csv)
 
@@ -34,11 +34,11 @@ The CSV has one row per workflow, model and language. It gives model calls, inpu
 
 Each cell covers three tasks on each of two models. The successful known-site edits both repaired Redis on StarCoder2. The successful whole-body edit repaired Go on Qwen's retry. Public caller failures triggered 19 retries across the original study and recovered this one change. The first prompts contained the target function and public assertions. Caller implementation excerpts appeared only on eligible retries. [Per-model results and uncertainty](results/expression.md) · [Prompts and completions](results/expression.jsonl)
 
-### Distance to the 20% goal
+### Token cost and acceptance
 
 The prespecified Qwen comparison counted the cost of selecting and editing a site. GPT++, typed Python and Rust each finished with **0/3** accepted changes. A cost per accepted edit and its percentage saving are therefore undefined.
 
-The direct numerical comparison was the secondary, **known-site StarCoder2** condition. GPT++ used **908** tokens per accepted change, Rust **897**, and typed Python had zero accepts. Both successful edits fixed the same Redis call paths. The GPT++ point estimate was **1.23% more expensive than Rust**, leaving a gap of **21.23 percentage points** to the 20% savings goal. Reaching it would have required at most **717.6** tokens per accepted edit. The paired interval for the cost ratio spans zero to infinity because many resamples have zero successes. This is a development result on three scalar extracts. [Paired comparisons](results/expression.md)
+The direct numerical comparison was the secondary, **known-site StarCoder2** condition. GPT++ used **908** tokens per accepted change, Rust **897**, and typed Python had zero accepts. Both successful edits fixed the same Redis call paths. Across the three tasks, GPT++ spent **11 more tokens** than Rust for the same number of accepted fixes. Typed Python has no cost per accepted edit in this condition. The paired interval for the cost ratio spans zero to infinity because many resamples have zero successes. This is a development result on three scalar extracts. [Paired comparisons](results/expression.md)
 
 ## What changed after the first run
 
@@ -84,7 +84,7 @@ target/empirical-venv/bin/python -B bench/expression/run_expression.py target/ex
 target/empirical-venv/bin/python -B bench/expression/catalog_study.py target/catalog-new.jsonl
 ```
 
-To replay the example-filtered repair study, build the current compiler. The runner invokes the ordinary GPT++ CLI and independently checks the recorded selections with the macOS benchmark evaluator. Offline replay uses the saved local-model replies. A fresh run requires Ollama with the two model digests recorded in the archive and a new output path.
+To replay the original example-filtered repair and distinguishing-input studies, use a separate checkout of commit `245cb7e` and build its compiler. Run the following commands in that checkout. The runner invokes the ordinary GPT++ CLI and independently checks the recorded selections with the macOS benchmark evaluator. Offline replay uses the saved local-model replies. A fresh run of that archived workflow requires Ollama with the two recorded model digests and a new output path.
 
 ```sh
 cargo build --locked --offline
@@ -96,3 +96,45 @@ target/empirical-venv/bin/python -B bench/expression/distinguish_study.py --repl
 ```
 
 The repair archive’s `capture_provenance` field preserves the original capture manifest, its complete archive hash and the hash of the six trial rows. A subsequent metadata correction enumerated the specific dependencies and removed the unrelated old catalog frontend from the source check. The captured runner and its revised manifest-checking version have distinct fingerprints. The recorded product code, model requests, responses, trial rows and scores were retained. To reconstruct the original bytes, serialize `capture_provenance.original_manifest` with Python’s default `json.dumps`, append a newline, then append the six original JSONL lines verbatim.
+
+## Agent-generated expressions with public feedback
+
+The free-generation editor proposes one new native expression and can retry once after a public diagnostic. The matched GPT++, typed Python and Rust study includes the earlier project extracts and a separate block of three new scalar contracts. Each language uses the same structured response, change specification, public examples and retry limit. The GPT++ trials invoke the actual product CLI. [Historical task results](results/agent.md) · [New-task results](results/fresh-agent.md) · [Historical protocol](agent-protocol.md) · [New-task protocol](agent-fresh-protocol.md)
+
+Recreate both reports with Python. Behavioral replay uses the macOS benchmark environment and the checked edit adapters. Fresh inference uses the pinned local models and requires a new archive path. Replay these two original blocks with the pre-extension compiler from revision `245cb7e`, which implements their expression editor and trace interface.
+
+```sh
+python3 -B bench/expression/agent_study.py --report bench/expression/results/agent.jsonl
+python3 -B bench/expression/fresh_agent_study.py --report bench/expression/results/fresh-agent.jsonl
+git worktree add --detach target/agent-compiler-before 245cb7e
+cargo build --manifest-path target/agent-compiler-before/Cargo.toml --locked --offline
+target/empirical-venv/bin/python -B bench/expression/replay_agent.py --gpp target/agent-compiler-before/target/debug/gpp bench/expression/results/agent.jsonl
+target/empirical-venv/bin/python -B bench/expression/replay_agent.py --gpp target/agent-compiler-before/target/debug/gpp bench/expression/results/fresh-agent.jsonl
+```
+
+During the historical block, the live compiler build path changed as the batch probe command was added. The archive records the two observed binary fingerprints, the initial capture hash and the hash of every original trial row. Individual historical calls did not record a binary hash. The new-task runner takes a private compiler copy before starting its assignments. Timing in both blocks describes the recorded development machine and sandboxed adapters.
+
+### Rechecking frozen GPT++ answers after extending the language
+
+The explicit `as I64` conversion and native integer `min`, `max` and `clamp` calls were motivated by expressions generated in the arithmetic block. A separate retrospective applied all 24 archived GPT++ answers from both blocks to their original source bytes. No new model responses were generated. On the three new contracts, Qwen’s original answer sequence went from zero to three accepted changes. Its signed-saturation expression passed on the first answer. Half-open windows and timeout quantization passed with the originally saved retry. The three selected patches also passed 879 additional direct checks. Neither model repaired a historical fixture in this replay, and StarCoder2 repaired none of the new tasks. [Retrospective results](results/compat.md) · [Scoring protocol](compat-protocol.md) · [Patch and response hashes](results/compat.jsonl)
+
+```sh
+cargo build --locked --offline
+python3 -B bench/expression/compat_study.py --report bench/expression/results/compat.jsonl
+target/empirical-venv/bin/python -B bench/expression/compat_study.py --replay bench/expression/results/compat.jsonl
+```
+
+## Measure compiler session latency
+
+The current compiler batches the same candidate edits and supplied calls. The comparison requires identical JSON outputs on all nine workloads over three alternating repetitions. Build revision `245cb7e` in `target/probe-baseline` or pass an existing checkout using `--baseline PATH`.
+
+```sh
+mkdir -p target/probe-baseline
+git archive 245cb7e | tar -x -C target/probe-baseline
+cargo build --locked --offline --manifest-path target/probe-baseline/Cargo.toml
+cargo build --locked --offline
+target/empirical-venv/bin/python -B bench/expression/probe_study.py target/probe-new.jsonl
+python3 -B bench/expression/probe_study.py --report bench/expression/results/probe.jsonl
+```
+
+The [native program study](../runtime/README.md) measures execution time and peak memory across GPT++, Rust and Python.

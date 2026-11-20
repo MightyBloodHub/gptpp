@@ -11,6 +11,7 @@ import re
 import sys
 from tempfile import TemporaryDirectory
 
+import probe
 import propose
 
 
@@ -121,31 +122,22 @@ def search(args, snapshot, work, cases, base):
         return result
 
     result["stop_reason"] = "grammar_complete"
-    fragment = work / "probe.expr"
-    # Check the original failures first. Every survivor still has to pass every case.
     prioritized = [cases[i] for i in failures] + [c for i, c in enumerate(cases) if i not in failures]
-    for candidate in search_order(traces, failures):
-        if result["tested"] >= args.budget:
-            result.update(exhausted=True, stop_reason="budget")
-            break
-        fragment.write_text(candidate["replacement"], encoding="utf-8")
-        # The snapshot is private and immutable. The final application targets the user's
-        # original revision. The compiler supplies exactly the same grouping in both edits.
-        patch = patch_args(args.gpp, snapshot, args.function, candidate)
-        preview = propose.compiler(*patch, fragment, "--stdout")
-        result["tested"] += 1
-        if preview.returncode:
-            if b"error[GPP-" in preview.stderr:
+    calls = [(c.function, c.args) for c in prioritized]
+    with probe.session(args.gpp, snapshot, args.function, base, work, calls,
+                       wrapped=True, expected=[c.expected for c in prioritized]) as evaluate:
+        for candidate in search_order(traces, failures):
+            if result["tested"] >= args.budget:
+                result.update(exhausted=True, stop_reason="budget")
+                break
+            reply = evaluate(candidate)
+            result["tested"] += 1
+            if reply["status"] == "invalid" or not reply["matches"]:
                 continue
-            raise propose.ProposalError(preview.stderr.decode(errors="replace").strip())
-        try:
-            propose.check_cases(args.gpp, preview.stdout, work, prioritized)
-        except propose.CaseFailure:
-            continue
-        result["candidates"].append(candidate)
-        if len(result["candidates"]) == MENU_LIMIT:
-            result["stop_reason"] = "menu_full"
-            break
+            result["candidates"].append(candidate)
+            if len(result["candidates"]) == MENU_LIMIT:
+                result["stop_reason"] = "menu_full"
+                break
     if result["candidates"]:
         result["status"] = "listed"
     return result

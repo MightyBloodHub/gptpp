@@ -2,7 +2,9 @@
 use std::collections::HashMap;
 
 use crate::ir::{self, Instr, Op, Term};
-use crate::syntax::{self, BinOp, Diagnostic, Expr, ExprKind, Span, Stmt, StmtKind, Type};
+use crate::syntax::{
+    self, BinOp, Diagnostic, Expr, ExprKind, Intrinsic, Span, Stmt, StmtKind, Type,
+};
 
 type Result<T> = std::result::Result<T, Diagnostic>;
 
@@ -382,6 +384,20 @@ impl<'a, 't, F: FnMut(&Expr, Type)> Builder<'a, 't, F> {
             ExprKind::Name(name) => self.resolve(name, expr.span)?.slot,
             ExprKind::Call(name, arguments) => self.call(name, arguments, expr.span)?,
             ExprKind::If { cond, yes, no } => self.conditional_value(cond, yes, no)?,
+            ExprKind::AsI64(operand) => {
+                let slot = self.expr(operand)?;
+                match self.slots[slot] {
+                    Type::I64 => slot,
+                    Type::Bool => self.value(Type::I64, Op::BoolToI64(slot)),
+                    Type::Unit => {
+                        return Err(Diagnostic::new(
+                            "GPP-TYPE-001",
+                            "cannot convert Unit to I64",
+                            operand.span,
+                        ));
+                    }
+                }
+            }
             ExprKind::Unary(op, operand) => {
                 let slot = self.expr(operand)?;
                 let (expected, result) = ir::unary_types(*op);
@@ -418,28 +434,49 @@ impl<'a, 't, F: FnMut(&Expr, Type)> Builder<'a, 't, F> {
                 span,
             ));
         }
-        let id = self.names.get(name).copied().ok_or_else(|| {
+        if let Some(&id) = self.names.get(name) {
+            let callee = &self.module.functions[id];
+            let slots =
+                self.arguments(name, arguments, callee.params.iter().map(|p| p.ty), span)?;
+            return Ok(self.value(callee.result, Op::Call(id, slots)));
+        }
+        let intrinsic = Intrinsic::named(name).ok_or_else(|| {
             Diagnostic::new("GPP-NAME-001", format!("undefined function '{name}'"), span)
         })?;
-        let callee = &self.module.functions[id];
-        if arguments.len() != callee.params.len() {
+        let slots = self.arguments(
+            name,
+            arguments,
+            std::iter::repeat_n(Type::I64, intrinsic.arity()),
+            span,
+        )?;
+        Ok(self.value(Type::I64, Op::Intrinsic(intrinsic, slots)))
+    }
+
+    fn arguments(
+        &mut self,
+        name: &str,
+        arguments: &[Expr],
+        types: impl ExactSizeIterator<Item = Type>,
+        span: Span,
+    ) -> Result<Vec<usize>> {
+        if arguments.len() != types.len() {
             return Err(Diagnostic::new(
                 "GPP-CALL-001",
                 format!(
                     "'{name}' expects {} arguments, found {}",
-                    callee.params.len(),
+                    types.len(),
                     arguments.len()
                 ),
                 span,
             ));
         }
         let mut slots = Vec::with_capacity(arguments.len());
-        for (argument, parameter) in arguments.iter().zip(&callee.params) {
+        for (argument, ty) in arguments.iter().zip(types) {
             let slot = self.expr(argument)?;
-            require(self.slots[slot], parameter.ty, argument.span, "argument")?;
+            require(self.slots[slot], ty, argument.span, "argument")?;
             slots.push(slot);
         }
-        Ok(self.value(callee.result, Op::Call(id, slots)))
+        Ok(slots)
     }
 
     fn logical(&mut self, op: BinOp, left: &Expr, right: &Expr) -> Result<usize> {

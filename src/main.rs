@@ -3,6 +3,7 @@ mod edit;
 mod interpreter;
 mod ir;
 mod native;
+mod probe;
 mod syntax;
 mod trace;
 
@@ -20,7 +21,8 @@ Usage:
   gpp build [-O0|-O2] [-o EXECUTABLE] FILE
   gpp ast FILE
   gpp emit-llvm FILE
-  gpp trace FILE --function TARGET --call ENTRY [ARG ...] [--fuel N]";
+  gpp trace FILE --function TARGET --call ENTRY [ARG ...] [--fuel N]
+  gpp probe FILE --function TARGET --expect REVISION --cases CASES.tsv [--wrapped] [--filter]";
 
 #[derive(PartialEq)]
 enum Action {
@@ -196,9 +198,13 @@ fn main() -> ExitCode {
     enum Invocation {
         Compile(Options),
         Trace(trace::Request),
+        Probe(probe::Request),
         Edit(edit::Request),
     }
-    let parsed = if args.peek().is_some_and(|s| s == "trace") {
+    let parsed = if args.peek().is_some_and(|s| s == "probe") {
+        args.next();
+        probe::Request::parse(args).map(Invocation::Probe)
+    } else if args.peek().is_some_and(|s| s == "trace") {
         args.next();
         trace::Request::parse(args).map(Invocation::Trace)
     } else if args
@@ -219,6 +225,7 @@ fn main() -> ExitCode {
     let result = match command {
         Invocation::Compile(options) => execute(options),
         Invocation::Trace(request) => request.execute(),
+        Invocation::Probe(request) => request.execute(),
         Invocation::Edit(request) => edit::execute(request),
     };
     match result {

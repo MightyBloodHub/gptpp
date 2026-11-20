@@ -121,6 +121,7 @@ pub enum ExprKind {
     Name(String),
     Call(String, Vec<Expr>),
     Unary(UnOp, Box<Expr>),
+    AsI64(Box<Expr>),
     Binary(BinOp, Box<Expr>, Box<Expr>),
     If {
         cond: Box<Expr>,
@@ -133,6 +134,32 @@ pub enum ExprKind {
 pub enum UnOp {
     Neg,
     Not,
+}
+
+/// Fallback callable names in the scalar profile. User declarations take priority.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Intrinsic {
+    Min,
+    Max,
+    Clamp,
+}
+
+impl Intrinsic {
+    pub fn named(name: &str) -> Option<Self> {
+        match name {
+            "min" => Some(Self::Min),
+            "max" => Some(Self::Max),
+            "clamp" => Some(Self::Clamp),
+            _ => None,
+        }
+    }
+
+    pub fn arity(self) -> usize {
+        match self {
+            Self::Min | Self::Max => 2,
+            Self::Clamp => 3,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -680,6 +707,22 @@ impl<'a> Parser<'a> {
     fn binary(&mut self, minimum: u8, depth: usize) -> Result<ParsedExpr, Diagnostic> {
         check_depth(depth, self.peek().span)?;
         let mut left = self.prefix(depth)?;
+        // Casts bind less tightly than prefix operators and more tightly than
+        // every binary operator. "as" remains an identifier in prefix position.
+        while self.eat("as") {
+            self.require("I64")?;
+            let span = self.span_from(left.expr.span.start);
+            let height = left.height + 1;
+            check_depth(height, span)?;
+            left = ParsedExpr {
+                expr: Expr {
+                    kind: ExprKind::AsI64(Box::new(left.expr)),
+                    span,
+                    site: ExprSite::Ordinary,
+                },
+                height,
+            };
+        }
         while let Some(op) = BinOp::from_token(self.peek().text) {
             if op.precedence() < minimum {
                 break;
@@ -944,7 +987,18 @@ fn print_expr(expr: &Expr, minimum: u8, text: &mut String) {
         }
         ExprKind::Unary(op, child) => {
             write!(text, "{op}").unwrap();
+            print_expr(child, 8, text);
+        }
+        ExprKind::AsI64(child) => {
+            let grouped = minimum > 7;
+            if grouped {
+                text.push('(');
+            }
             print_expr(child, 7, text);
+            text.push_str(" as I64");
+            if grouped {
+                text.push(')');
+            }
         }
         ExprKind::Binary(op, left, right) => {
             let precedence = op.precedence();

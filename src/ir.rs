@@ -1,4 +1,4 @@
-//! Internal scalar control-flow IR. Operands refer to function-local slots.
+//! Internal typed control-flow IR. Operands refer to function-local slots.
 //! Every instruction assigns one slot; a call always has a destination, even for Unit.
 use std::collections::HashSet;
 
@@ -6,6 +6,7 @@ pub use crate::syntax::{BinOp, Intrinsic, Type, UnOp};
 
 #[derive(Debug)]
 pub struct Program {
+    pub types: Vec<crate::syntax::TypeDecl>,
     pub functions: Vec<Function>,
     pub entry: usize,
 }
@@ -38,6 +39,10 @@ pub enum Op {
     Bool(bool),
     Unit,
     Copy(usize),
+    Record(usize, Vec<usize>),
+    Field(usize, usize),
+    Variant(usize, usize),
+    Hole(Type),
     BoolToI64(usize),
     Intrinsic(Intrinsic, Vec<usize>),
     Unary(UnOp, usize),
@@ -80,6 +85,18 @@ pub(crate) fn binary_result(op: BinOp, left: Type, right: Type) -> Option<Type> 
 /// Reject malformed indices, types, control flow, and reads that can reach
 /// the function entry without passing through a definition.
 pub fn validate(program: &Program) -> Result<(), String> {
+    let valid_type = |ty| !matches!(ty, Type::Named(id) if id >= program.types.len());
+    for decl in &program.types {
+        match &decl.kind {
+            crate::syntax::TypeKind::Record(fields) => {
+                if fields.iter().any(|f| !valid_type(f.ty) || matches!(f.ty, Type::Named(i) if matches!(program.types[i].kind, crate::syntax::TypeKind::Record(_)))) {
+                    return Err("invalid flat record layout".into());
+                }
+            }
+            crate::syntax::TypeKind::Enum(tags) if tags.is_empty() => return Err("empty enum layout".into()),
+            _ => {}
+        }
+    }
     let entry = program
         .functions
         .get(program.entry)
@@ -88,6 +105,9 @@ pub fn validate(program: &Program) -> Result<(), String> {
         return Err("invalid bootstrap entry signature".into());
     }
     for function in &program.functions {
+        if !valid_type(function.result) || !function.slots.iter().all(|&t| valid_type(t)) {
+            return Err("undeclared slot or return type".into());
+        }
         validate_function(program, function)
             .map_err(|message| format!("{}: {message}", function.name))?;
     }
@@ -112,6 +132,41 @@ fn validate_function(program: &Program, function: &Function) -> Result<(), Strin
                 Op::Int(_) => Type::I64,
                 Op::Bool(_) => Type::Bool,
                 Op::Unit => Type::Unit,
+                Op::Record(id, args) => {
+                    let Some(crate::syntax::TypeKind::Record(fields)) =
+                        program.types.get(*id).map(|d| &d.kind)
+                    else {
+                        return Err("invalid record constructor".into());
+                    };
+                    if args.len() != fields.len() {
+                        return Err("invalid record arity".into());
+                    }
+                    for (arg, field) in args.iter().zip(fields) {
+                        if operand(*arg)? != field.ty {
+                            return Err("incorrect record field type".into());
+                        }
+                    }
+                    Type::Named(*id)
+                }
+                Op::Field(slot, field) => {
+                    let Type::Named(id) = operand(*slot)? else {
+                        return Err("projection requires a record".into());
+                    };
+                    let Some(crate::syntax::TypeKind::Record(fields)) =
+                        program.types.get(id).map(|d| &d.kind)
+                    else {
+                        return Err("invalid record type".into());
+                    };
+                    fields.get(*field).ok_or("invalid field index")?.ty
+                }
+                Op::Variant(id, tag) => {
+                    if !matches!(program.types.get(*id).map(|d| &d.kind), Some(crate::syntax::TypeKind::Enum(v)) if *tag < v.len())
+                    {
+                        return Err("invalid enum tag".into());
+                    }
+                    Type::Named(*id)
+                }
+                Op::Hole(ty) => *ty,
                 Op::Copy(source) => operand(*source)?,
                 Op::BoolToI64(source) => {
                     if operand(*source)? != Type::Bool {
@@ -255,6 +310,7 @@ mod tests {
 
     fn program(slots: Vec<Type>, blocks: Vec<Block>) -> Program {
         Program {
+            types: Vec::new(),
             entry: 0,
             functions: vec![Function {
                 name: "main".into(),

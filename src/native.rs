@@ -2,6 +2,7 @@
 //! LLVM's optimization pipeline may promote these cells to SSA registers.
 
 use crate::ir::{self, BinOp, Function, Intrinsic, Op, Program, Term, Type, UnOp};
+use crate::syntax::{TypeDecl, TypeKind};
 use std::env;
 use std::fmt::Write as _;
 use std::fs;
@@ -15,10 +16,14 @@ const LLVM_RELEASE: &str = "22.1.8";
 
 // Bool and Unit share an internal representation. Unit's only value is false.
 // The public bootstrap entry always returns i64 to the C runner.
-fn llvm_type(ty: Type) -> &'static str {
+fn llvm_type(ty: Type, types: &[TypeDecl]) -> String {
     match ty {
-        Type::I64 => "i64",
-        Type::Bool | Type::Unit => "i1",
+        Type::I64 => "i64".into(),
+        Type::Bool | Type::Unit => "i1".into(),
+        Type::Named(i) => match types[i].kind {
+            TypeKind::Enum(_) => "i64".into(),
+            TypeKind::Record(_) => format!("%gpp_t{i}"),
+        },
     }
 }
 
@@ -86,6 +91,7 @@ ok:
 
 struct FunctionEmitter<'a> {
     out: &'a mut String,
+    types: &'a [TypeDecl],
     function: &'a Function,
     next_reg: usize,
 }
@@ -99,7 +105,7 @@ impl FunctionEmitter<'_> {
     }
 
     fn load(&mut self, slot: usize) -> String {
-        let ty = llvm_type(self.function.slots[slot]);
+        let ty = llvm_type(self.function.slots[slot], self.types);
         self.register(&format!("load {ty}, ptr %s{slot}"))
     }
 
@@ -108,6 +114,24 @@ impl FunctionEmitter<'_> {
             Op::Int(n) => n.to_string(),
             Op::Bool(b) => b.to_string(),
             Op::Unit => "false".into(),
+            Op::Hole(_) => return Err("unresolved hole reached native lowering".into()),
+            Op::Variant(_, tag) => tag.to_string(),
+            Op::Record(_, args) => {
+                let mut aggregate = String::from("zeroinitializer");
+                for (i, &slot) in args.iter().enumerate() {
+                    let field_ty = llvm_type(self.function.slots[slot], self.types);
+                    let field = self.load(slot);
+                    aggregate = self.register(&format!(
+                        "insertvalue {ty} {aggregate}, {field_ty} {field}, {i}"
+                    ));
+                }
+                aggregate
+            }
+            Op::Field(slot, index) => {
+                let record_ty = llvm_type(self.function.slots[*slot], self.types);
+                let record = self.load(*slot);
+                self.register(&format!("extractvalue {record_ty} {record}, {index}"))
+            }
             Op::Copy(slot) => self.load(*slot),
             Op::BoolToI64(slot) => {
                 let bit = self.load(*slot);
@@ -133,9 +157,28 @@ impl FunctionEmitter<'_> {
                 }
             }
             Op::Binary(op, left, right) => {
-                let operand_type = llvm_type(self.function.slots[*left]);
+                let operand_type = llvm_type(self.function.slots[*left], self.types);
                 let a = self.load(*left);
                 let b = self.load(*right);
+                if let Type::Named(id) = self.function.slots[*left]
+                    && let TypeKind::Record(fields) = &self.types[id].kind
+                {
+                    let mut equal = String::from("true");
+                    for (index, field) in fields.iter().enumerate() {
+                        let field_ty = llvm_type(field.ty, self.types);
+                        let lhs =
+                            self.register(&format!("extractvalue {operand_type} {a}, {index}"));
+                        let rhs =
+                            self.register(&format!("extractvalue {operand_type} {b}, {index}"));
+                        let same = self.register(&format!("icmp eq {field_ty} {lhs}, {rhs}"));
+                        equal = self.register(&format!("and i1 {equal}, {same}"));
+                    }
+                    return Ok(if *op == BinOp::Ne {
+                        self.register(&format!("xor i1 {equal}, true"))
+                    } else {
+                        equal
+                    });
+                }
                 let code = match op {
                     BinOp::Add => "add",
                     BinOp::Sub => "sub",
@@ -162,7 +205,7 @@ impl FunctionEmitter<'_> {
             Op::Call(callee, args) => {
                 let mut operands = Vec::with_capacity(args.len());
                 for &slot in args {
-                    let arg_type = llvm_type(self.function.slots[slot]);
+                    let arg_type = llvm_type(self.function.slots[slot], self.types);
                     operands.push(format!("{arg_type} {}", self.load(slot)));
                 }
                 self.register(&format!(
@@ -175,11 +218,11 @@ impl FunctionEmitter<'_> {
 
     fn emit(mut self, id: usize) -> Result<(), String> {
         let function = self.function;
-        let result = llvm_type(function.result);
+        let result = llvm_type(function.result, self.types);
         let params: Vec<_> = function.slots[..function.params]
             .iter()
             .enumerate()
-            .map(|(i, &ty)| format!("{} %arg{i}", llvm_type(ty)))
+            .map(|(i, &ty)| format!("{} %arg{i}", llvm_type(ty, self.types)))
             .collect();
         writeln!(
             self.out,
@@ -188,18 +231,23 @@ impl FunctionEmitter<'_> {
         )
         .unwrap();
         for (i, &ty) in function.slots.iter().enumerate() {
-            writeln!(self.out, "  %s{i} = alloca {}", llvm_type(ty)).unwrap();
+            writeln!(self.out, "  %s{i} = alloca {}", llvm_type(ty, self.types)).unwrap();
         }
         for (i, &ty) in function.slots[..function.params].iter().enumerate() {
-            writeln!(self.out, "  store {} %arg{i}, ptr %s{i}", llvm_type(ty)).unwrap();
+            writeln!(
+                self.out,
+                "  store {} %arg{i}, ptr %s{i}",
+                llvm_type(ty, self.types)
+            )
+            .unwrap();
         }
         self.out.push_str("  br label %bb0\n");
         for (index, block) in function.blocks.iter().enumerate() {
             writeln!(self.out, "bb{index}:").unwrap();
             for instruction in &block.instructions {
                 let dst = instruction.dst;
-                let ty = llvm_type(function.slots[dst]);
-                let value = self.value(&instruction.op, ty)?;
+                let ty = llvm_type(function.slots[dst], self.types);
+                let value = self.value(&instruction.op, &ty)?;
                 writeln!(self.out, "  store {ty} {value}, ptr %s{dst}").unwrap();
             }
             match block.term {
@@ -219,9 +267,18 @@ impl FunctionEmitter<'_> {
     }
 }
 
-pub fn emit_llvm(program: &Program) -> Result<String, String> {
+pub fn emit_functions(program: &Program) -> Result<String, String> {
     ir::validate(program)?;
     let mut out = String::new();
+    for (id, decl) in program.types.iter().enumerate() {
+        if let TypeKind::Record(fields) = &decl.kind {
+            let members = fields
+                .iter()
+                .map(|f| llvm_type(f.ty, &program.types))
+                .collect::<Vec<_>>();
+            writeln!(out, "%gpp_t{id} = type {{ {} }}", members.join(", ")).unwrap();
+        }
+    }
     emit_arithmetic_helpers(&mut out);
     out.push_str("declare i64 @llvm.smin.i64(i64, i64)\ndeclare i64 @llvm.smax.i64(i64, i64)\n");
     if program
@@ -251,11 +308,17 @@ ok:
     for (id, function) in program.functions.iter().enumerate() {
         FunctionEmitter {
             out: &mut out,
+            types: &program.types,
             function,
             next_reg: 0,
         }
         .emit(id)?;
     }
+    Ok(out)
+}
+
+pub fn emit_llvm(program: &Program) -> Result<String, String> {
+    let mut out = emit_functions(program)?;
     writeln!(
         out,
         "\ndefine i64 @gpp_entry() {{\n  %result = call i64 @gpp_fn_{}()\n  ret i64 %result\n}}",
@@ -384,12 +447,21 @@ fn macos_sdk(clang: &mut Command) -> Result<(), String> {
 }
 
 pub fn build(program: &Program, output: &Path, optimize: bool) -> Result<(), String> {
-    let module = emit_llvm(program)?;
+    link(&emit_llvm(program)?, RUNNER, output, optimize, false)
+}
+
+pub fn link(
+    module: &str,
+    runtime: &str,
+    output: &Path,
+    optimize: bool,
+    shared: bool,
+) -> Result<(), String> {
     let tools = llvm_bin()?;
     let stage = BuildDir::create(output.parent().unwrap_or(Path::new(".")))
         .map_err(|e| format!("creating build directory for {}: {e}", output.display()))?;
     fs::write(stage.0.join("module.ll"), module).map_err(|e| e.to_string())?;
-    fs::write(stage.0.join("bootstrap.c"), RUNNER).map_err(|e| e.to_string())?;
+    fs::write(stage.0.join("bootstrap.c"), runtime).map_err(|e| e.to_string())?;
 
     let level = if optimize { "O2" } else { "O0" };
     run(Command::new(tools.join("opt"))
@@ -405,7 +477,11 @@ pub fn build(program: &Program, output: &Path, optimize: bool) -> Result<(), Str
     };
     // opt owns the IR pipeline. Keep its verified bitcode intact through clang's
     // frontend while selecting the corresponding machine-code optimization level.
-    run(clang()?.arg(format!("-{level}")).args([
+    let mut codegen = clang()?;
+    if shared {
+        codegen.arg("-fPIC");
+    }
+    run(codegen.arg(format!("-{level}")).args([
         "-Xclang",
         "-disable-llvm-passes",
         "-Wno-override-module",
@@ -414,7 +490,23 @@ pub fn build(program: &Program, output: &Path, optimize: bool) -> Result<(), Str
         "-o",
         "module.o",
     ]))?;
-    run(clang()?.args(["-std=c11", "bootstrap.c", "module.o", "-o", "program"]))?;
+    let mut linker = clang()?;
+    if shared {
+        linker.args(["-fPIC", "-fvisibility=hidden"]);
+        #[cfg(target_os = "macos")]
+        {
+            let name = output
+                .file_name()
+                .and_then(|n| n.to_str())
+                .ok_or("invalid library filename")?;
+            linker
+                .args(["-dynamiclib", "-Xlinker", "-install_name", "-Xlinker"])
+                .arg(format!("@rpath/{name}"));
+        }
+        #[cfg(not(target_os = "macos"))]
+        linker.arg("-shared");
+    }
+    run(linker.args(["-std=c11", "bootstrap.c", "module.o", "-o", "program"]))?;
     fs::rename(stage.0.join("program"), output)
         .map_err(|e| format!("installing executable at {}: {e}", output.display()))
 }

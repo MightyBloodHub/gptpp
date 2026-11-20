@@ -793,3 +793,15 @@ section[id] { scroll-margin-block-start: 1.5rem; }
 @media (max-width: 22em) {
   .hero h1 { font-size: clamp(2.65rem, 15.5vw, 3.3rem); }
 }
+
+#contract-example {
+  min-height: 2.2rem;
+  padding: .25rem 1.85rem .25rem .5rem;
+  color: var(--gpp-paper);
+  font: inherit;
+  background-color: var(--gpp-ink);
+  border: 1px solid #606779;
+}
+.contract-editor-head { justify-content: start; }
+.contract-presets { margin-inline-start: auto; }
+.principles .text-link { display: inline-block; }

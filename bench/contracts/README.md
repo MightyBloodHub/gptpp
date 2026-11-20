@@ -2,7 +2,7 @@
 
 Three small scalar programs have executable GPT++ contracts over fixed input domains. The report compares sparse-example filtering with full-domain verification, checks the first counterexamples against independent arithmetic oracles, and records each search result. The companion Python and Rust programs execute the same candidate expressions on all the same inputs, including inputs outside the contract used to illustrate the limits of a bounded guarantee. All local compiler and language commands run without model inference. [Report](results.md) · [Protocol](protocol.md) · [Frozen fixture definitions](fixtures.py) · [Raw records](results.jsonl)
 
-From the repository root, build GPT++ with the pinned Rust toolchain. The study requires Python 3.10 or newer and `rustc` on the search path. Generating the Markdown report reads the archived results without executing the compilers.
+For an exact replay of these source-fingerprinted archives, run the commands in a checkout of commit `bd79507`. Build GPT++ there with the pinned Rust toolchain. The study requires Python 3.10 or newer and `rustc` on the search path. Generating the Markdown report reads the archived results without executing the compilers.
 
 ```sh
 cargo build --locked --offline

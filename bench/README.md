@@ -2,6 +2,14 @@
 
 The benchmark suite measures how much model work GPT++, typed Python, and Rust require to produce an accepted change. An accepted change passes the language checker, public examples, and withheld cases. Tokens per accepted edit includes input and output tokens from every attempt, including failures and retries. Reports include acceptance counts, timings, and paired uncertainty where available.
 
+## Matched state-transition maintenance
+
+Two models attempted four previously unseen event-driven changes in all three languages. GPT++, typed Python and Rust each accepted the same two of eight model-task assignments. The shared no-model search passed three of four families in every language. In one worked case, Qwen’s original GPT++ expression was checked against 1,088 withheld end states in both the interpreter and a compiled library called from Python. [Matched results](stateful/results.md) · [Paired comparison](stateful/paired.md) · [Runnable model completion](../examples/streak_counter/README.md)
+
+## Symbolic verification
+
+The symbolic verifier agreed with an independent oracle on 98 generated contracts, including 45 replayed counterexamples. GPT++, Rust with Kani, and typed Python with CrossHair each confirmed three full-width reservation cancellation properties and caught a deliberate double release. [Differential checks](proof/README.md) · [Cross-language verifier comparison](verifiers/README.md)
+
 ## Finite-contract verification and repair
 
 On three scalar tasks, exhaustive verification rejected six of ten curated edits that passed the sparse examples. Separate contract-guided search produced a verified repair on each task. Direct execution in GPT++, Python and Rust agreed on all 373 curated program/input outcomes per language. In the supplemental model study, Qwen solved one task and StarCoder2 solved none. [Finite-domain results](contracts/results.md) · [Model results](contracts/model-results.md) · [Reproduction](contracts/README.md)
@@ -43,6 +51,7 @@ The eight-task policy study found lower token costs for Qwen's native GPT++ body
 | [Matched expression generation](expression/agent-protocol.md) | How do caller context, observations and one retry compare across languages? | [Historical report](expression/results/agent.md) | [JSONL](expression/results/agent.jsonl) |
 | [New arithmetic contracts](expression/agent-fresh-protocol.md) | Which edits transfer to three new scalar contracts? | [Report](expression/results/fresh-agent.md) | [JSONL](expression/results/fresh-agent.jsonl) |
 | [Native scalar operations](expression/compat-protocol.md) | Which saved model proposals become correct with the added operations? | [Report](expression/results/compat.md) | [JSONL](expression/results/compat.jsonl) |
+| [Matched state-transition changes](stateful/protocol.md) | What changes with the language under the same typed edit interface and sequence contracts? | [Report](stateful/results.md) | [JSONL](stateful/results.jsonl) |
 | [Finite contracts](contracts/protocol.md) | Which example-passing edits survive every declared input? | [Report](contracts/results.md) | [JSONL](contracts/results.jsonl) |
 | [Contract-guided model edits](contracts/model-protocol.md) | Can local models generate a checked edit with at most one counterexample retry? | [Report](contracts/model-results.md) | [JSONL](contracts/model-results.jsonl) |
 | [Compiler session latency](expression/probe-protocol.md) | How much work does batching remove with identical outcomes? | [Report](expression/results/probe.md) | [JSONL](expression/results/probe.jsonl) |

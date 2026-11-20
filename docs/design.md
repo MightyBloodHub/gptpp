@@ -2,9 +2,9 @@
 ## A general-purpose programming language and compiler optimized for AI-authored software
 
 **Document:** `docs/design.md`<br>
-**Design revision:** 0.6<br>
+**Design revision:** 0.7<br>
 **Date:** 21 November 2026<br>
-**Status:** The scalar language has named finite contracts. An agent can check a Boolean predicate over a declared domain, inspect a concrete counterexample and verify a candidate edit against the same property. [Executable contract](../examples/capacity.gpp) · [Scalar language reference](scalar-language.md#verify-a-finite-contract)
+**Status:** The compiler supports typed expression holes, flat records, enums, finite contracts and optional symbolic verification with Z3. A Python booking application and a Rust client import the same GPT++ component through a versioned scalar C interface. The executable reference describes the shipped subset. Later sections also describe planned features. [Reservation application](../examples/reservations/README.md) · [Language reference](scalar-language.md)
 
 > **Mission:** Give AI agents the language and compiler operations they need to construct, understand and revise correct programs. Compiled programs run independently of a model.
 

@@ -11,9 +11,9 @@ python3 -m http.server 8080 --bind 127.0.0.1 --directory target/website
 
 Open [the local preview](http://127.0.0.1:8080/). The Trace tab illustrates `target/debug/gpp trace examples/add.gpp --function add --call main`. Run it from the repository root to inspect the full JSON.
 
-The [finite-contract playground](https://gptpp.sandoog.co/#finite-contracts) starts with the complete `examples/capacity.gpp` module. Source text runs locally in a dedicated browser worker. The playground allows up to 32 KiB of UTF-8 source and 10,000 assignments, and terminates a worker after eight seconds. A budget-limited compiler report and a browser timeout are distinguishable in the result panel. Preview on localhost or HTTPS so the worker can compute the source revision.
+The [finite-contract playground](https://gptpp.sandoog.co/#finite-contracts) starts with the complete `examples/reservations/booking.gpp` module. The preset menu also loads `examples/capacity.gpp`. The static build embeds the exact repository sources with Python 3. Source text runs locally in a dedicated browser worker. The playground allows up to 32 KiB of UTF-8 source and 10,000 assignments, and terminates a worker after eight seconds. A budget-limited compiler report and a browser timeout are distinguishable in the result panel. Preview on localhost or HTTPS so the worker can compute the source revision.
 
-The normal site build verifies the checked-in WebAssembly compiler and its Rust sources against `website/playground/verify.sha256`. To regenerate it after compiler changes and compare its reports with the native CLI, run from the repository root.
+The normal site build verifies the checked-in WebAssembly compiler and its Rust sources against `website/playground/verify.sha256`. To regenerate it after compiler changes and compare eleven reports with the native CLI, including the reservation module, its double-release defect and an exhausted assignment budget, run from the repository root.
 
 ```sh
 rustup target add wasm32-unknown-unknown

@@ -1,12 +1,28 @@
-//! Resolve a single scalar module and lower checked expressions to typed blocks.
+//! Resolve a single module and lower checked expressions to typed blocks.
 use std::collections::{HashMap, HashSet};
 
 use crate::ir::{self, Instr, Op, Term};
 use crate::syntax::{
-    self, BinOp, Diagnostic, Expr, ExprKind, Intrinsic, Span, Stmt, StmtKind, Type,
+    self, BinOp, Diagnostic, Expr, ExprKind, Intrinsic, Span, Stmt, StmtKind, Type, TypeKind,
 };
 
 type Result<T> = std::result::Result<T, Diagnostic>;
+
+#[derive(Debug)]
+pub struct Hole {
+    pub name: String,
+    pub function: String,
+    pub ty: Type,
+    pub span: Span,
+    pub locals: Vec<(String, Type)>,
+}
+
+/// Typecheck the surrounding program while collecting every explicit hole.
+pub fn holes(module: &syntax::Module) -> Result<Vec<Hole>> {
+    let mut found = Vec::new();
+    lower(module, |_, _| {}, Some(&mut found))?;
+    Ok(found)
+}
 
 pub fn check(module: &syntax::Module) -> Result<ir::Program> {
     check_with_types(module, |_, _| {})
@@ -15,10 +31,35 @@ pub fn check(module: &syntax::Module) -> Result<ir::Program> {
 /// Visit each typed source expression, including unreachable branches.
 pub fn check_with_types(
     module: &syntax::Module,
-    mut record_type: impl FnMut(&Expr, Type),
+    record_type: impl FnMut(&Expr, Type),
 ) -> Result<ir::Program> {
+    lower(module, record_type, None)
+}
+
+fn lower(
+    module: &syntax::Module,
+    mut record_type: impl FnMut(&Expr, Type),
+    mut holes: Option<&mut Vec<Hole>>,
+) -> Result<ir::Program> {
+    for decl in &module.types {
+        if let TypeKind::Record(fields) = &decl.kind {
+            for f in fields {
+                if matches!(f.ty, Type::Named(id) if matches!(module.types[id].kind, TypeKind::Record(_)))
+                {
+                    return Err(Diagnostic::new(
+                        "GPP-TYPE-001",
+                        "nested record fields are outside the flat record profile",
+                        f.span,
+                    ));
+                }
+            }
+        }
+    }
     let mut names = HashMap::new();
     for (id, function) in module.functions.iter().enumerate() {
+        if let Some((_, decl)) = module.declaration(&function.name) {
+            return Err(duplicate(&decl.name, decl.span));
+        }
         if names.insert(function.name.as_str(), id).is_some() {
             return Err(duplicate(&function.name, function.span));
         }
@@ -42,7 +83,16 @@ pub fn check_with_types(
 
     let mut functions = Vec::with_capacity(module.functions.len());
     for function in &module.functions {
-        functions.push(Builder::new(module, &names, function, &mut record_type).lower()?);
+        functions.push(
+            Builder::new(
+                module,
+                &names,
+                function,
+                &mut record_type,
+                holes.as_deref_mut(),
+            )
+            .lower()?,
+        );
     }
     let mut contract_names = HashSet::new();
     for contract in &module.contracts {
@@ -52,9 +102,13 @@ pub fn check_with_types(
         }
         // Resolve references against the production module. Predicates never
         // occupy a runtime function ID and are excluded from native output.
-        Builder::new(module, &names, predicate, &mut record_type).lower()?;
+        Builder::new(module, &names, predicate, &mut record_type, None).lower()?;
     }
-    let program = ir::Program { entry, functions };
+    let program = ir::Program {
+        entry,
+        functions,
+        types: module.types.clone(),
+    };
     ir::validate(&program)
         .map_err(|message| Diagnostic::new("GPP-INTERNAL-001", message, main.span))?;
     Ok(program)
@@ -66,17 +120,6 @@ fn duplicate(name: &str, span: Span) -> Diagnostic {
         format!("duplicate declaration of '{name}' in this scope"),
         span,
     )
-}
-
-fn require(actual: Type, expected: Type, span: Span, subject: &str) -> Result<()> {
-    if actual == expected {
-        return Ok(());
-    }
-    Err(Diagnostic::new(
-        "GPP-TYPE-001",
-        format!("{subject} must have type {expected}, found {actual}"),
-        span,
-    ))
 }
 
 #[derive(Clone, Copy)]
@@ -93,6 +136,7 @@ struct OpenBlock {
 
 struct Builder<'a, 't, F> {
     record_type: &'t mut F,
+    holes: Option<&'t mut Vec<Hole>>,
     module: &'a syntax::Module,
     names: &'a HashMap<&'a str, usize>,
     source: &'a syntax::Function,
@@ -109,9 +153,11 @@ impl<'a, 't, F: FnMut(&Expr, Type)> Builder<'a, 't, F> {
         names: &'a HashMap<&'a str, usize>,
         source: &'a syntax::Function,
         record_type: &'t mut F,
+        holes: Option<&'t mut Vec<Hole>>,
     ) -> Self {
         Self {
             record_type,
+            holes,
             module,
             names,
             source,
@@ -120,6 +166,21 @@ impl<'a, 't, F: FnMut(&Expr, Type)> Builder<'a, 't, F> {
             blocks: vec![OpenBlock::default()],
             current: Some(0),
         }
+    }
+
+    fn require(&self, actual: Type, expected: Type, span: Span, subject: &str) -> Result<()> {
+        if actual == expected {
+            return Ok(());
+        }
+        Err(Diagnostic::new(
+            "GPP-TYPE-001",
+            format!(
+                "{subject} must have type {}, found {}",
+                self.module.type_name(expected),
+                self.module.type_name(actual)
+            ),
+            span,
+        ))
     }
 
     fn lower(mut self) -> Result<ir::Function> {
@@ -141,7 +202,8 @@ impl<'a, 't, F: FnMut(&Expr, Type)> Builder<'a, 't, F> {
                     "GPP-RETURN-001",
                     format!(
                         "function '{}' can complete without returning {}",
-                        self.source.name, self.source.result
+                        self.source.name,
+                        self.module.type_name(self.source.result)
                     ),
                     self.source.span,
                 ));
@@ -246,7 +308,7 @@ impl<'a, 't, F: FnMut(&Expr, Type)> Builder<'a, 't, F> {
                     let init = self.expr(value)?;
                     let ty = self.slots[init];
                     if let Some(expected) = annotation {
-                        require(ty, *expected, value.span, "initializer")?;
+                        self.require(ty, *expected, value.span, "initializer")?;
                     }
                     // A new binding owns a slot even when initialized from another local.
                     let slot = self.value(ty, Op::Copy(init));
@@ -269,7 +331,7 @@ impl<'a, 't, F: FnMut(&Expr, Type)> Builder<'a, 't, F> {
                         ));
                     }
                     let new = self.expr(value)?;
-                    require(
+                    self.require(
                         self.slots[new],
                         self.slots[binding.slot],
                         value.span,
@@ -279,7 +341,7 @@ impl<'a, 't, F: FnMut(&Expr, Type)> Builder<'a, 't, F> {
                 }
                 StmtKind::Return(value) => {
                     let result = self.expr(value)?;
-                    require(
+                    self.require(
                         self.slots[result],
                         self.source.result,
                         value.span,
@@ -303,7 +365,7 @@ impl<'a, 't, F: FnMut(&Expr, Type)> Builder<'a, 't, F> {
 
     fn condition(&mut self, expr: &Expr) -> Result<usize> {
         let value = self.expr(expr)?;
-        require(self.slots[value], Type::Bool, expr.span, "condition")?;
+        self.require(self.slots[value], Type::Bool, expr.span, "condition")?;
         Ok(value)
     }
 
@@ -354,7 +416,7 @@ impl<'a, 't, F: FnMut(&Expr, Type)> Builder<'a, 't, F> {
         let left = self.current;
         self.current = else_block;
         let second = self.expr(no)?;
-        require(self.slots[second], ty, no.span, "else value")?;
+        self.require(self.slots[second], ty, no.span, "else value")?;
         self.write(result, Op::Copy(second));
         self.join(left);
         Ok(result)
@@ -391,6 +453,79 @@ impl<'a, 't, F: FnMut(&Expr, Type)> Builder<'a, 't, F> {
             ExprKind::Int(number) => self.value(Type::I64, Op::Int(*number)),
             ExprKind::Bool(boolean) => self.value(Type::Bool, Op::Bool(*boolean)),
             ExprKind::Unit => self.value(Type::Unit, Op::Unit),
+            ExprKind::Hole(name, ty) => {
+                let Some(holes) = &mut self.holes else {
+                    return Err(Diagnostic::new(
+                        "GPP-HOLE-001",
+                        format!("unresolved hole '?{name}: {}'", self.module.type_name(*ty)),
+                        expr.span,
+                    ));
+                };
+                let mut visible = std::collections::BTreeMap::new();
+                for scope in &self.scopes {
+                    for (local, binding) in scope {
+                        visible.insert(local.clone(), self.slots[binding.slot]);
+                    }
+                }
+                holes.push(Hole {
+                    name: name.clone(),
+                    function: self.source.name.clone(),
+                    span: expr.span,
+                    ty: *ty,
+                    locals: visible.into_iter().collect(),
+                });
+                self.value(*ty, Op::Hole(*ty))
+            }
+            ExprKind::Variant(name, variant) => {
+                let Some((id, decl)) = self.module.declaration(name) else {
+                    return Err(Diagnostic::new(
+                        "GPP-NAME-001",
+                        format!("unknown enum '{name}'"),
+                        expr.span,
+                    ));
+                };
+                let TypeKind::Enum(variants) = &decl.kind else {
+                    return Err(Diagnostic::new(
+                        "GPP-TYPE-001",
+                        format!("'{name}' is not an enum"),
+                        expr.span,
+                    ));
+                };
+                let tag = variants.iter().position(|v| v == variant).ok_or_else(|| {
+                    Diagnostic::new(
+                        "GPP-NAME-001",
+                        format!("unknown variant '{name}::{variant}'"),
+                        expr.span,
+                    )
+                })?;
+                self.value(Type::Named(id), Op::Variant(id, tag))
+            }
+            ExprKind::Field(base, name) => {
+                let slot = self.expr(base)?;
+                let ty = self.slots[slot];
+                let Some(TypeKind::Record(fields)) = (match ty {
+                    Type::Named(id) => Some(&self.module.types[id].kind),
+                    _ => None,
+                }) else {
+                    return Err(Diagnostic::new(
+                        "GPP-TYPE-001",
+                        format!("{} has no record fields", self.module.type_name(ty)),
+                        base.span,
+                    ));
+                };
+                let (index, field) = fields
+                    .iter()
+                    .enumerate()
+                    .find(|(_, p)| &p.name == name)
+                    .ok_or_else(|| {
+                        Diagnostic::new(
+                            "GPP-NAME-001",
+                            format!("unknown field '{}.{name}'", self.module.type_name(ty)),
+                            expr.span,
+                        )
+                    })?;
+                self.value(field.ty, Op::Field(slot, index))
+            }
             ExprKind::Name(name) => self.resolve(name, expr.span)?.slot,
             ExprKind::Call(name, arguments) => self.call(name, arguments, expr.span)?,
             ExprKind::If { cond, yes, no } => self.conditional_value(cond, yes, no)?,
@@ -399,10 +534,10 @@ impl<'a, 't, F: FnMut(&Expr, Type)> Builder<'a, 't, F> {
                 match self.slots[slot] {
                     Type::I64 => slot,
                     Type::Bool => self.value(Type::I64, Op::BoolToI64(slot)),
-                    Type::Unit => {
+                    other => {
                         return Err(Diagnostic::new(
                             "GPP-TYPE-001",
-                            "cannot convert Unit to I64",
+                            format!("cannot convert {} to I64", self.module.type_name(other)),
                             operand.span,
                         ));
                     }
@@ -411,7 +546,7 @@ impl<'a, 't, F: FnMut(&Expr, Type)> Builder<'a, 't, F> {
             ExprKind::Unary(op, operand) => {
                 let slot = self.expr(operand)?;
                 let (expected, result) = ir::unary_types(*op);
-                require(self.slots[slot], expected, operand.span, "unary operand")?;
+                self.require(self.slots[slot], expected, operand.span, "unary operand")?;
                 self.value(result, Op::Unary(*op, slot))
             }
             ExprKind::Binary(op @ (BinOp::And | BinOp::Or), left, right) => {
@@ -425,7 +560,11 @@ impl<'a, 't, F: FnMut(&Expr, Type)> Builder<'a, 't, F> {
                 let result = ir::binary_result(*op, lhs, rhs).ok_or_else(|| {
                     Diagnostic::new(
                         "GPP-TYPE-001",
-                        format!("operator '{op}' cannot take {lhs} and {rhs}"),
+                        format!(
+                            "operator '{op}' cannot take {} and {}",
+                            self.module.type_name(lhs),
+                            self.module.type_name(rhs)
+                        ),
                         expr.span,
                     )
                 })?;
@@ -449,6 +588,17 @@ impl<'a, 't, F: FnMut(&Expr, Type)> Builder<'a, 't, F> {
             let slots =
                 self.arguments(name, arguments, callee.params.iter().map(|p| p.ty), span)?;
             return Ok(self.value(callee.result, Op::Call(id, slots)));
+        }
+        if let Some((id, decl)) = self.module.declaration(name) {
+            let TypeKind::Record(fields) = &decl.kind else {
+                return Err(Diagnostic::new(
+                    "GPP-TYPE-001",
+                    format!("'{name}' requires a qualified enum variant"),
+                    span,
+                ));
+            };
+            let slots = self.arguments(name, arguments, fields.iter().map(|p| p.ty), span)?;
+            return Ok(self.value(Type::Named(id), Op::Record(id, slots)));
         }
         let intrinsic = Intrinsic::named(name).ok_or_else(|| {
             Diagnostic::new("GPP-NAME-001", format!("undefined function '{name}'"), span)
@@ -483,7 +633,7 @@ impl<'a, 't, F: FnMut(&Expr, Type)> Builder<'a, 't, F> {
         let mut slots = Vec::with_capacity(arguments.len());
         for (argument, ty) in arguments.iter().zip(types) {
             let slot = self.expr(argument)?;
-            require(self.slots[slot], ty, argument.span, "argument")?;
+            self.require(self.slots[slot], ty, argument.span, "argument")?;
             slots.push(slot);
         }
         Ok(slots)

@@ -33,14 +33,24 @@ fi
 mkdir -p "$output_dir/assets/benchmarks" "$output_dir/playground"
 install -m 644 "$source_dir/contract-worker.js" "$output_dir/"
 install -m 644 "$source_dir/playground/verify.wasm" "$output_dir/playground/"
-install -m 644 "$source_dir/index.html" "$source_dir/styles.css" "$source_dir/site.js" "$output_dir/"
-if [ -n "$revision" ]; then
-  short_revision=$(printf '%.7s' "$revision")
-  sed -e "s|MightyBloodHub/gptpp/blob/master/|MightyBloodHub/gptpp/blob/$revision/|g" \
-      -e "s|MightyBloodHub/gptpp/tree/master/|MightyBloodHub/gptpp/tree/$revision/|g" \
-      -e "s|commits/master/\">Scorecard source history|commit/$revision\">Scorecard source · $short_revision|" \
-      "$source_dir/index.html" > "$output_dir/index.html"
-fi
+install -m 644 "$source_dir/styles.css" "$source_dir/site.js" "$output_dir/"
+python3 - "$repo_dir" "$output_dir/index.html" "$revision" <<'PYTHON'
+from html import escape
+from pathlib import Path
+import sys
+
+root, target, revision = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3]
+page = (root / "website/index.html").read_text()
+for marker, name in (("GPP_BOOKING_SOURCE", "reservations/booking.gpp"), ("GPP_QUEUE_SOURCE", "capacity.gpp")):
+    if page.count(marker) != 1:
+        raise SystemExit(f"expected one {marker} in the playground")
+    page = page.replace(marker, escape((root / "examples" / name).read_text(), quote=False))
+if revision:
+    for kind in ("blob", "tree"):
+        prefix = f"MightyBloodHub/gptpp/{kind}/"
+        page = page.replace(prefix + "master/", prefix + revision + "/")
+target.write_text(page)
+PYTHON
 install -m 644 "$brand_dir/logo/gptpp-dark.svg" "$output_dir/assets/logo.svg"
 install -m 644 "$brand_dir/logo/gptpp-mark.svg" "$output_dir/assets/mark.svg"
 install -m 644 "$brand_dir/logo/favicon.ico" "$output_dir/favicon.ico"

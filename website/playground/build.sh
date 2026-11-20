@@ -14,7 +14,7 @@ rustup run "$toolchain" rustc --edition=2024 --crate-type=cdylib --crate-name=gp
   website/playground/wasm.rs -o "$out"
 chmod 644 "$out"
 mv -f "$out" website/playground/verify.wasm
-set -- rust-toolchain.toml src/*.rs src/bootstrap.c website/playground/wasm.rs \
+set -- rust-toolchain.toml src/*.rs src/*.c website/playground/wasm.rs \
   website/playground/build.sh website/playground/verify.wasm
 if command -v sha256sum >/dev/null 2>&1; then
   sha256sum "$@" > "$manifest"

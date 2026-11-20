@@ -1,4 +1,5 @@
-//! Syntax of the scalar bootstrap profile. All spans are half-open UTF-8 byte offsets.
+//! Syntax of the bootstrap language. All spans are half-open UTF-8 byte offsets.
+use std::collections::{HashMap, HashSet};
 use std::fmt::{self, Write};
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Hash)]
@@ -29,6 +30,7 @@ pub enum Type {
     I64,
     Bool,
     Unit,
+    Named(usize),
 }
 
 impl fmt::Display for Type {
@@ -37,6 +39,7 @@ impl fmt::Display for Type {
             Self::I64 => "I64",
             Self::Bool => "Bool",
             Self::Unit => "Unit",
+            Self::Named(index) => return write!(f, "type #{index}"),
         })
     }
 }
@@ -46,6 +49,34 @@ pub struct Module {
     pub name: String,
     pub functions: Vec<Function>,
     pub contracts: Vec<Contract>,
+    pub types: Vec<TypeDecl>,
+}
+
+#[derive(Clone, Debug)]
+pub struct TypeDecl {
+    pub name: String,
+    pub kind: TypeKind,
+    pub span: Span,
+}
+
+#[derive(Clone, Debug)]
+pub enum TypeKind {
+    Record(Vec<Param>),
+    Enum(Vec<String>),
+}
+
+impl Module {
+    pub fn type_name(&self, ty: Type) -> &str {
+        match ty {
+            Type::I64 => "I64",
+            Type::Bool => "Bool",
+            Type::Unit => "Unit",
+            Type::Named(id) => &self.types[id].name,
+        }
+    }
+    pub fn declaration(&self, name: &str) -> Option<(usize, &TypeDecl)> {
+        self.types.iter().enumerate().find(|(_, t)| t.name == name)
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -134,6 +165,9 @@ pub enum ExprKind {
     Bool(bool),
     Unit,
     Name(String),
+    Variant(String, String),
+    Field(Box<Expr>, String),
+    Hole(String, Type),
     Call(String, Vec<Expr>),
     Unary(UnOp, Box<Expr>),
     AsI64(Box<Expr>),
@@ -339,11 +373,12 @@ fn lex(source: &str) -> Result<Vec<Token<'_>>, Diagnostic> {
                     b'=' | b'!' | b'<' | b'>' | b'+' | b'-' | b'*' | b'/' | b'%',
                     Some(b'=')
                 )
+                | (b':', Some(b':'))
                 | (b'&', Some(b'&'))
                 | (b'|', Some(b'|'))
         ) {
             pos += 1;
-        } else if !b";.,:(){}+-*/%=!<>".contains(&byte) {
+        } else if !b"?;.,:(){}+-*/%=!<>".contains(&byte) {
             let c = source[start..].chars().next().unwrap();
             return Err(Diagnostic::new(
                 "GPP-LEX-001",
@@ -393,33 +428,35 @@ struct ParsedExpr {
 struct Parser<'a> {
     tokens: Vec<Token<'a>>,
     at: usize,
+    type_names: HashMap<&'a str, usize>,
 }
 
 pub fn parse(source: &str) -> Result<Module, Diagnostic> {
-    Parser {
-        tokens: lex(source)?,
-        at: 0,
-    }
-    .module()
+    Parser::new(source)?.module()
 }
 
 /// Parse exactly one expression and return its byte extent, excluding exterior trivia.
 pub fn expression_span(source: &str) -> Result<Span, Diagnostic> {
-    let mut parser = Parser {
-        tokens: lex(source)?,
-        at: 0,
-    };
+    Ok(parse_expression(source)?.span)
+}
+
+pub fn parse_expression(source: &str) -> Result<Expr, Diagnostic> {
+    let mut parser = Parser::new(source)?;
     let expr = parser.expression(0)?;
     parser.end()?;
-    Ok(expr.span)
+    Ok(expr)
 }
 
 /// Return the exact interior of a complete braced block or a list of statements.
-pub fn body_fragment(source: &str) -> Result<&str, Diagnostic> {
-    let mut parser = Parser {
-        tokens: lex(source)?,
-        at: 0,
-    };
+pub fn body_fragment<'a>(source: &'a str, module: &Module) -> Result<&'a str, Diagnostic> {
+    let mut parser = Parser::new(source)?;
+    parser.type_names.extend(
+        module
+            .types
+            .iter()
+            .enumerate()
+            .map(|(id, decl)| (decl.name.as_str(), id)),
+    );
     if parser.peek().text == "{" {
         let start = parser.peek().span.end;
         parser.block(0)?;
@@ -435,6 +472,30 @@ pub fn body_fragment(source: &str) -> Result<&str, Diagnostic> {
 }
 
 impl<'a> Parser<'a> {
+    fn new(source: &'a str) -> Result<Self, Diagnostic> {
+        let tokens = lex(source)?;
+        let mut type_names = HashMap::new();
+        for pair in tokens.windows(2) {
+            if matches!(pair[0].text, "record" | "enum") {
+                let name = pair[1].text;
+                if matches!(name, "Bool" | "I64" | "Unit")
+                    || type_names.insert(name, type_names.len()).is_some()
+                {
+                    return Err(Diagnostic::new(
+                        "GPP-NAME-002",
+                        format!("duplicate type '{name}'"),
+                        pair[1].span,
+                    ));
+                }
+            }
+        }
+        Ok(Self {
+            tokens,
+            type_names,
+            at: 0,
+        })
+    }
+
     fn end(&self) -> Result<(), Diagnostic> {
         if self.peek().text.is_empty() {
             Ok(())
@@ -506,6 +567,7 @@ impl<'a> Parser<'a> {
             "I64" => Type::I64,
             "Bool" => Type::Bool,
             "Unit" => Type::Unit,
+            name if self.type_names.contains_key(name) => Type::Named(self.type_names[name]),
             _ if is_identifier(self.peek().text) => {
                 return Err(Diagnostic::new(
                     "GPP-PARSE-002",
@@ -529,8 +591,11 @@ impl<'a> Parser<'a> {
         self.require(";")?;
         let mut functions = Vec::new();
         let mut contracts = Vec::new();
+        let mut types = Vec::new();
         while !self.peek().text.is_empty() {
-            if self.peek().text == "contract" {
+            if matches!(self.peek().text, "record" | "enum") {
+                types.push(self.type_decl()?);
+            } else if self.peek().text == "contract" {
                 contracts.push(self.contract()?);
             } else {
                 functions.push(self.function()?);
@@ -540,7 +605,56 @@ impl<'a> Parser<'a> {
             name,
             functions,
             contracts,
+            types,
         })
+    }
+
+    fn type_decl(&mut self) -> Result<TypeDecl, Diagnostic> {
+        let keyword = self.bump();
+        let name = self.identifier()?;
+        self.require("{")?;
+        let mut seen = HashSet::new();
+        let mut fields = Vec::new();
+        let mut variants = Vec::new();
+        while self.peek().text != "}" {
+            let start = self.peek().span.start;
+            let member = self.identifier()?;
+            if !seen.insert(member.clone()) {
+                return Err(Diagnostic::new(
+                    "GPP-NAME-002",
+                    format!("duplicate member '{member}' of '{name}'"),
+                    self.span_from(start),
+                ));
+            }
+            if keyword.text == "record" {
+                self.require(":")?;
+                let ty = self.ty()?;
+                fields.push(Param {
+                    name: member,
+                    ty,
+                    span: self.span_from(start),
+                });
+            } else {
+                variants.push(member);
+            }
+            if !self.eat(",") {
+                break;
+            }
+        }
+        self.require("}")?;
+        let span = self.span_from(keyword.span.start);
+        let kind = if keyword.text == "record" {
+            TypeKind::Record(fields)
+        } else if variants.is_empty() {
+            return Err(Diagnostic::new(
+                "GPP-TYPE-001",
+                "an enum requires at least one variant",
+                span,
+            ));
+        } else {
+            TypeKind::Enum(variants)
+        };
+        Ok(TypeDecl { name, kind, span })
     }
 
     fn bound(&mut self) -> Result<i64, Diagnostic> {
@@ -588,7 +702,7 @@ impl<'a> Parser<'a> {
                     }
                     Domain::I64 { low, high }
                 }
-                Type::Unit => {
+                Type::Unit | Type::Named(_) => {
                     return Err(Diagnostic::new(
                         "GPP-DOMAIN-001",
                         "contract parameters require Bool or a bounded I64",
@@ -867,6 +981,22 @@ impl<'a> Parser<'a> {
     }
 
     fn prefix(&mut self, depth: usize) -> Result<ParsedExpr, Diagnostic> {
+        let mut value = self.atom(depth)?;
+        while self.eat(".") {
+            let field = self.identifier()?;
+            let span = self.span_from(value.expr.span.start);
+            value.height += 1;
+            check_depth(value.height, span)?;
+            value.expr = Expr {
+                kind: ExprKind::Field(Box::new(value.expr), field),
+                span,
+                site: ExprSite::Ordinary,
+            };
+        }
+        Ok(value)
+    }
+
+    fn atom(&mut self, depth: usize) -> Result<ParsedExpr, Diagnostic> {
         check_depth(depth, self.peek().span)?;
         let token = self.peek();
         let mut height = 1;
@@ -920,6 +1050,12 @@ impl<'a> Parser<'a> {
                     return Ok(child);
                 }
             }
+            "?" => {
+                self.bump();
+                let label = self.identifier()?;
+                self.require(":")?;
+                ExprKind::Hole(label, self.ty()?)
+            }
             "true" | "false" => {
                 self.bump();
                 ExprKind::Bool(token.text == "true")
@@ -937,7 +1073,9 @@ impl<'a> Parser<'a> {
             }
             word if is_identifier(word) => {
                 self.bump();
-                if self.eat("(") {
+                if self.eat("::") {
+                    ExprKind::Variant(word.to_owned(), self.identifier()?)
+                } else if self.eat("(") {
                     let mut args = Vec::new();
                     while self.peek().text != ")" {
                         let arg = self.binary(1, depth + 1)?;
@@ -987,6 +1125,20 @@ impl fmt::Display for UnOp {
 pub fn print(module: &Module) -> String {
     let mut text = String::new();
     writeln!(text, "module {};", module.name).unwrap();
+    for decl in &module.types {
+        let (keyword, members) = match &decl.kind {
+            TypeKind::Enum(variants) => ("enum", variants.join(", ")),
+            TypeKind::Record(fields) => (
+                "record",
+                fields
+                    .iter()
+                    .map(|p| format!("{}: {}", p.name, module.type_name(p.ty)))
+                    .collect::<Vec<_>>()
+                    .join(", "),
+            ),
+        };
+        writeln!(text, "\n{keyword} {} {{ {members} }}", decl.name).unwrap();
+    }
     for function in &module.functions {
         text.push('\n');
         if function.public {
@@ -997,10 +1149,10 @@ pub fn print(module: &Module) -> String {
             if index != 0 {
                 text.push_str(", ");
             }
-            write!(text, "{}: {}", param.name, param.ty).unwrap();
+            write!(text, "{}: {}", param.name, module.type_name(param.ty)).unwrap();
         }
-        write!(text, ") -> {} !{{}} ", function.result).unwrap();
-        print_block(&function.body, 0, &mut text);
+        write!(text, ") -> {} !{{}} ", module.type_name(function.result)).unwrap();
+        print_block(module, &function.body, 0, &mut text);
         text.push('\n');
     }
     for c in &module.contracts {
@@ -1009,7 +1161,7 @@ pub fn print(module: &Module) -> String {
             if i != 0 {
                 text.push_str(", ");
             }
-            write!(text, "{}: {}", param.name, param.ty).unwrap();
+            write!(text, "{}: {}", param.name, module.type_name(param.ty)).unwrap();
             if let Domain::I64 { low, high } = domain {
                 write!(text, " in {low}..={high}").unwrap();
             }
@@ -1018,13 +1170,13 @@ pub fn print(module: &Module) -> String {
         let StmtKind::Return(expr) = &c.predicate.body[0].kind else {
             unreachable!("contract predicate")
         };
-        print_expr(expr, 0, &mut text);
+        print_expr(module, expr, 0, &mut text);
         text.push_str(" }\n");
     }
     text
 }
 
-fn print_block(body: &[Stmt], indent: usize, text: &mut String) {
+fn print_block(module: &Module, body: &[Stmt], indent: usize, text: &mut String) {
     text.push_str("{\n");
     for stmt in body {
         text.push_str(&"    ".repeat(indent + 1));
@@ -1037,20 +1189,20 @@ fn print_block(body: &[Stmt], indent: usize, text: &mut String) {
             } => {
                 write!(text, "{} {name}", if *mutable { "var" } else { "let" }).unwrap();
                 if let Some(ty) = annotation {
-                    write!(text, ": {ty}").unwrap();
+                    write!(text, ": {}", module.type_name(*ty)).unwrap();
                 }
                 text.push_str(" = ");
-                print_expr(value, 0, text);
+                print_expr(module, value, 0, text);
                 text.push(';');
             }
             StmtKind::Assign { name, value } => {
                 write!(text, "{name} = ").unwrap();
-                print_expr(value, 0, text);
+                print_expr(module, value, 0, text);
                 text.push(';');
             }
             StmtKind::Return(value) => {
                 text.push_str("return ");
-                print_expr(value, 0, text);
+                print_expr(module, value, 0, text);
                 text.push(';');
             }
             StmtKind::If {
@@ -1059,23 +1211,23 @@ fn print_block(body: &[Stmt], indent: usize, text: &mut String) {
                 else_body,
             } => {
                 text.push_str("if ");
-                print_expr(cond, 0, text);
+                print_expr(module, cond, 0, text);
                 text.push(' ');
-                print_block(then_body, indent + 1, text);
+                print_block(module, then_body, indent + 1, text);
                 if !else_body.is_empty() {
                     text.push_str(" else ");
-                    print_block(else_body, indent + 1, text);
+                    print_block(module, else_body, indent + 1, text);
                 }
             }
             StmtKind::While { cond, body } => {
                 text.push_str("while ");
-                print_expr(cond, 0, text);
+                print_expr(module, cond, 0, text);
                 text.push(' ');
-                print_block(body, indent + 1, text);
+                print_block(module, body, indent + 1, text);
             }
             StmtKind::Expr(expr) => {
                 let start = text.len();
-                print_expr(expr, 0, text);
+                print_expr(module, expr, 0, text);
                 // A leading bare "if" is parsed as a statement.
                 if text[start..].starts_with("if ") {
                     text.insert(start, '(');
@@ -1090,20 +1242,32 @@ fn print_block(body: &[Stmt], indent: usize, text: &mut String) {
     text.push('}');
 }
 
-fn print_expr(expr: &Expr, minimum: u8, text: &mut String) {
+fn print_expr(module: &Module, expr: &Expr, minimum: u8, text: &mut String) {
     match &expr.kind {
         ExprKind::If { cond, yes, no } => {
             text.push_str("if ");
-            print_expr(cond, 0, text);
+            print_expr(module, cond, 0, text);
             text.push_str(" { ");
-            print_expr(yes, 0, text);
+            print_expr(module, yes, 0, text);
             text.push_str(" } else { ");
-            print_expr(no, 0, text);
+            print_expr(module, no, 0, text);
             text.push_str(" }");
         }
         ExprKind::Int(n) => write!(text, "{n}").unwrap(),
         ExprKind::Bool(b) => write!(text, "{b}").unwrap(),
         ExprKind::Unit => text.push_str("()"),
+        ExprKind::Field(value, field) => {
+            if matches!(value.kind, ExprKind::If { .. } | ExprKind::Unary(..)) {
+                text.push('(');
+                print_expr(module, value, 0, text);
+                text.push(')');
+            } else {
+                print_expr(module, value, 9, text);
+            }
+            write!(text, ".{field}").unwrap();
+        }
+        ExprKind::Variant(name, variant) => write!(text, "{name}::{variant}").unwrap(),
+        ExprKind::Hole(name, ty) => write!(text, "?{name}: {}", module.type_name(*ty)).unwrap(),
         ExprKind::Name(name) => text.push_str(name),
         ExprKind::Call(name, args) => {
             write!(text, "{name}(").unwrap();
@@ -1111,20 +1275,20 @@ fn print_expr(expr: &Expr, minimum: u8, text: &mut String) {
                 if index != 0 {
                     text.push_str(", ");
                 }
-                print_expr(arg, 0, text);
+                print_expr(module, arg, 0, text);
             }
             text.push(')');
         }
         ExprKind::Unary(op, child) => {
             write!(text, "{op}").unwrap();
-            print_expr(child, 8, text);
+            print_expr(module, child, 8, text);
         }
         ExprKind::AsI64(child) => {
             let grouped = minimum > 7;
             if grouped {
                 text.push('(');
             }
-            print_expr(child, 7, text);
+            print_expr(module, child, 7, text);
             text.push_str(" as I64");
             if grouped {
                 text.push(')');
@@ -1136,9 +1300,9 @@ fn print_expr(expr: &Expr, minimum: u8, text: &mut String) {
             if parens {
                 text.push('(');
             }
-            print_expr(left, precedence, text);
+            print_expr(module, left, precedence, text);
             write!(text, " {op} ").unwrap();
-            print_expr(right, precedence + 1, text);
+            print_expr(module, right, precedence + 1, text);
             if parens {
                 text.push(')');
             }

@@ -1,0 +1,1412 @@
+{
+  "schema": "gpp.proof-differential/1",
+  "solver": "Z3 version 4.16.0 - 64 bit",
+  "inputs_per_program": 10,
+  "programs": 98,
+  "python_assignments": 980,
+  "symbolic_results": {
+    "proved": 53,
+    "refuted": 45
+  },
+  "runner_sha256": "3e7a97d12bdb2da36957b8becb67128457a3a1e82b96a34ae66d818c73874876",
+  "gpp_sha256": "ecdabe3cc30cd9879f4a0239c50ffa777be1c5a3620cdbc343bde416c3620c63",
+  "production": {
+    "booking_sha256": "89eab43f2a6db0de9c92cbc1f7b3506afa5163625164be19940438c0f62953be",
+    "obligations_sha256": "66ab17c3fcfa00ebf313bad76b62b1571783bfa8d00cab031818212b6e3b87f9",
+    "source_sha256_with_negative_control": "b07be57b533c582d29c9de36e10fbb083e44e6175102bf74f20c311e054f0b8a",
+    "finite_checked": {
+      "one_action": 4,
+      "two_actions": 16,
+      "three_actions": 64,
+      "four_actions": 256,
+      "sold_out": 1
+    },
+    "contracts": [
+      {
+        "name": "one_action",
+        "status": "proved"
+      },
+      {
+        "name": "two_actions",
+        "status": "proved"
+      },
+      {
+        "name": "three_actions",
+        "status": "proved"
+      },
+      {
+        "name": "four_actions",
+        "status": "proved"
+      },
+      {
+        "name": "sold_out",
+        "status": "proved"
+      },
+      {
+        "name": "active_cancel_twice",
+        "status": "proved"
+      },
+      {
+        "name": "repeat_cancel",
+        "status": "proved"
+      },
+      {
+        "name": "unknown_cancel",
+        "status": "proved"
+      },
+      {
+        "name": "without_headroom",
+        "status": "refuted",
+        "counterexample": {
+          "inputs": {
+            "available": 9223372036854775807
+          },
+          "fault": "IntegerOverflow"
+        }
+      }
+    ]
+  },
+  "cases": [
+    {
+      "family": "add_max",
+      "k": -3,
+      "source_sha256": "b00b3f6f91070af40e24ed7a161159feac6c9c63de9afc423c47d609b2456487",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "add_max",
+      "k": -2,
+      "source_sha256": "c1ee620061e30c5bf4329179a5d2f867e8ba9465f5b598f3d0080b1702408dc8",
+      "python_outcomes": {
+        "IntegerOverflow": 2,
+        "true": 8
+      },
+      "finite_checked": 1,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": -2,
+          "b": false
+        },
+        "fault": "IntegerOverflow"
+      }
+    },
+    {
+      "family": "add_max",
+      "k": -1,
+      "source_sha256": "9f731222c786eb943757744e60ba1ab9f82534dcae2882d6d22df7cbf750edc5",
+      "python_outcomes": {
+        "true": 8,
+        "IntegerOverflow": 2
+      },
+      "finite_checked": 3,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": -1,
+          "b": false
+        },
+        "fault": "IntegerOverflow"
+      }
+    },
+    {
+      "family": "add_max",
+      "k": 0,
+      "source_sha256": "8c5f663f65869437870836b0fa5c8a6278bb44866640966f3a887354eeb42c6b",
+      "python_outcomes": {
+        "true": 8,
+        "IntegerOverflow": 2
+      },
+      "finite_checked": 5,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": 0,
+          "b": false
+        },
+        "fault": "IntegerOverflow"
+      }
+    },
+    {
+      "family": "add_max",
+      "k": 1,
+      "source_sha256": "afcd260afb4e97e35f0c43029fa303fb8107b00f308434f58603ac634fded936",
+      "python_outcomes": {
+        "true": 8,
+        "IntegerOverflow": 2
+      },
+      "finite_checked": 7,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": 1,
+          "b": false
+        },
+        "fault": "IntegerOverflow"
+      }
+    },
+    {
+      "family": "add_max",
+      "k": 2,
+      "source_sha256": "876a9086cd7cc2645fa22f4cd547d5ded81c3aeb4b52a3f8f011d387c4962713",
+      "python_outcomes": {
+        "true": 8,
+        "IntegerOverflow": 2
+      },
+      "finite_checked": 9,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": 2,
+          "b": false
+        },
+        "fault": "IntegerOverflow"
+      }
+    },
+    {
+      "family": "add_max",
+      "k": 3,
+      "source_sha256": "3e054f1961b75fd87bb8968d7a01a4d748136ad16b63278608b3a4ad9951d664",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "subtract_min",
+      "k": -3,
+      "source_sha256": "60af2e6b96dcad7b230dcd5eadc2c791fab13baff3a436b7763db5c0f0f730ad",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "subtract_min",
+      "k": -2,
+      "source_sha256": "5c36877ee758cffdd4ea47a6b1e4081a80ce6e51c5d46875ad64951e52631a76",
+      "python_outcomes": {
+        "true": 9,
+        "IntegerOverflow": 1
+      },
+      "finite_checked": 2,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": -2,
+          "b": true
+        },
+        "fault": "IntegerOverflow"
+      }
+    },
+    {
+      "family": "subtract_min",
+      "k": -1,
+      "source_sha256": "21dd9c0c8e1305e156f3e272ab17cf9c089e34e425c80ce5b59eb7ccebb523d1",
+      "python_outcomes": {
+        "true": 9,
+        "IntegerOverflow": 1
+      },
+      "finite_checked": 4,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": -1,
+          "b": true
+        },
+        "fault": "IntegerOverflow"
+      }
+    },
+    {
+      "family": "subtract_min",
+      "k": 0,
+      "source_sha256": "0d67e64f043cbeeb7a623b23ef4f7cada7d6e66387beae4b1845bb5878bffb69",
+      "python_outcomes": {
+        "true": 9,
+        "IntegerOverflow": 1
+      },
+      "finite_checked": 6,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": 0,
+          "b": true
+        },
+        "fault": "IntegerOverflow"
+      }
+    },
+    {
+      "family": "subtract_min",
+      "k": 1,
+      "source_sha256": "1505557ec1a2ddfefe8accb98dedd31bf81c2c82368de25d0d8cd113d6f40225",
+      "python_outcomes": {
+        "true": 9,
+        "IntegerOverflow": 1
+      },
+      "finite_checked": 8,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": 1,
+          "b": true
+        },
+        "fault": "IntegerOverflow"
+      }
+    },
+    {
+      "family": "subtract_min",
+      "k": 2,
+      "source_sha256": "b07681cdabecce7dd8fd3f4382764e9ddb77cc15e1e89c3764ce2de6b223ab3a",
+      "python_outcomes": {
+        "true": 9,
+        "IntegerOverflow": 1
+      },
+      "finite_checked": 10,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": 2,
+          "b": true
+        },
+        "fault": "IntegerOverflow"
+      }
+    },
+    {
+      "family": "subtract_min",
+      "k": 3,
+      "source_sha256": "e31755969a5d358083ffc791b4ce3077b5b5dfff744fc04948f8b1760cbc090c",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "mul_edge",
+      "k": -3,
+      "source_sha256": "275fbabf84f1a5a47397574bbd78a1ea709d5437aa74f3ccc6fbe31e42eee9d8",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "mul_edge",
+      "k": -2,
+      "source_sha256": "51b4302f31592433544d80fc5659cd01b2e7091999a645ec7bfefad872c067c4",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "mul_edge",
+      "k": -1,
+      "source_sha256": "08298bf902590a01061fb84078ce0810678085f934fbc6e90d6a1e1903b8213f",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "mul_edge",
+      "k": 0,
+      "source_sha256": "0a44614ad0c3e1b869397fe0d66508f1f9e4765b21c9de0b77fe74edd24bcdfd",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "mul_edge",
+      "k": 1,
+      "source_sha256": "87806489a7698ae17c9401e02508f48c8cc5f3ce590be44129654e4f2f156acd",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "mul_edge",
+      "k": 2,
+      "source_sha256": "598c3f08cc628a00f6a40e46e90ebe4e7078f94401afc0e56b668fc7669e28d7",
+      "python_outcomes": {
+        "true": 9,
+        "IntegerOverflow": 1
+      },
+      "finite_checked": 10,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": 2,
+          "b": true
+        },
+        "fault": "IntegerOverflow"
+      }
+    },
+    {
+      "family": "mul_edge",
+      "k": 3,
+      "source_sha256": "9c20581fd72fa10e35306789ec296a434fb149293a5697a7c01318bdfa12f52f",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "eager_discard",
+      "k": -3,
+      "source_sha256": "1dddf0ce0decc794dc115affd823aaff75542c6d5c1fe62c677183529d2f462d",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "eager_discard",
+      "k": -2,
+      "source_sha256": "4bbaf4dbe19250ee3bb050e2e6c03b6fc7e98f5f758bd4a2e4dcd8096ac3334e",
+      "python_outcomes": {
+        "DivisionByZero": 2,
+        "true": 8
+      },
+      "finite_checked": 1,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": -2,
+          "b": false
+        },
+        "fault": "DivisionByZero"
+      }
+    },
+    {
+      "family": "eager_discard",
+      "k": -1,
+      "source_sha256": "66bc3c9345d33f4646ff6234062a19cd3582beebca9bde2126454dd4eddffab2",
+      "python_outcomes": {
+        "true": 8,
+        "DivisionByZero": 2
+      },
+      "finite_checked": 3,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": -1,
+          "b": false
+        },
+        "fault": "DivisionByZero"
+      }
+    },
+    {
+      "family": "eager_discard",
+      "k": 0,
+      "source_sha256": "7838438164dc0855c5bafff363b2b75b6124b4d7e4664b9251eea3bd47f91016",
+      "python_outcomes": {
+        "true": 8,
+        "DivisionByZero": 2
+      },
+      "finite_checked": 5,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": 0,
+          "b": false
+        },
+        "fault": "DivisionByZero"
+      }
+    },
+    {
+      "family": "eager_discard",
+      "k": 1,
+      "source_sha256": "23e6ddcef9ba7968253d2e992aaeff3d5661057c4a0234130aa95fe30b281704",
+      "python_outcomes": {
+        "true": 8,
+        "DivisionByZero": 2
+      },
+      "finite_checked": 7,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": 1,
+          "b": false
+        },
+        "fault": "DivisionByZero"
+      }
+    },
+    {
+      "family": "eager_discard",
+      "k": 2,
+      "source_sha256": "5be9d3a7e7c249cc2b406dbd7d695ef19a8afbe637bd05cc9cfb0a4f103f028f",
+      "python_outcomes": {
+        "true": 8,
+        "DivisionByZero": 2
+      },
+      "finite_checked": 9,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": 2,
+          "b": false
+        },
+        "fault": "DivisionByZero"
+      }
+    },
+    {
+      "family": "eager_discard",
+      "k": 3,
+      "source_sha256": "a781b7cf886183caca4a3e5f602d52811fa50eec956b7d49ccf854f980607e34",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "guarded_div",
+      "k": -3,
+      "source_sha256": "9ffae15146ddf052185b8540478298bf4dcc466896dfa69ecf453a572cd2d478",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "guarded_div",
+      "k": -2,
+      "source_sha256": "39c1db66f56b477cb01891dcc77ca48920cd9f429c0da5ee225146e5a2dab0f1",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "guarded_div",
+      "k": -1,
+      "source_sha256": "f5f369e994452b266fc1100e25b057e1529b27324d5568975cad5d02ae5acb2c",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "guarded_div",
+      "k": 0,
+      "source_sha256": "394c019cc07d5de7ba44be11a7c458afa6910c655bce44dc716a528e09a2892d",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "guarded_div",
+      "k": 1,
+      "source_sha256": "ac3c38a74c4dbf92f41c344f1453e57829f4a7a8c00357d78d9bf5e85238e8a0",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "guarded_div",
+      "k": 2,
+      "source_sha256": "6289dfdc250a9494f5f5c58dec3109746c7d749b75fd2cceb97e8bbbe53898e5",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "guarded_div",
+      "k": 3,
+      "source_sha256": "984f389cbbf0a1afa623ca384f5487ad4b6c978bd0131814d5fb86f96374ad2e",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "signed_quotient",
+      "k": -3,
+      "source_sha256": "37dd89af1999cffe7f07fef403b89754204a58c4c8f78543f13cc3d15923d838",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "signed_quotient",
+      "k": -2,
+      "source_sha256": "867f290402821463b8e8d10e233b41cce7cb539d1316f4418e7c0f978d740b07",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "signed_quotient",
+      "k": -1,
+      "source_sha256": "44ad5e1975ba19bdb39a51cbf6a5546e4db537b9bebc98b60d0b61d6f9f47c7e",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "signed_quotient",
+      "k": 0,
+      "source_sha256": "c43cfbfb371eaf5e8812e2da574f2ccd38f3eab17962c4ac7f902e873664ed87",
+      "python_outcomes": {
+        "DivisionByZero": 10
+      },
+      "finite_checked": 1,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": -1,
+          "b": false
+        },
+        "fault": "DivisionByZero"
+      }
+    },
+    {
+      "family": "signed_quotient",
+      "k": 1,
+      "source_sha256": "7c5c7c9f09e73d8b02cef5e0a7c3902331ee16d0bed714834649b151e2a67e42",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "signed_quotient",
+      "k": 2,
+      "source_sha256": "d8947449c73b865f4c8196ee30f54d8c58150bbeaecd46d19027a6fea3139836",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "signed_quotient",
+      "k": 3,
+      "source_sha256": "cd23b3588e45ab05a9469eda9a5310ee4be99ae23f831f27d80965c28b9a695f",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "ordered_faults",
+      "k": -3,
+      "source_sha256": "e54854f99f3e6e478791cf5df19dfa746f87c2bd52f037ed5d35fdf7a30ccc82",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "ordered_faults",
+      "k": -2,
+      "source_sha256": "765717edbf5a3dfcd100f54cfe993769487133273b97fedb37bb719976b1bc92",
+      "python_outcomes": {
+        "DivisionByZero": 1,
+        "IntegerOverflow": 1,
+        "true": 8
+      },
+      "finite_checked": 1,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": -2,
+          "b": false
+        },
+        "fault": "DivisionByZero"
+      }
+    },
+    {
+      "family": "ordered_faults",
+      "k": -1,
+      "source_sha256": "1342ef66607655e5933800d0513ebc65704d0c9e4cf1403054a3b5442fe42421",
+      "python_outcomes": {
+        "true": 8,
+        "DivisionByZero": 1,
+        "IntegerOverflow": 1
+      },
+      "finite_checked": 3,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": -1,
+          "b": false
+        },
+        "fault": "DivisionByZero"
+      }
+    },
+    {
+      "family": "ordered_faults",
+      "k": 0,
+      "source_sha256": "8b36647c0d780b7f8a35b27d5d5fc6cf9e260fb01a3d9c81e348b852e9ecc11f",
+      "python_outcomes": {
+        "true": 8,
+        "DivisionByZero": 1,
+        "IntegerOverflow": 1
+      },
+      "finite_checked": 5,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": 0,
+          "b": false
+        },
+        "fault": "DivisionByZero"
+      }
+    },
+    {
+      "family": "ordered_faults",
+      "k": 1,
+      "source_sha256": "4fb43147d4aa73929fa536306e3c42b9e3cb780410b926138c4becb2f0c1b5b7",
+      "python_outcomes": {
+        "true": 8,
+        "DivisionByZero": 1,
+        "IntegerOverflow": 1
+      },
+      "finite_checked": 7,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": 1,
+          "b": false
+        },
+        "fault": "DivisionByZero"
+      }
+    },
+    {
+      "family": "ordered_faults",
+      "k": 2,
+      "source_sha256": "3574079442783b6aeb11003e7164f0de33ccef76667551ab701094e743387853",
+      "python_outcomes": {
+        "true": 8,
+        "DivisionByZero": 1,
+        "IntegerOverflow": 1
+      },
+      "finite_checked": 9,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": 2,
+          "b": false
+        },
+        "fault": "DivisionByZero"
+      }
+    },
+    {
+      "family": "ordered_faults",
+      "k": 3,
+      "source_sha256": "6ac6a821e2504a17daf117fb224fa20789d69270cf5fafbcfafc7f42d3e8a4c8",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "signed_remainder",
+      "k": -3,
+      "source_sha256": "be0776e007fe561f5ef96507dffc2221e9a960505753d233b944a6ecaf8e5c98",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "signed_remainder",
+      "k": -2,
+      "source_sha256": "34093652580c0761ebf10a064c7f1e17ef4c7abdfc1b16866afd70a24858cb53",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "signed_remainder",
+      "k": -1,
+      "source_sha256": "b69265adebb63a79898933959c5b1adb2815b1e265b7e366d46160fba553cc02",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "signed_remainder",
+      "k": 0,
+      "source_sha256": "97274edddd721ea1f341b18fe689ae8089206063a710b7fb6d495230e9496981",
+      "python_outcomes": {
+        "DivisionByZero": 10
+      },
+      "finite_checked": 1,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": -1,
+          "b": false
+        },
+        "fault": "DivisionByZero"
+      }
+    },
+    {
+      "family": "signed_remainder",
+      "k": 1,
+      "source_sha256": "d45e79491c658eb6465a132bce5ed580436940617e2accbe0d727818cbad2eb2",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "signed_remainder",
+      "k": 2,
+      "source_sha256": "359824474937aca1d4fcb9fd3af842712fa923f1d867e47401ce9290b9955884",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "signed_remainder",
+      "k": 3,
+      "source_sha256": "f0855dba1336434d938585e80e1a868991d2903e9b5c8221bb2c6124a35b2290",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "min_remainder",
+      "k": -3,
+      "source_sha256": "c628e699b2e329f58191f8a3522bd53929ec38c3335b569e79c9fa9a0df8708e",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "min_remainder",
+      "k": -2,
+      "source_sha256": "a9408a64905f1cce5c28647a3c6cc7ad522a63c8c1a2d9a2d0eab200cda7b892",
+      "python_outcomes": {
+        "DivisionByZero": 1,
+        "true": 9
+      },
+      "finite_checked": 1,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": -2,
+          "b": false
+        },
+        "fault": "DivisionByZero"
+      }
+    },
+    {
+      "family": "min_remainder",
+      "k": -1,
+      "source_sha256": "d647e7d3aaf45376fb63b002650d92573c493d18dc21d196c8d323b8365a1c88",
+      "python_outcomes": {
+        "true": 9,
+        "DivisionByZero": 1
+      },
+      "finite_checked": 3,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": -1,
+          "b": false
+        },
+        "fault": "DivisionByZero"
+      }
+    },
+    {
+      "family": "min_remainder",
+      "k": 0,
+      "source_sha256": "c725fef052a89580739e0f493b60d8f63ebbe26da117e44fbcd5b3b5c3a3c44c",
+      "python_outcomes": {
+        "true": 9,
+        "DivisionByZero": 1
+      },
+      "finite_checked": 5,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": 0,
+          "b": false
+        },
+        "fault": "DivisionByZero"
+      }
+    },
+    {
+      "family": "min_remainder",
+      "k": 1,
+      "source_sha256": "302434360f4103c67bd2a3f11042d73b30cc19895ca05c7de15006a0398a5874",
+      "python_outcomes": {
+        "true": 9,
+        "DivisionByZero": 1
+      },
+      "finite_checked": 7,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": 1,
+          "b": false
+        },
+        "fault": "DivisionByZero"
+      }
+    },
+    {
+      "family": "min_remainder",
+      "k": 2,
+      "source_sha256": "c9bc76d73a2426c53fabd708ff43e9617ac4c4b17fe250f36b1f7f21ddab7d66",
+      "python_outcomes": {
+        "true": 9,
+        "DivisionByZero": 1
+      },
+      "finite_checked": 9,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": 2,
+          "b": false
+        },
+        "fault": "DivisionByZero"
+      }
+    },
+    {
+      "family": "min_remainder",
+      "k": 3,
+      "source_sha256": "c360539af77e31c98a902b69f0f439f492c57210c266c235c7b4051b98ed1d37",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "min_division",
+      "k": -3,
+      "source_sha256": "4bfd2072a6169b1121675a1eff66e6546dbcd4bbb812e6e47ebdc80cf186a6a7",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "min_division",
+      "k": -2,
+      "source_sha256": "43b6a415383a077f4dafb26a948faee0dc4ea2148a0979f44d6c7ea52ccbee4b",
+      "python_outcomes": {
+        "true": 9,
+        "IntegerOverflow": 1
+      },
+      "finite_checked": 2,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": -2,
+          "b": true
+        },
+        "fault": "IntegerOverflow"
+      }
+    },
+    {
+      "family": "min_division",
+      "k": -1,
+      "source_sha256": "bc00e2e5eeb157341a7dab0f4fe3d04608cdcc7a55415f2906cb9951f075d052",
+      "python_outcomes": {
+        "true": 9,
+        "IntegerOverflow": 1
+      },
+      "finite_checked": 4,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": -1,
+          "b": true
+        },
+        "fault": "IntegerOverflow"
+      }
+    },
+    {
+      "family": "min_division",
+      "k": 0,
+      "source_sha256": "e016b82e64ac546739270495894a8910a80d43d83fdebeabff4690536418e461",
+      "python_outcomes": {
+        "true": 9,
+        "IntegerOverflow": 1
+      },
+      "finite_checked": 6,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": 0,
+          "b": true
+        },
+        "fault": "IntegerOverflow"
+      }
+    },
+    {
+      "family": "min_division",
+      "k": 1,
+      "source_sha256": "acf2c1a8e95a495b67099a0551906bbbc8bd11467cf8a0147bc7414cc48e6c82",
+      "python_outcomes": {
+        "true": 9,
+        "IntegerOverflow": 1
+      },
+      "finite_checked": 8,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": 1,
+          "b": true
+        },
+        "fault": "IntegerOverflow"
+      }
+    },
+    {
+      "family": "min_division",
+      "k": 2,
+      "source_sha256": "6cd94ee5b0e77c535863d3a64368510ace1aba4b439546ce34c32c0c58d07890",
+      "python_outcomes": {
+        "true": 9,
+        "IntegerOverflow": 1
+      },
+      "finite_checked": 10,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": 2,
+          "b": true
+        },
+        "fault": "IntegerOverflow"
+      }
+    },
+    {
+      "family": "min_division",
+      "k": 3,
+      "source_sha256": "03ee919889b1ccaa33761a7e19ceb69c500297827b228e596bfe8d12df5c8a47",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "clamp",
+      "k": -3,
+      "source_sha256": "897e35e984204298d6223e1865dd4587c6c3b0b8dca323f04dded9e3e22e96af",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "clamp",
+      "k": -2,
+      "source_sha256": "8756a7358b3a2234aeeb967c2cfafb846fbb158264efefbd380d0c56ca76ad92",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "clamp",
+      "k": -1,
+      "source_sha256": "3ea1b9e1701c8bc839c36f5ee9854b1351a23d44d8d208659e03f85ea3a1d838",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "clamp",
+      "k": 0,
+      "source_sha256": "af96df385c5c3d360bd17cbe9db155dbfaa6506886f3c389dac857b29e264703",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "clamp",
+      "k": 1,
+      "source_sha256": "0c6be113302cc9a9ab05a043783aed5308299ea60fd8eacdd3ebdfe31f41c028",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "clamp",
+      "k": 2,
+      "source_sha256": "1a72544a1ec37685bfa8b6d07c91a5bf3cd065da88e778c605c4af835f642819",
+      "python_outcomes": {
+        "InvalidBounds": 10
+      },
+      "finite_checked": 1,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": -1,
+          "b": false
+        },
+        "fault": "InvalidBounds"
+      }
+    },
+    {
+      "family": "clamp",
+      "k": 3,
+      "source_sha256": "c1d212d4578c297be0ec88d145fc809617b372aa3f761b75d74b321c3a396951",
+      "python_outcomes": {
+        "InvalidBounds": 10
+      },
+      "finite_checked": 1,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": -1,
+          "b": false
+        },
+        "fault": "InvalidBounds"
+      }
+    },
+    {
+      "family": "record_comparison",
+      "k": -3,
+      "source_sha256": "3094e963e92d4d4327b990fda362d98ea119eeebe31f3b405fb00ea50c908f52",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "record_comparison",
+      "k": -2,
+      "source_sha256": "1127186d3a2a58b9c2b480177889b25bd7525967bd53e72283ae5b7557f733e9",
+      "python_outcomes": {
+        "true": 9,
+        "false": 1
+      },
+      "finite_checked": 2,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": -2,
+          "b": true
+        },
+        "result": false
+      }
+    },
+    {
+      "family": "record_comparison",
+      "k": -1,
+      "source_sha256": "0a4d685f213b447ddae8eca90d779d91775fc741565cefb18452d65e9e1afb9e",
+      "python_outcomes": {
+        "true": 9,
+        "false": 1
+      },
+      "finite_checked": 4,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": -1,
+          "b": true
+        },
+        "result": false
+      }
+    },
+    {
+      "family": "record_comparison",
+      "k": 0,
+      "source_sha256": "4e94cf1ba3f5e75107bcd37a837b27d1119413f0c069ddde49406c7046446ec6",
+      "python_outcomes": {
+        "true": 9,
+        "false": 1
+      },
+      "finite_checked": 6,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": 0,
+          "b": true
+        },
+        "result": false
+      }
+    },
+    {
+      "family": "record_comparison",
+      "k": 1,
+      "source_sha256": "0997506b936ab16a880b348d9c6f7fcfe92926adc691ac6402aeb2118ebd1b3f",
+      "python_outcomes": {
+        "true": 9,
+        "false": 1
+      },
+      "finite_checked": 8,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": 1,
+          "b": true
+        },
+        "result": false
+      }
+    },
+    {
+      "family": "record_comparison",
+      "k": 2,
+      "source_sha256": "278a54845be212c5be977fc3b93ce3aba4128c3ac0f93d27b9e8ce1445581dbc",
+      "python_outcomes": {
+        "true": 9,
+        "false": 1
+      },
+      "finite_checked": 10,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": 2,
+          "b": true
+        },
+        "result": false
+      }
+    },
+    {
+      "family": "record_comparison",
+      "k": 3,
+      "source_sha256": "bb3832359147f1543def544f9caf2ef5c5365d075695f7ec69dbcf0829756bdc",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "discarded_field",
+      "k": -3,
+      "source_sha256": "028f2bd9dad4242c529d68ff018191b5e97ac8ada5c2444571d272f5177a2675",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "discarded_field",
+      "k": -2,
+      "source_sha256": "0c8ec9e01272c60f804f81b3cc471a46d40fbf765487224498734231c1a9082e",
+      "python_outcomes": {
+        "DivisionByZero": 2,
+        "true": 8
+      },
+      "finite_checked": 1,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": -2,
+          "b": false
+        },
+        "fault": "DivisionByZero"
+      }
+    },
+    {
+      "family": "discarded_field",
+      "k": -1,
+      "source_sha256": "d3b59e6c045875c10974375cd43632d3d894ff8700e7c30e7945029ae992d033",
+      "python_outcomes": {
+        "true": 8,
+        "DivisionByZero": 2
+      },
+      "finite_checked": 3,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": -1,
+          "b": false
+        },
+        "fault": "DivisionByZero"
+      }
+    },
+    {
+      "family": "discarded_field",
+      "k": 0,
+      "source_sha256": "8d54316f6dfb6c24cafc0d764803258e01184cf0e859bf914004a85087a83152",
+      "python_outcomes": {
+        "true": 8,
+        "DivisionByZero": 2
+      },
+      "finite_checked": 5,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": 0,
+          "b": false
+        },
+        "fault": "DivisionByZero"
+      }
+    },
+    {
+      "family": "discarded_field",
+      "k": 1,
+      "source_sha256": "b81a6659e88f91a0c25d39a7b7596e122a307bf141a317e1053db0aa851eccc8",
+      "python_outcomes": {
+        "true": 8,
+        "DivisionByZero": 2
+      },
+      "finite_checked": 7,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": 1,
+          "b": false
+        },
+        "fault": "DivisionByZero"
+      }
+    },
+    {
+      "family": "discarded_field",
+      "k": 2,
+      "source_sha256": "a229855e1aa97e4b5dd6a251f6ca1baeb73a7aa4387ffe4cc7eddc1e4bd42db4",
+      "python_outcomes": {
+        "true": 8,
+        "DivisionByZero": 2
+      },
+      "finite_checked": 9,
+      "proof": "refuted",
+      "solver_witness": {
+        "inputs": {
+          "x": 2,
+          "b": false
+        },
+        "fault": "DivisionByZero"
+      }
+    },
+    {
+      "family": "discarded_field",
+      "k": 3,
+      "source_sha256": "d34518af7e37eac6f79a8151e3950331dc329987489b5d78129d2cd7f82791cd",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "lazy_record_projection",
+      "k": -3,
+      "source_sha256": "49f1b5208a738f77b448e392ffbb89c89e7856c24a2cbd28660f0ae05a14fe57",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "lazy_record_projection",
+      "k": -2,
+      "source_sha256": "761b889c95b9ac108407e53f765be5d1a7dd8bbe67abdfc3e2182bc630dd83db",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "lazy_record_projection",
+      "k": -1,
+      "source_sha256": "3ccd5d244b122988d045bbb31b70f2fb471505d020a77ff898b4fccda3985334",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "lazy_record_projection",
+      "k": 0,
+      "source_sha256": "0ae84680bb8561a0d70c090a442907b466d0c1eac55face812790c3064b4445c",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "lazy_record_projection",
+      "k": 1,
+      "source_sha256": "117beddfe9ea05de01d57524148a357ea7d4dbb3d4afcb5c5dc7255f10dfc4e7",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "lazy_record_projection",
+      "k": 2,
+      "source_sha256": "a35f7212fab03a8f9d7b25f92abd37fb050813718647d4665ea00c0a8c094b88",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    },
+    {
+      "family": "lazy_record_projection",
+      "k": 3,
+      "source_sha256": "cfe92af98fdf4738159fcc3566c701242519050fbc24ff41406fe2f17bd88617",
+      "python_outcomes": {
+        "true": 10
+      },
+      "finite_checked": 10,
+      "proof": "proved"
+    }
+  ]
+}

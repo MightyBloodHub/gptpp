@@ -2,19 +2,25 @@
 //! lowering or arithmetic implementation with native code generation.
 use std::collections::HashMap;
 use std::fmt;
+use std::rc::Rc;
 
 use crate::syntax::{
-    BinOp, Contract, Domain, Expr, ExprKind, Function, Intrinsic, Module, Stmt, StmtKind, UnOp,
+    BinOp, Contract, Domain, Expr, ExprKind, Function, Intrinsic, Module, Stmt, StmtKind, TypeKind,
+    UnOp,
 };
 
 pub const DEFAULT_FUEL: u64 = 1_000_000;
 const MAX_NESTING: usize = 128;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+pub type RecordValue = (String, Vec<(String, Value)>);
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Int(i64),
     Bool(bool),
     Unit,
+    Enum(Rc<(String, String)>),
+    Record(Rc<RecordValue>),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -33,22 +39,23 @@ impl fmt::Display for Fault {
 }
 
 impl Value {
-    fn int(self) -> Result<i64, Fault> {
+    fn int(&self) -> Result<i64, Fault> {
         match self {
-            Self::Int(n) => Ok(n),
+            Self::Int(n) => Ok(*n),
             _ => Err(Fault::InvalidCheckedProgram),
         }
     }
 
-    fn boolean(self) -> Result<bool, Fault> {
+    fn boolean(&self) -> Result<bool, Fault> {
         match self {
-            Self::Bool(b) => Ok(b),
+            Self::Bool(b) => Ok(*b),
             _ => Err(Fault::InvalidCheckedProgram),
         }
     }
 }
 
 struct Interpreter<'a, 'o, O> {
+    module: &'a Module,
     observer: &'o mut O,
     functions: HashMap<&'a str, &'a Function>,
     fuel: u64,
@@ -61,13 +68,13 @@ type Frame<'a> = Vec<Scope<'a>>;
 pub trait Observer<'a> {
     type Visit;
     fn enter(&mut self, expr: &Expr, scopes: &[Scope<'a>]) -> Self::Visit;
-    fn leave(&mut self, visit: Self::Visit, result: Result<Value, Fault>);
+    fn leave(&mut self, visit: Self::Visit, result: &Result<Value, Fault>);
 }
 
 impl Observer<'_> for () {
     type Visit = ();
     fn enter(&mut self, _: &Expr, _: &[Scope<'_>]) {}
-    fn leave(&mut self, _: (), _: Result<Value, Fault>) {}
+    fn leave(&mut self, _: (), _: &Result<Value, Fault>) {}
 }
 
 pub fn run(module: &Module, fuel: u64) -> Result<i64, Fault> {
@@ -84,10 +91,10 @@ pub fn invoke<'a>(
     Interpreter::new(module, fuel, observer).call(entry, args, 0)
 }
 
-pub fn in_domain(domain: Domain, value: Value) -> bool {
+pub fn in_domain(domain: Domain, value: &Value) -> bool {
     match (domain, value) {
         (Domain::Bool, Value::Bool(_)) => true,
-        (Domain::I64 { low, high }, Value::Int(n)) => (low..=high).contains(&n),
+        (Domain::I64 { low, high }, Value::Int(n)) => (low..=high).contains(n),
         _ => false,
     }
 }
@@ -117,7 +124,7 @@ pub fn contract_evaluator<'a>(
             || !values
                 .iter()
                 .zip(&contract.domains)
-                .all(|(&v, &d)| in_domain(d, v))
+                .all(|(v, &d)| in_domain(d, v))
         {
             return Err(Fault::InvalidCheckedProgram);
         }
@@ -138,6 +145,7 @@ pub fn invoke_wrapper<'a>(module: &'a Module, wrapper: &'a Function) -> Result<V
 impl<'a, 'o, O: Observer<'a>> Interpreter<'a, 'o, O> {
     fn new(module: &'a Module, fuel: u64, observer: &'o mut O) -> Self {
         Self {
+            module,
             observer,
             functions: module
                 .functions
@@ -159,6 +167,16 @@ impl<'a, 'o, O: Observer<'a>> Interpreter<'a, 'o, O> {
     fn call(&mut self, name: &str, args: Vec<Value>, depth: usize) -> Result<Value, Fault> {
         self.step(depth)?;
         let Some(&function) = self.functions.get(name) else {
+            if let Some((_, decl)) = self.module.declaration(name) {
+                let TypeKind::Record(fields) = &decl.kind else {
+                    return Err(Fault::InvalidCheckedProgram);
+                };
+                if fields.len() != args.len() {
+                    return Err(Fault::InvalidCheckedProgram);
+                }
+                let values = fields.iter().map(|p| p.name.clone()).zip(args).collect();
+                return Ok(Value::Record(Rc::new((name.to_owned(), values))));
+            }
             return match (Intrinsic::named(name), args.as_slice()) {
                 (Some(Intrinsic::Min), [Value::Int(a), Value::Int(b)]) => Ok(Value::Int(*a.min(b))),
                 (Some(Intrinsic::Max), [Value::Int(a), Value::Int(b)]) => Ok(Value::Int(*a.max(b))),
@@ -185,7 +203,7 @@ impl<'a, 'o, O: Observer<'a>> Interpreter<'a, 'o, O> {
             .params
             .iter()
             .map(|p| p.name.as_str())
-            .zip(args.iter().copied())
+            .zip(args.iter().cloned())
             .collect();
         let mut frame = vec![params];
         Ok(self
@@ -267,7 +285,7 @@ impl<'a, 'o, O: Observer<'a>> Interpreter<'a, 'o, O> {
     fn expr(&mut self, expr: &'a Expr, frame: &Frame<'a>, depth: usize) -> Result<Value, Fault> {
         let visit = self.observer.enter(expr, frame);
         let result = self.eval(expr, frame, depth);
-        self.observer.leave(visit, result);
+        self.observer.leave(visit, &result);
         result
     }
 
@@ -285,10 +303,25 @@ impl<'a, 'o, O: Observer<'a>> Interpreter<'a, 'o, O> {
             ExprKind::Int(n) => Ok(Value::Int(*n)),
             ExprKind::Bool(b) => Ok(Value::Bool(*b)),
             ExprKind::Unit => Ok(Value::Unit),
+            ExprKind::Hole(..) => Err(Fault::InvalidCheckedProgram),
+            ExprKind::Variant(name, variant) => {
+                Ok(Value::Enum(Rc::new((name.clone(), variant.clone()))))
+            }
+            ExprKind::Field(base, field) => {
+                let Value::Record(record) = self.expr(base, frame, depth + 1)? else {
+                    return Err(Fault::InvalidCheckedProgram);
+                };
+                record
+                    .1
+                    .iter()
+                    .find(|(name, _)| name == field)
+                    .map(|(_, v)| v.clone())
+                    .ok_or(Fault::InvalidCheckedProgram)
+            }
             ExprKind::Name(name) => frame
                 .iter()
                 .rev()
-                .find_map(|scope| scope.get(name.as_str()).copied())
+                .find_map(|scope| scope.get(name.as_str()).cloned())
                 .ok_or(Fault::InvalidCheckedProgram),
             ExprKind::Call(name, args) => {
                 let values = args
@@ -300,7 +333,7 @@ impl<'a, 'o, O: Observer<'a>> Interpreter<'a, 'o, O> {
             ExprKind::AsI64(inner) => match self.expr(inner, frame, depth + 1)? {
                 Value::Bool(b) => Ok(Value::Int(i64::from(b))),
                 v @ Value::Int(_) => Ok(v),
-                Value::Unit => Err(Fault::InvalidCheckedProgram),
+                _ => Err(Fault::InvalidCheckedProgram),
             },
             ExprKind::Unary(op, inner) => {
                 let value = self.expr(inner, frame, depth + 1)?;

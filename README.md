@@ -2,7 +2,27 @@
 
 **A language made by AI, for AI.** GPT++ is a free and open project. [Project website](https://gptpp.sandoog.co/)
 
-GPT++ is an experimental programming language designed for coding agents. An agent can ask the compiler what an expression did on a particular call, which local values it could use, and which source revision it can safely edit. A project can state a behavior as a Boolean predicate over a finite input domain. The compiler checks a proposed change against each input and can return a concrete counterexample to the agent. The same scalar program runs in the offline reference interpreter or compiles to a native executable through LLVM.
+GPT++ is an experimental programming language designed for coding agents. Programs can leave an expression open with a name and a type. An agent can ask which values are in scope, search for expressions that satisfy the callers’ contracts, and get a concrete input when two passing completions disagree. Completed programs run independently of a model.
+
+## A reservation component in GPT++, Python and Rust
+
+The GPT++ module owns the booking state and the reserve/cancel decisions. A Python CLI persists arbitrary booking IDs in SQLite. An independent Rust client uses the same native library through a generated C ABI. In both clients, reserving A and B and cancelling A twice leaves B active and exactly one free seat. Cancelling an unseen ID returns an explicit domain error. [Run the application](examples/reservations/README.md) · [Try the live verifier](https://gptpp.sandoog.co/#finite-contracts)
+
+```sh
+cargo build --locked --offline
+python3 examples/reservations/check.py --sketch outcome > target/sketch.gpp
+target/debug/gpp holes target/sketch.gpp --function transition
+target/debug/gpp complete target/sketch.gpp --hole repeat
+target/debug/gpp verify examples/reservations/booking.gpp
+```
+
+The compiler filled `?repeat: Outcome` with `Outcome::Ok` and checked 340 action histories plus a sold-out case. The resulting module matched the shipped code byte for byte. Leaving the free-seat count open produced two behaviors that agree in the two-seat fixture. The compiler asked whether cancelling an already cancelled booking with eight seats free should leave eight or two. [Completion and ambiguity](examples/reservations/README.md#complete-a-typed-decision)
+
+For wider domains, the native `prove` command uses Z3 to check supported contracts symbolically. The combined reservation module proves eight contracts, including repeated cancellation and unknown IDs over the full nonnegative I64 range. The active-booking property excludes the largest I64 value so that releasing one seat fits. [Full-width obligations](examples/reservations/cancellation.proof.gpp.inc) · [Language reference](docs/scalar-language.md)
+
+**Fresh model comparison.** On four state-machine changes attempted by two models, GPT++, typed Python and Rust each passed the same two of eight assignments. The models made 42 calls across 24 assignments. GPT++ used 2,813.5 tokens per accepted change, Python 2,847 and Rust 3,042.5. These totals include failed attempts. The same model-free search solved three of four tasks in every language. GPT++’s separate built-in search solved two. [Run Qwen’s accepted streak update](examples/streak_counter/README.md) · [Matched results](bench/stateful/results.md) · [Protocol and limits](bench/stateful/protocol.md)
+
+## Earlier experiments
 
 **Finite contracts.** A module can name a rule for a function or its callers. Run the verifier to check the complete declared domain or get the first failing input. Contract-guided repair tests expression edits against those same rules. On three development tasks, six of ten hand-written edits passed the visible examples and then failed on another declared input. [Try the live verifier](https://gptpp.sandoog.co/#finite-contracts) · [Measured results](bench/contracts/results.md) · [Verify a contract](docs/scalar-language.md#verify-a-finite-contract) · [Contract-guided repair](tools/README.md#repair-an-expression-against-source-contracts)
 
@@ -20,7 +40,7 @@ target/debug/gpp check examples/add.gpp
 target/debug/gpp run --interpreter examples/add.gpp
 ```
 
-The example prints `42`. The current language includes checked signed 64-bit integers, booleans, local bindings, functions, conditionals, and loops. [Example source](examples/add.gpp) · [Scalar language reference](docs/scalar-language.md)
+The example prints `42`. The language supports checked signed 64-bit integers, booleans, records, enums, local bindings, functions, conditionals and loops. [Example source](examples/add.gpp) · [Scalar language reference](docs/scalar-language.md)
 
 ### Check a rule over every input in its domain
 

@@ -7,6 +7,7 @@ use std::ffi::OsString;
 use std::fs;
 use std::io::{self, Write};
 use std::path::PathBuf;
+use std::rc::Rc;
 
 const USAGE: &str =
     "gpp trace FILE --function TARGET (--call ENTRY|--contract NAME) [ARG ...] [--fuel N]";
@@ -90,20 +91,20 @@ impl Request {
         .map_err(report)?;
         let (args, result) = if self.contract {
             let predicate = find_contract(&module, &self.entry)?;
-            let args = parse_witness(predicate, &self.args)?;
+            let args = parse_witness(&module, predicate, &self.args)?;
             let result =
                 interpreter::eval_contract(&module, predicate, args.clone(), self.fuel, &mut trace);
             (args, result)
         } else {
             let entry = edit::target(&module, &self.entry)?;
-            let args = parse_values(entry, &self.args)?;
+            let args = parse_values(&module, entry, &self.args)?;
             let result =
                 interpreter::invoke(&module, &self.entry, args.clone(), self.fuel, &mut trace);
             (args, result)
         };
         let revision = edit::revision(source.as_bytes())?;
         let mut out = io::BufWriter::new(io::stdout().lock());
-        let mut emit = || -> io::Result<()> {
+        let emit = || -> io::Result<()> {
             write!(
                 out,
                 "{{\"schema\":\"gpp.trace/1\",\"revision\":{},\"function\":{},\"start_byte\":{},\"end_byte\":{},\"call\":{},\"args\":[",
@@ -117,7 +118,7 @@ impl Request {
                 if i > 0 {
                     write!(out, ",")?;
                 }
-                write_value(&mut out, *v)?;
+                write_value(&mut out, v.clone())?;
             }
             write!(out, "],")?;
             if self.contract {
@@ -141,7 +142,7 @@ impl Request {
                     out,
                     "{{\"start_byte\":{start},\"end_byte\":{end},{binary_gap}\"text\":{},\"type\":\"{}\",\"hits\":{},\"observations\":[",
                     json_string(&source[start..end]),
-                    site.ty,
+                    module.type_name(site.ty),
                     site.hits
                 )?;
                 for (i, obs) in site.observations.iter().enumerate() {
@@ -154,10 +155,14 @@ impl Request {
                             write!(out, ",")?;
                         }
                         write!(out, "{}:", json_string(name))?;
-                        write_value(&mut out, *value)?;
+                        write_value(&mut out, value.clone())?;
                     }
                     write!(out, "}},")?;
-                    write_result(&mut out, "value", obs.result.expect("every visit finishes"))?;
+                    write_result(
+                        &mut out,
+                        "value",
+                        obs.result.clone().expect("every visit finishes"),
+                    )?;
                     write!(out, "}}")?;
                 }
                 write!(out, "]}}")?;
@@ -177,8 +182,12 @@ pub(crate) fn find_contract<'a>(module: &'a Module, name: &str) -> Result<&'a Co
         .ok_or_else(|| format!("unknown contract '{name}'"))
 }
 
-pub(crate) fn parse_witness(contract: &Contract, raw: &[String]) -> Result<Vec<Value>, String> {
-    let values = parse_values(&contract.predicate, raw)?;
+pub(crate) fn parse_witness(
+    module: &Module,
+    contract: &Contract,
+    raw: &[String],
+) -> Result<Vec<Value>, String> {
+    let values = parse_values(module, &contract.predicate, raw)?;
     for ((param, domain), value) in contract
         .predicate
         .params
@@ -186,7 +195,7 @@ pub(crate) fn parse_witness(contract: &Contract, raw: &[String]) -> Result<Vec<V
         .zip(&contract.domains)
         .zip(&values)
     {
-        if !interpreter::in_domain(*domain, *value) {
+        if !interpreter::in_domain(*domain, value) {
             return Err(format!(
                 "value outside contract domain for '{}'",
                 param.name
@@ -196,7 +205,11 @@ pub(crate) fn parse_witness(contract: &Contract, raw: &[String]) -> Result<Vec<V
     Ok(values)
 }
 
-pub(crate) fn parse_values(entry: &Function, raw: &[String]) -> Result<Vec<Value>, String> {
+pub(crate) fn parse_values(
+    module: &Module,
+    entry: &Function,
+    raw: &[String],
+) -> Result<Vec<Value>, String> {
     if raw.len() != entry.params.len() {
         return Err(format!(
             "'{}' expects {} arguments, found {}",
@@ -210,21 +223,65 @@ pub(crate) fn parse_values(entry: &Function, raw: &[String]) -> Result<Vec<Value
         .iter()
         .zip(raw)
         .map(|(param, s)| {
-            parse_value(param.ty, s).ok_or_else(|| {
+            parse_value(module, param.ty, s).ok_or_else(|| {
                 format!(
                     "expected {} for argument '{}', found {s}",
-                    param.ty, param.name
+                    module.type_name(param.ty),
+                    param.name
                 )
             })
         })
         .collect()
 }
 
-pub(crate) fn parse_value(ty: Type, text: &str) -> Option<Value> {
+pub(crate) fn parse_value(module: &Module, ty: Type, text: &str) -> Option<Value> {
     match ty {
         Type::I64 => text.parse::<i64>().ok().map(Value::Int),
         Type::Bool => text.parse::<bool>().ok().map(Value::Bool),
         Type::Unit if text == "()" => Some(Value::Unit),
+        Type::Named(_) => literal(module, ty, &syntax::parse_expression(text).ok()?),
+        _ => None,
+    }
+}
+
+/// A data argument may contain only literals, qualified tags and record constructors.
+fn literal(module: &Module, ty: Type, expr: &Expr) -> Option<Value> {
+    use syntax::{ExprKind, TypeKind, UnOp};
+    match (ty, &expr.kind) {
+        (Type::I64, ExprKind::Int(n)) => Some(Value::Int(*n)),
+        (Type::I64, ExprKind::Unary(UnOp::Neg, child)) => {
+            if let ExprKind::Int(n) = child.kind {
+                n.checked_neg().map(Value::Int)
+            } else {
+                None
+            }
+        }
+        (Type::Bool, ExprKind::Bool(b)) => Some(Value::Bool(*b)),
+        (Type::Unit, ExprKind::Unit) => Some(Value::Unit),
+        (Type::Named(id), ExprKind::Variant(t, v)) => {
+            let decl = &module.types[id];
+            if matches!(&decl.kind, TypeKind::Enum(variants) if &decl.name==t && variants.contains(v))
+            {
+                Some(Value::Enum(Rc::new((t.clone(), v.clone()))))
+            } else {
+                None
+            }
+        }
+        (Type::Named(id), ExprKind::Call(t, args)) => {
+            let decl = &module.types[id];
+            let TypeKind::Record(fields) = &decl.kind else {
+                return None;
+            };
+            if &decl.name != t || fields.len() != args.len() {
+                return None;
+            }
+            let data = fields
+                .iter()
+                .zip(args)
+                .map(|(field, value)| Some((field.name.clone(), literal(module, field.ty, value)?)))
+                .collect::<Option<Vec<_>>>()?;
+            Some(Value::Record(Rc::new((t.clone(), data))))
+        }
         _ => None,
     }
 }
@@ -234,6 +291,18 @@ pub(crate) fn write_value(out: &mut impl Write, value: Value) -> io::Result<()> 
         Value::Int(n) => write!(out, "{n}"),
         Value::Bool(b) => write!(out, "{b}"),
         Value::Unit => write!(out, "null"),
+        Value::Enum(e) => write!(out, "{}", json_string(&format!("{}::{}", e.0, e.1))),
+        Value::Record(record) => {
+            write!(out, "{{")?;
+            for (i, (field, value)) in record.1.iter().enumerate() {
+                if i != 0 {
+                    write!(out, ",")?;
+                }
+                write!(out, "{}:", json_string(field))?;
+                write_value(out, value.clone())?;
+            }
+            write!(out, "}}")
+        }
     }
 }
 
@@ -282,7 +351,11 @@ impl<'a> Observer<'a> for Trace<'a> {
         }
         // Inner bindings replace shadowed outer values. Reserve the sample on
         // entry so recursive calls to this exact site keep their own results.
-        let locals = scopes.iter().flatten().map(|(&n, &v)| (n, v)).collect();
+        let locals = scopes
+            .iter()
+            .flatten()
+            .map(|(&n, v)| (n, v.clone()))
+            .collect();
         site.observations.push(Observation {
             locals,
             result: None,
@@ -290,9 +363,9 @@ impl<'a> Observer<'a> for Trace<'a> {
         Some((expr.span, index))
     }
 
-    fn leave(&mut self, visit: Self::Visit, result: Result<Value, Fault>) {
+    fn leave(&mut self, visit: Self::Visit, result: &Result<Value, Fault>) {
         if let Some((span, i)) = visit {
-            self.sites.get_mut(&span).unwrap().observations[i].result = Some(result);
+            self.sites.get_mut(&span).unwrap().observations[i].result = Some(result.clone());
         }
     }
 }

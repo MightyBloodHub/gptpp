@@ -170,7 +170,7 @@ impl Call {
                 interpreter::invoke_wrapper(module, wrapper).map(|value| match (ty, value) {
                     (Type::Bool, Value::Int(n)) => Value::Bool(n != 0),
                     (Type::Unit, _) => Value::Unit,
-                    _ => value,
+                    (_, result) => result,
                 })
             }
         }
@@ -198,12 +198,12 @@ fn read_cases(
         if contracts {
             let contract =
                 trace::find_contract(module, name).map_err(|e| format!("case {}: {e}", i + 1))?;
-            let values = trace::parse_witness(contract, &args)
+            let values = trace::parse_witness(module, contract, &args)
                 .map_err(|e| format!("case {}: {e}", i + 1))?;
             let expected = if filter {
                 Some(
                     expected_text
-                        .and_then(|s| trace::parse_value(Type::Bool, s))
+                        .and_then(|s| trace::parse_value(module, Type::Bool, s))
                         .ok_or_else(|| {
                             format!("case {}: expected a Bool in the final field", i + 1)
                         })?,
@@ -218,17 +218,17 @@ fn read_cases(
             continue;
         }
         let entry = edit::target(module, name).map_err(|e| format!("case {}: {e}", i + 1))?;
-        let values =
-            trace::parse_values(entry, &args).map_err(|e| format!("case {}: {e}", i + 1))?;
+        let values = trace::parse_values(module, entry, &args)
+            .map_err(|e| format!("case {}: {e}", i + 1))?;
         let expected = if filter {
             Some(
                 expected_text
-                    .and_then(|s| trace::parse_value(entry.result, s))
+                    .and_then(|s| trace::parse_value(module, entry.result, s))
                     .ok_or_else(|| {
                         format!(
                             "case {}: expected a {} result in the final field",
                             i + 1,
-                            entry.result
+                            module.type_name(entry.result)
                         )
                     })?,
             )
@@ -241,16 +241,26 @@ fn read_cases(
             let literals = values
                 .iter()
                 .map(|v| match v {
-                    Value::Int(n) => n.to_string(),
-                    Value::Bool(b) => b.to_string(),
-                    Value::Unit => "()".to_owned(),
+                    Value::Int(n) => Ok(n.to_string()),
+                    Value::Bool(b) => Ok(b.to_string()),
+                    Value::Unit => Ok("()".to_owned()),
+                    Value::Record(_) | Value::Enum(_) => Err(format!(
+                        "case {}: wrapped probes require scalar arguments",
+                        i + 1
+                    )),
                 })
-                .collect::<Vec<_>>();
+                .collect::<Result<Vec<_>, _>>()?;
             let call = format!("{name}({})", literals.join(", "));
             let body = match entry.result {
                 Type::I64 => format!("return {call};"),
                 Type::Bool => format!("if {call} {{ return 1; }} return 0;"),
                 Type::Unit => format!("{call}; return 0;"),
+                Type::Named(_) => {
+                    return Err(format!(
+                        "case {}: wrapped probe requires a scalar result",
+                        i + 1
+                    ));
+                }
             };
             let wrapper = format!("{prefix}{i}");
             let text = format!("module probe; fn {wrapper}() -> I64 !{{}} {{ {body} }}");

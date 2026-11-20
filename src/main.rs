@@ -1,9 +1,13 @@
 mod check;
+mod complete;
 mod edit;
+mod holes;
 mod interpreter;
 mod ir;
+mod library;
 mod native;
 mod probe;
+mod symbolic;
 mod syntax;
 mod trace;
 mod verify;
@@ -20,6 +24,10 @@ Usage:
   gpp check [--format=json] FILE
   gpp run --interpreter [--fuel N] FILE
   gpp build [-O0|-O2] [-o EXECUTABLE] FILE
+  gpp holes FILE [--function NAME] [--format=json]
+  gpp complete FILE --hole NAME [--fill EXPRESSION_FILE] [--limit N] [--budget N] [--expect REVISION] [--stdout]
+  gpp prove FILE [--contract NAME] [--timeout-ms N]
+  gpp library FILE (-o OUTPUT|--header) [-O0|-O2]
   gpp ast FILE
   gpp emit-llvm FILE
   gpp verify FILE [--contract NAME] [--budget N] [--format=json]
@@ -197,9 +205,19 @@ fn main() -> ExitCode {
         println!("{USAGE}\n{}", edit::USAGE);
         return ExitCode::SUCCESS;
     }
-    if args.peek().is_some_and(|s| s == "verify") {
-        args.next();
-        return match verify::run(args) {
+    if matches!(
+        args.peek().and_then(|s| s.to_str()),
+        Some("complete" | "prove" | "holes" | "verify" | "library")
+    ) {
+        let command = args.next().unwrap();
+        let result = match command.to_str().unwrap() {
+            "complete" => complete::run(args),
+            "prove" => symbolic::run(args),
+            "holes" => holes::run(args),
+            "library" => library::run(args),
+            _ => verify::run(args),
+        };
+        return match result {
             Ok(code) => ExitCode::from(code),
             Err(message) => {
                 eprintln!("{message}");

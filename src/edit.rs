@@ -221,13 +221,20 @@ pub(crate) fn expressions(function: &Function) -> Vec<&Expr> {
                 walk_expr(lhs, nodes);
                 walk_expr(rhs, nodes);
             }
-            ExprKind::Unary(_, arg) | ExprKind::AsI64(arg) => walk_expr(arg, nodes),
+            ExprKind::Unary(_, arg) | ExprKind::AsI64(arg) | ExprKind::Field(arg, _) => {
+                walk_expr(arg, nodes)
+            }
             ExprKind::Call(_, args) => {
                 for arg in args {
                     walk_expr(arg, nodes);
                 }
             }
-            ExprKind::Int(_) | ExprKind::Bool(_) | ExprKind::Name(_) | ExprKind::Unit => {}
+            ExprKind::Int(_)
+            | ExprKind::Bool(_)
+            | ExprKind::Name(_)
+            | ExprKind::Variant(..)
+            | ExprKind::Hole(..)
+            | ExprKind::Unit => {}
         }
     }
 
@@ -366,7 +373,7 @@ fn candidate(edit: &Edit, source: &str, fragment: &str) -> Result<(String, Modul
             // A trailing line comment must not consume the return's semicolon.
             format!("    return {};{}", &fragment[..end], &fragment[end..])
         }
-        FragmentKind::Body => syntax::body_fragment(fragment)
+        FragmentKind::Body => syntax::body_fragment(fragment, &module)
             .map_err(fragment_error)?
             .to_owned(),
     };

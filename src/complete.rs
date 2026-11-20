@@ -1,0 +1,592 @@
+//! Complete one typed expression hole against all source contracts. The search
+//! grammar reads the hole's lexical scope; the verifier independently checks
+//! the complete program, including callers and multi-step properties.
+use crate::check::{self, Hole};
+use crate::interpreter::{self, Fault, Value};
+use crate::syntax::{self, Function, Module, Type, TypeKind};
+use crate::{diagnostic, edit, json_string, trace, verify};
+use std::collections::HashSet;
+use std::ffi::OsString;
+use std::fs;
+use std::io::Write;
+use std::path::{Path, PathBuf};
+use std::rc::Rc;
+
+const USAGE: &str = "gpp complete FILE --hole NAME [--fill EXPRESSION_FILE] [--limit N] [--budget N] [--expect REVISION] [--stdout]";
+const PROBE_LIMIT: usize = 64;
+
+struct Options {
+    file: PathBuf,
+    name: String,
+    fragment: Option<PathBuf>,
+    limit: usize,
+    budget: u64,
+    expected: Option<String>,
+    stdout: bool,
+}
+
+impl Options {
+    fn parse(mut args: impl Iterator<Item = OsString>) -> Result<Self, String> {
+        let file = PathBuf::from(args.next().ok_or(USAGE)?);
+        let (mut name, mut fragment, mut limit, mut budget, mut expected) =
+            (None, None, None, None, None);
+        let mut stdout = false;
+        while let Some(flag) = args.next() {
+            match flag.to_str() {
+                Some("--hole") if name.is_none() => {
+                    name = Some(
+                        args.next()
+                            .and_then(|s| s.into_string().ok())
+                            .ok_or(USAGE)?,
+                    )
+                }
+                Some("--fill") if fragment.is_none() => {
+                    fragment = Some(PathBuf::from(args.next().ok_or(USAGE)?))
+                }
+                Some("--limit") if limit.is_none() => {
+                    limit = Some(
+                        args.next()
+                            .and_then(|n| n.to_str()?.parse::<usize>().ok())
+                            .filter(|n| (1..=4096).contains(n))
+                            .ok_or("--limit requires 1..4096")?,
+                    )
+                }
+                Some("--budget") if budget.is_none() => {
+                    budget = Some(
+                        args.next()
+                            .and_then(|n| n.to_str()?.parse().ok())
+                            .ok_or("--budget requires a nonnegative assignment count")?,
+                    )
+                }
+                Some("--expect") if expected.is_none() => {
+                    expected = Some(
+                        args.next()
+                            .and_then(|s| s.into_string().ok())
+                            .ok_or(USAGE)?,
+                    )
+                }
+                Some("--stdout") if !stdout => stdout = true,
+                _ => return Err(USAGE.into()),
+            }
+        }
+        Ok(Self {
+            file,
+            name: name.ok_or(USAGE)?,
+            fragment,
+            limit: limit.unwrap_or(256),
+            budget: budget.unwrap_or(verify::DEFAULT_BUDGET),
+            expected,
+            stdout,
+        })
+    }
+}
+
+fn add_leaves(
+    module: &Module,
+    items: &mut Vec<(String, Type)>,
+    name: String,
+    ty: Type,
+    depth: usize,
+) {
+    if items.len() >= 48 {
+        return;
+    }
+    items.push((name.clone(), ty));
+    if depth > 0
+        && let Type::Named(id) = ty
+        && let TypeKind::Record(fields) = &module.types[id].kind
+    {
+        for field in fields {
+            add_leaves(
+                module,
+                items,
+                format!("{name}.{}", field.name),
+                field.ty,
+                depth - 1,
+            );
+        }
+    }
+}
+
+fn grammar(module: &Module, hole: &Hole, limit: usize) -> Vec<String> {
+    let mut leaves = Vec::new();
+    for (name, ty) in &hole.locals {
+        add_leaves(module, &mut leaves, name.clone(), *ty, 2);
+    }
+    for (i, decl) in module.types.iter().enumerate() {
+        if let TypeKind::Enum(variants) = &decl.kind {
+            for variant in variants.iter().take(16) {
+                if leaves.len() >= 80 {
+                    break;
+                }
+                leaves.push((format!("{}::{variant}", decl.name), Type::Named(i)));
+            }
+        }
+    }
+    let atoms = |ty| {
+        leaves
+            .iter()
+            .filter(|(_, t)| *t == ty)
+            .map(|(s, _)| s.as_str())
+            .collect::<Vec<_>>()
+    };
+    let mut ints = atoms(Type::I64);
+    let flags = atoms(Type::Bool);
+    let names = ints.clone();
+    ints.extend(["0", "1", "-1", "2"]);
+    let mut result = Vec::new();
+    let mut seen = HashSet::new();
+    // One extra item tells the caller whether the candidate cap truncated the grammar.
+    macro_rules! emit {
+        ($e:expr) => {{
+            let value: String = $e;
+            if seen.insert(value.clone()) {
+                result.push(value);
+                if result.len() > limit {
+                    return result;
+                }
+            }
+        }};
+    }
+    for a in atoms(hole.ty) {
+        emit!(a.to_owned());
+    }
+    match hole.ty {
+        Type::Bool => {
+            for a in ["false", "true"] {
+                emit!(a.to_owned());
+            }
+            for f in &flags {
+                emit!(format!("!{f}"));
+            }
+            for (a, t) in &leaves {
+                if matches!(t,Type::Named(i) if matches!(&module.types[*i].kind,TypeKind::Enum(_)))
+                    && !a.contains("::")
+                {
+                    for b in atoms(*t) {
+                        if a != b {
+                            emit!(format!("{a} == {b}"));
+                            emit!(format!("{a} != {b}"));
+                        }
+                    }
+                }
+            }
+            for a in &flags {
+                for b in &flags {
+                    if a < b {
+                        emit!(format!("{a} && {b}"));
+                        emit!(format!("{a} || {b}"));
+                    }
+                }
+            }
+            for a in names {
+                for b in &ints {
+                    if a != *b {
+                        for op in ["==", "!=", "<", "<=", ">", ">="] {
+                            emit!(format!("{a} {op} {b}"));
+                        }
+                    }
+                }
+            }
+        }
+        Type::I64 => {
+            for a in &ints {
+                emit!((*a).to_owned());
+            }
+            for a in &flags {
+                emit!(format!("{a} as I64"));
+            }
+            for a in &names {
+                for op in ["+", "-"] {
+                    emit!(format!("{a} {op} 1"));
+                }
+            }
+            for a in &names {
+                for b in &flags {
+                    for op in ["+", "-"] {
+                        emit!(format!("{a} {op} ({b} as I64)"));
+                    }
+                }
+            }
+            for a in &names {
+                for b in &ints {
+                    for op in ["+", "-", "*", "/", "%"] {
+                        emit!(format!("{a} {op} {b}"));
+                    }
+                }
+            }
+            for a in &names {
+                for b in &ints {
+                    for op in ["min", "max"] {
+                        emit!(format!("{op}({a}, {b})"));
+                    }
+                }
+            }
+            for f in &flags {
+                for a in &ints {
+                    for b in &ints {
+                        if a != b {
+                            emit!(format!("if {f} {{ {a} }} else {{ {b} }}"));
+                        }
+                    }
+                }
+            }
+        }
+        Type::Named(_) => {
+            let choices = atoms(hole.ty);
+            for f in flags {
+                for a in &choices {
+                    for b in &choices {
+                        if a != b {
+                            emit!(format!("if {f} {{ {a} }} else {{ {b} }}"));
+                        }
+                    }
+                }
+            }
+        }
+        Type::Unit => emit!("()".to_owned()),
+    }
+    result
+}
+
+fn fill(
+    opts: &Options,
+    source: &str,
+    function: &Function,
+    hole: &Hole,
+    expr: &str,
+) -> Result<(String, Module), String> {
+    let (candidate, module) = edit::replace_node(
+        &opts.file,
+        opts.fragment.as_deref().unwrap_or(Path::new("<candidate>")),
+        source,
+        function,
+        hole.span,
+        expr,
+    )?;
+    let end = candidate.len() - (source.len() - hole.span.end);
+    let mut actual = None;
+    check::check_with_types(&module, |node, ty| {
+        if node.span.start == hole.span.start && node.span.end == end {
+            actual = Some(ty);
+        }
+    })
+    .map_err(|d| diagnostic(&opts.file, &candidate, d, true))?;
+    if actual != Some(hole.ty) {
+        return Err(format!(
+            "hole '{}' requires {}; replacement has {}",
+            hole.name,
+            module.type_name(hole.ty),
+            actual
+                .map(|t| module.type_name(t))
+                .unwrap_or("unresolved type")
+        ));
+    }
+    Ok((candidate, module))
+}
+
+// Fairly vary all argument positions, including fields of a record, within a
+// fixed probe budget. These calls can witness a difference, never equivalence.
+fn product(columns: &[Vec<Value>], limit: usize) -> Vec<Vec<Value>> {
+    if columns.iter().any(Vec::is_empty) {
+        return vec![];
+    }
+    let total = columns
+        .iter()
+        .fold(1usize, |n, c| n.saturating_mul(c.len()));
+    let mut indices = vec![0; columns.len()];
+    let mut rows = Vec::new();
+    for n in 0..total.min(limit) {
+        if total > limit {
+            // A deterministic mix including both same-index and independent variations.
+            let mut rng = (n as u64 + 1).wrapping_mul(6364136223846793005);
+            for (i, col) in columns.iter().enumerate() {
+                rng = rng
+                    .wrapping_mul(6364136223846793005)
+                    .wrapping_add(1442695040888963407);
+                indices[i] = if n < 8 {
+                    n % col.len()
+                } else {
+                    ((rng >> 32) as usize) % col.len()
+                };
+            }
+        }
+        rows.push(
+            columns
+                .iter()
+                .zip(&indices)
+                .map(|(c, &i)| c[i].clone())
+                .collect(),
+        );
+        for (idx, c) in indices.iter_mut().zip(columns).rev() {
+            *idx += 1;
+            if *idx < c.len() {
+                break;
+            }
+            *idx = 0;
+        }
+    }
+    rows
+}
+
+fn samples(module: &Module, ty: Type, depth: usize) -> Vec<Value> {
+    match ty {
+        Type::Bool => vec![Value::Bool(false), Value::Bool(true)],
+        Type::Unit => vec![Value::Unit],
+        Type::I64 => [0, 1, -1, 2, 3, 4, 8, 9, i64::MIN, i64::MAX]
+            .into_iter()
+            .map(Value::Int)
+            .collect(),
+        Type::Named(i) => {
+            let decl = &module.types[i];
+            match &decl.kind {
+                TypeKind::Enum(variants) => variants
+                    .iter()
+                    .take(PROBE_LIMIT)
+                    .map(|s| Value::Enum(Rc::new((decl.name.clone(), s.clone()))))
+                    .collect(),
+                TypeKind::Record(fields) if depth < 3 && fields.len() <= 16 => {
+                    let cols = fields
+                        .iter()
+                        .map(|f| samples(module, f.ty, depth + 1))
+                        .collect::<Vec<_>>();
+                    product(&cols, 16)
+                        .into_iter()
+                        .map(|row| {
+                            Value::Record(Rc::new((
+                                decl.name.clone(),
+                                fields.iter().map(|f| f.name.clone()).zip(row).collect(),
+                            )))
+                        })
+                        .collect()
+                }
+                _ => vec![],
+            }
+        }
+    }
+}
+
+fn known_bad(result: &Result<Value, Fault>) -> bool {
+    matches!(
+        result,
+        Ok(Value::Bool(false))
+            | Err(Fault::IntegerOverflow | Fault::DivisionByZero | Fault::InvalidBounds)
+    )
+}
+
+fn outcome(value: Result<Value, Fault>) -> Result<Option<String>, String> {
+    if matches!(
+        value,
+        Err(Fault::ResourceLimit | Fault::InvalidCheckedProgram)
+    ) {
+        return Ok(None);
+    }
+    let mut bytes = Vec::new();
+    trace::write_result(&mut bytes, "result", value).map_err(|e| e.to_string())?;
+    Ok(Some(format!("{{{}}}", String::from_utf8(bytes).unwrap())))
+}
+
+fn inputs_json(function: &Function, args: &[Value]) -> Result<String, String> {
+    let mut input = Vec::new();
+    for (i, (p, v)) in function.params.iter().zip(args).enumerate() {
+        if i > 0 {
+            input.push(b',');
+        }
+        write!(input, "{}:", json_string(&p.name)).unwrap();
+        trace::write_value(&mut input, v.clone()).map_err(|e| e.to_string())?;
+    }
+    Ok(format!("{{{}}}", String::from_utf8(input).unwrap()))
+}
+
+struct Winner {
+    expression: String,
+    source: String,
+    report: String,
+}
+
+fn verification(module: &Module, source: &str, budget: u64) -> Result<String, String> {
+    let mut output = Vec::new();
+    verify::verify_module(
+        module,
+        &edit::revision(source.as_bytes())?,
+        None,
+        budget,
+        &mut output,
+    )?;
+    Ok(String::from_utf8(output).unwrap().trim().to_owned())
+}
+
+pub fn run(args: impl Iterator<Item = OsString>) -> Result<u8, String> {
+    let opts = Options::parse(args)?;
+    let source = fs::read_to_string(&opts.file).map_err(|e| e.to_string())?;
+    let revision = edit::revision(source.as_bytes())?;
+    if opts.expected.as_ref().is_some_and(|s| s != &revision) {
+        return Err("stale source revision".into());
+    }
+    let fail = |d| diagnostic(&opts.file, &source, d, true);
+    let module = syntax::parse(&source).map_err(fail)?;
+    let holes = check::holes(&module).map_err(fail)?;
+    let [hole] = holes.as_slice() else {
+        return Err("completion requires exactly one typed hole in the module".into());
+    };
+    if hole.name != opts.name {
+        return Err(format!("unknown hole '{}'", opts.name));
+    }
+    let function = edit::target(&module, &hole.function)?;
+    let manual = opts.fragment.is_some();
+    let candidates = if let Some(file) = &opts.fragment {
+        vec![fs::read_to_string(file).map_err(|e| e.to_string())?]
+    } else {
+        grammar(&module, hole, opts.limit)
+    };
+    let truncated = candidates.len() > opts.limit;
+    let calls = if manual || function.params.len() > 16 {
+        vec![]
+    } else {
+        product(
+            &function
+                .params
+                .iter()
+                .map(|p| samples(&module, p.ty, 0))
+                .collect::<Vec<_>>(),
+            PROBE_LIMIT,
+        )
+    };
+    let mut witnesses: Vec<(usize, Vec<Value>)> = vec![];
+    let mut tested = 0;
+    let mut survivors = 0;
+    let mut incomplete = module.contracts.is_empty();
+    let mut winner: Option<Winner> = None;
+    // An exhausted interpreter run gives no observation. A later pair of
+    // terminating candidates may still disagree on this same probe.
+    let mut observations: Vec<Option<(String, String)>> = vec![None; calls.len()];
+    let mut detail = String::new();
+    let mut ambiguous = false;
+    if !incomplete {
+        for expr in candidates.into_iter().take(opts.limit) {
+            tested += 1;
+            let (text, candidate) = match fill(&opts, &source, function, hole, &expr) {
+                Ok(v) => v,
+                Err(e) => {
+                    if manual {
+                        detail = format!(",\"diagnostic\":{}", json_string(&e));
+                    }
+                    continue;
+                }
+            };
+            if witnesses.iter().any(|(i, vs)| {
+                known_bad(&interpreter::eval_contract(
+                    &candidate,
+                    &candidate.contracts[*i],
+                    vs.clone(),
+                    interpreter::DEFAULT_FUEL,
+                    &mut (),
+                ))
+            }) {
+                continue;
+            }
+            let mut remaining = opts.budget;
+            let mut passed = true;
+            for (i, contract) in candidate.contracts.iter().enumerate() {
+                let row = verify::evaluate(&candidate, contract, remaining)?;
+                remaining -= row.checked;
+                match row.outcome {
+                    verify::Outcome::Passed => continue,
+                    verify::Outcome::Counterexample { args, .. } => witnesses.push((i, args)),
+                    verify::Outcome::Incomplete(_) => incomplete = true,
+                }
+                passed = false;
+                break;
+            }
+            if !passed {
+                if manual {
+                    detail = format!(
+                        ",\"verification\":{}",
+                        verification(&candidate, &text, opts.budget)?
+                    );
+                }
+                continue;
+            }
+            survivors += 1;
+            for (args, previous) in calls.iter().zip(&mut observations) {
+                let Some(current) = outcome(interpreter::invoke(
+                    &candidate,
+                    &function.name,
+                    args.clone(),
+                    interpreter::DEFAULT_FUEL,
+                    &mut (),
+                ))?
+                else {
+                    continue;
+                };
+                if let Some((first, prior)) = previous {
+                    if *prior != current {
+                        detail = format!(
+                            ",\"question\":{{\"function\":{},\"inputs\":{},\"alternatives\":[{{\"expression\":{},\"outcome\":{prior}}},{{\"expression\":{},\"outcome\":{current}}}]}}",
+                            json_string(&function.name),
+                            inputs_json(function, args)?,
+                            json_string(first),
+                            json_string(&expr)
+                        );
+                        ambiguous = true;
+                        break;
+                    }
+                } else {
+                    *previous = Some((expr.clone(), current));
+                }
+            }
+            if ambiguous {
+                break;
+            }
+            if winner.is_none() {
+                winner = Some(Winner {
+                    expression: expr.trim().to_owned(),
+                    report: verification(&candidate, &text, opts.budget)?,
+                    source: text,
+                });
+            }
+        }
+    } else {
+        detail = ",\"reason\":\"no_contracts\"".into();
+    }
+    if fs::read(&opts.file).map_err(|e| e.to_string())? != source.as_bytes() {
+        return Err("source changed during completion".into());
+    }
+    let (status, code) = if ambiguous {
+        ("ambiguous", 3)
+    } else if winner.is_some() {
+        ("verified", 0)
+    } else if incomplete || truncated {
+        ("incomplete", 3)
+    } else {
+        ("rejected", 1)
+    };
+    let selected = if code == 0 { winner.as_ref() } else { None };
+    if let Some(w) = selected {
+        detail = format!(
+            ",\"selected\":{},\"verification\":{}",
+            json_string(&w.expression),
+            w.report
+        );
+    }
+    let report = format!(
+        "{{\"schema\":\"gpp.complete/1\",\"revision\":{},\"hole\":{},\"status\":{},\"tested\":{tested},\"witnesses\":{},\"passing_candidates_seen\":{survivors},\"candidate_limit\":{},\"grammar_truncated\":{truncated},\"probe_calls_per_passing_candidate\":{}{} }}",
+        json_string(&revision),
+        json_string(&hole.name),
+        json_string(status),
+        witnesses.len(),
+        opts.limit,
+        calls.len(),
+        detail
+    );
+    if opts.stdout {
+        if let Some(w) = selected {
+            print!("{}", w.source);
+        } else {
+            eprintln!("{report}");
+        }
+    } else {
+        println!("{report}");
+    }
+    Ok(code)
+}

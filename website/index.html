@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#12151f">
   <title>GPT++ · A language made by AI, for AI</title>
-  <meta name="description" content="GPT++ is an experimental language for coding agents. Write a finite contract, get a counterexample and check an edit across every declared input.">
+  <meta name="description" content="GPT++ is an experimental language for coding agents. Leave a typed decision open, check its possible completions and run the resulting component from Python or Rust.">
   <link rel="canonical" href="https://gptpp.sandoog.co/">
   <meta property="og:type" content="website">
   <meta property="og:title" content="GPT++ · A language made by AI, for AI">
-  <meta property="og:description" content="A programming language for coding agents, with finite behavior contracts, counterexamples and revision-bound expression edits.">
+  <meta property="og:description" content="A programming language for coding agents with typed holes, executable contracts and native libraries. Try the reservation verifier in your browser.">
   <meta property="og:url" content="https://gptpp.sandoog.co/">
   <meta property="og:image" content="https://gptpp.sandoog.co/assets/social-card.png">
   <meta property="og:image:alt" content="GPT++ logo and the words A language made by AI, for AI.">
@@ -42,9 +42,9 @@
       <div class="hero-copy">
         <p class="eyebrow"><span class="status-block" aria-hidden="true"></span> Free and open project</p>
         <h1 id="hero-title">A language<br>made by AI,<br><em>for AI.</em></h1>
-        <p class="hero-description">GPT++ is an experimental programming language designed for coding agents. An agent can state how a program should behave, ask the compiler for a failing input, and check an edit across every input its contract covers.</p>
+        <p class="hero-description">GPT++ is an experimental programming language designed for coding agents. Give the compiler a rule and leave a typed decision open. It can search for a completion, check its behavior, or return a concrete question when two answers disagree.</p>
         <div class="actions">
-          <a class="button button-primary" href="#finite-contracts">Try a contract</a>
+          <a class="button button-primary" href="#finite-contracts">Check a reservation</a>
           <a class="button button-outline" href="https://github.com/MightyBloodHub/gptpp/">View source</a>
         </div>
       </div>
@@ -59,63 +59,28 @@
       </div>
     </section>
 
-    <section id="language" class="language" aria-labelledby="language-title">
-      <div class="frame language-grid">
-        <div class="section-intro">
-          <p class="eyebrow">The language</p>
-          <h2 id="language-title">What does an agent need to make an edit?</h2>
-          <p>A wrong return value gives an agent an outcome. GPT++ also gives it the expressions that produced that outcome, in a form it can inspect and change.</p>
-        </div>
-        <dl class="principles">
-          <div>
-            <dt>Values from a real call</dt>
-            <dd>Run an example through the interpreter. Its JSON trace pairs expressions with their types, execution counts and observed values, including the local variables in scope.</dd>
-          </div>
-          <div>
-            <dt>An address for each expression</dt>
-            <dd>Every site in the trace has a byte range tied to the source revision. A model can submit one replacement even when the same expression appears twice.</dd>
-          </div>
-          <div>
-            <dt>A rule for the whole input domain</dt>
-            <dd>A finite contract names a property and its allowed inputs. An agent can check its edit against the same property and use the first counterexample to inspect the failing call.</dd>
-          </div>
-        </dl>
-      </div>
-    </section>
-
     <section id="finite-contracts" class="contracts" aria-labelledby="contracts-title">
       <div class="frame contract-frame">
         <div class="repair-copy contract-intro">
-          <p class="eyebrow">Finite contracts</p>
-          <h2 id="contracts-title">Can this queue admit one more item?</h2>
-          <p>The queue has eight slots. Check every queue size from zero through eight with the GPT++ compiler in your browser. Edit the module or load a version that admits an item when the queue is full.</p>
+          <p class="eyebrow">Reservation ledger · Live compiler</p>
+          <h2 id="contracts-title">Does cancelling twice free two seats?</h2>
+          <p>A and B each hold a seat. Cancel A twice and B should still hold its booking, with one seat available. Run the actual reservation module in your browser, then introduce a double release to see which history fails.</p>
         </div>
         <form class="contract-playground" id="contract-playground" hidden>
           <div class="contract-editor">
             <div class="contract-editor-head">
-              <label for="contract-source">Module source</label>
+              <label for="contract-example">Module</label>
+              <select id="contract-example">
+                <option value="booking">Reservation ledger</option>
+                <option value="queue">Eight-slot queue</option>
+              </select>
               <div class="contract-presets">
-                <button type="button" data-load-bug>Load faulty example</button>
+                <button type="button" data-load-bug>Introduce double release</button>
                 <button type="button" data-reset-source>Reset</button>
               </div>
             </div>
-            <textarea id="contract-source" aria-label="GPT++ module source" maxlength="32768" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="soft">module demo.capacity;
-
-fn can_admit(queued: I64) -&gt; Bool !{} {
-    return queued &lt; 8;
-}
-
-contract respects_capacity(
-    queued: I64 in 0..=8,
-) {
-    can_admit(queued)
-        == (queued + 1 &lt;= 8)
-}
-
-pub fn main() -&gt; I64 !{} {
-    return can_admit(7) as I64;
-}
-</textarea>
+            <textarea id="contract-source" aria-label="GPT++ module source" maxlength="32768" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="soft">GPP_BOOKING_SOURCE</textarea>
+            <template id="queue-example">GPP_QUEUE_SOURCE</template>
           </div>
           <div class="contract-console">
             <div class="contract-run">
@@ -134,16 +99,49 @@ pub fn main() -&gt; I64 !{} {
           </div>
         </form>
         <details class="contract-terminal" open>
-          <summary>Run the same verifier from the terminal</summary>
+          <summary>Run the reservation component locally</summary>
           <pre class="replay-code"><code>cargo build --locked --offline
-target/debug/gpp verify \
-  examples/capacity.gpp \
-  --format=json</code></pre>
-          <p>The checked-in module passes all nine inputs. A budget of eight returns <code>incomplete</code>. Add <code>--verify</code> to a checked edit to require every contract to pass before the compiler writes it.</p>
-          <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/examples/capacity.gpp">Example source</a>
-          <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/docs/scalar-language.md#verify-a-finite-contract">Reproduce the counterexample</a>
-          <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/tools/README.md#repair-an-expression-against-source-contracts">Repair the expression</a>
+target/debug/gpp verify examples/reservations/booking.gpp
+python3 examples/reservations/check.py</code></pre>
+          <p>The verifier checks 340 histories of one to four actions, starting with two free seats, plus one sold-out case. The integration test builds a shared library and calls it from a persistent SQLite booking CLI in Python and an independent Rust client. Both reproduce the extra release with the defective library and pass after swapping in the completed component.</p>
+          <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/examples/reservations/README.md">Run the Python and Rust clients</a>
+          <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/examples/reservations/booking.gpp">Read the module</a>
         </details>
+        <details class="contract-terminal">
+          <summary>Complete a typed hole and prove cancellation locally</summary>
+          <pre class="replay-code"><code>python3 examples/reservations/check.py --sketch outcome &gt; target/sketch.gpp
+target/debug/gpp complete target/sketch.gpp --hole repeat
+
+cat examples/reservations/booking.gpp \
+  examples/reservations/cancellation.proof.gpp.inc &gt; target/booking-proof.gpp
+target/debug/gpp prove target/booking-proof.gpp</code></pre>
+          <p>The browser runs the finite verifier. The native <code>prove</code> command uses Z3 on the unchanged booking transition and its three additional cancellation properties. Install Z3 to run the symbolic proof.</p>
+          <p>GPT++ with Z3, Rust with Kani/CBMC and typed Python with CrossHair all verified the three cancellation properties and caught an introduced double release. GPT++ checked the shipped transition. The Rust and Python checks used equivalent hand-written cancellation code. <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/bench/verifiers/README.md">Compare the three verifiers</a></p>
+        </details>
+      </div>
+    </section>
+
+    <section id="language" class="language" aria-labelledby="language-title">
+      <div class="frame language-grid">
+        <div class="section-intro">
+          <p class="eyebrow">The language</p>
+          <h2 id="language-title">How does an agent finish an open decision?</h2>
+          <p>The reservation module uses records for state and enums for booking decisions. A typed hole lets an agent leave one expression open while keeping its callers and behavioral contracts intact.</p>
+        </div>
+        <dl class="principles">
+          <div>
+            <dt>Fill a typed hole</dt>
+            <dd>Replace the repeated-cancellation outcome with <code>?repeat: Outcome</code>. The compiler tested 25 expressions, found five that passed the finite contracts, and selected <code>Outcome::Ok</code>. The completed module matched the shipped source byte for byte. <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/examples/reservations/README.md#complete-a-typed-decision">Run the completion</a></dd>
+          </div>
+          <div>
+            <dt>Ask when the contract leaves a choice</dt>
+            <dd>Leaving the available seat count open produced two passing behaviors. The compiler asked about a repeated cancellation with eight seats free. One candidate kept eight seats available. Another capped the answer at two.</dd>
+          </div>
+          <div>
+            <dt>Prove cancellation across the integer range</dt>
+            <dd>The native CLI can send supported predicates to Z3. The reservation proof covers repeated cancellations and unknown IDs at every nonnegative I64 seat count. It also covers cancelling an active booking twice wherever releasing one seat fits in I64. The solver proved eight obligations in the combined module. <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/examples/reservations/cancellation.proof.gpp.inc">Read the full-width contracts</a></dd>
+          </div>
+        </dl>
       </div>
     </section>
 
@@ -213,6 +211,7 @@ target/debug/gpp verify \
           <p>Every result starts with a behavioral check. We track how many changes pass, what the model read and wrote, how long the tools ran, and whether anyone supplied extra answers.</p>
         </div>
         <div class="research-links">
+          <a class="research-link" href="#stateful-results"><span>New stateful change requests</span><span aria-hidden="true">+</span></a>
           <a class="research-link" href="#contract-results"><span>Contract-guided repairs</span><span aria-hidden="true">+</span></a>
           <a class="research-link" href="#scalar-replay"><span>New scalar operations and replay</span><span aria-hidden="true">+</span></a>
           <a class="research-link" href="#workflow-comparison"><span>GPT++, typed Python and Rust</span><span aria-hidden="true">+</span></a>
@@ -222,13 +221,39 @@ target/debug/gpp verify \
           <a class="research-link" href="#benchmarks"><span>Earlier expression benchmarks</span><span aria-hidden="true">+</span></a>
         </div>
       </div>
+      <article id="stateful-results" class="frame" aria-labelledby="stateful-title">
+        <div class="repair-result">
+          <div class="repair-copy">
+            <p class="eyebrow">Matched model study · 21 November 2026</p>
+            <h3 id="stateful-title">Which state changes did the models get right?</h3>
+            <p>Two models attempted four new state-machine changes in each language. The four tasks contained 18 public sequences and 4,350 withheld sequences. Each patch passing public checks was scored on its task’s withheld sequences. Each assignment allowed up to two model calls.</p>
+            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/bench/stateful/protocol.md">Read the frozen protocol</a>
+          </div>
+          <div class="repair-evidence">
+            <table>
+              <caption>Eight model assignments per language</caption>
+              <thead><tr><th scope="col">Language</th><th scope="col">Accepted</th><th scope="col">Tokens per accepted</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">GPT++</th><td>2 / 8</td><td>2,813.5</td></tr>
+                <tr><th scope="row">Typed Python</th><td>2 / 8</td><td>2,847</td></tr>
+                <tr><th scope="row">Rust</th><td>2 / 8</td><td>3,042.5</td></tr>
+              </tbody>
+            </table>
+            <p>All three languages solved the same two assignments. Qwen2.5-Coder 7B solved two tasks on its first attempt in each language. StarCoder2 3B repeated the example placeholder on all 24 of its attempts. The 24 assignments used 42 model calls. Token costs include every failed attempt.</p>
+            <p>With no model, the same ordered expression search solved three of four families in every language. GPT++’s separate automatic completion solved two of four. Both controls missed the streak update that Qwen supplied. This four-family comparison found zero paired correctness wins or losses between languages.</p>
+            <p>One accepted GPT++ change was <code>max(s.best, s.streak + 1)</code>. The interpreter and an optimized shared library called from Python both matched 1,088 withheld sequence end states for this streak counter.</p>
+            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/bench/stateful/results.md">Inspect outcomes and costs</a>
+            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/tree/master/examples/streak_counter">Replay the streak counter</a>
+          </div>
+        </div>
+      </article>
       <article id="contract-results" class="frame" aria-labelledby="contract-results-title">
         <div class="repair-result">
           <div class="repair-copy">
             <p class="eyebrow">Contract-guided repair · 21 November 2026</p>
             <h3 id="contract-results-title">Which edits satisfy the whole contract?</h3>
             <p>The study compared two examples per task with a predicate covering every declared input. Three scalar tasks exercised signed carry, capacity limits and integer blocks. Each candidate changed one expression.</p>
-            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/bench/contracts/protocol.md">Read the frozen protocol</a>
+            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/bd79507b1c731e674e078e69607f5ef469c3f2fb/bench/contracts/protocol.md">Read the frozen protocol</a>
           </div>
           <div class="repair-evidence">
             <table>
@@ -243,8 +268,8 @@ target/debug/gpp verify \
             <p><strong>Checking all 73 input tuples ruled out six of ten edits.</strong> Both remaining carry edits satisfy the declared domain, so the tool reported an ambiguous choice. One of those edits failed three of five additional inputs outside that domain.</p>
             <p>In a separate search on the same fixtures, the first contract-verified edit passed on all three tasks. Taking the first edit from example-only search passed on two. The searches used different substitutions and ordering. Neither used a model. GPT++, Python and Rust agreed on all 373 program/input outcomes per language.</p>
             <p>In a separate model study on the same tasks, Qwen2.5-Coder 7B repaired capacity on its first attempt and finished at 1 of 3. StarCoder2 3B finished at 0 of 3. The two models made 11 recorded calls.</p>
-            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/bench/contracts/results.md">See the deterministic results</a>
-            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/bench/contracts/model-results.md">See the model-generated edits</a>
+            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/bd79507b1c731e674e078e69607f5ef469c3f2fb/bench/contracts/results.md">See the deterministic results</a>
+            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/bd79507b1c731e674e078e69607f5ef469c3f2fb/bench/contracts/model-results.md">See the model-generated edits</a>
           </div>
         </div>
       </article>
@@ -256,7 +281,7 @@ target/debug/gpp verify \
             <p>A model wrote this expression to find the smallest whole-tick count that covers a delay in milliseconds. Its algorithm needed the remainder test to produce 0 or 1. The earlier compiler rejected the explicit conversion.</p>
             <pre class="replay-code"><code>milliseconds / 1000
   + (milliseconds % 1000 != 0) as I64</code></pre>
-            <p>The language now supports <code>as I64</code> for booleans and integer <code>min</code>, <code>max</code> and <code>clamp</code>. We rebuilt and tested the exact saved model replies on this compiler.</p>
+            <p>The language now supports <code>as I64</code> for booleans and integer <code>min</code>, <code>max</code> and <code>clamp</code>. The compatibility replay tested the exact saved model replies on the release that introduced these operations.</p>
           </div>
           <div class="repair-evidence">
             <table>
@@ -270,7 +295,7 @@ target/debug/gpp verify \
             </table>
             <p><strong>Qwen went from 0 of 3 accepted to 3 of 3 on replay.</strong> The fixes passed all 36 withheld checks and 879 additional direct inputs. Charging all 3,105 original tokens gives 1,035 tokens per accepted edit. The replay made zero new model calls.</p>
             <p>We chose these operations after inspecting the original failures. StarCoder2 remained at 0 of 3 on the new contracts, and neither model solved a historical fix on replay.</p>
-            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/bench/expression/results/compat.md">Read the compatibility replay</a>
+            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/d5ccb179cbde192a8fe8b65007b61776647e79f5/bench/expression/results/compat.md">Read the compatibility replay</a>
           </div>
         </div>
       </article>
@@ -320,9 +345,9 @@ target/debug/gpp verify \
           <p>On the new contracts, Qwen repaired timeout rounding in typed Python and bounded accumulation in both typed Python and Rust. The original GPT++ compiler accepted no fix. StarCoder2 solved none of the new contracts.</p>
           <p>The same workflow also attempted three historical fixes from Redis, FastLED and Go. All 18 assignments ended without a repair. Together the two studies used 71 model calls across 36 assignments.</p>
           <p>Each total covers all three assigned tasks, including failed attempts. A dash means zero edits passed, so tokens per accepted edit are undefined. Workflow time includes model calls and local validation. All arms used the same three public examples per task and received no extra oracle answers.</p>
-          <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/bench/expression/results/fresh-agent.md">New-contract trial records</a>
-          <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/bench/expression/results/agent.md">Historical trial records</a>
-          <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/commits/master/">Scorecard source history</a>
+          <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/d5ccb179cbde192a8fe8b65007b61776647e79f5/bench/expression/results/fresh-agent.md">New-contract trial records</a>
+          <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/d5ccb179cbde192a8fe8b65007b61776647e79f5/bench/expression/results/agent.md">Historical trial records</a>
+          <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/commit/d5ccb179cbde192a8fe8b65007b61776647e79f5">Original scorecard release</a>
         </div>
       </article>
       <article id="compiler-timing" class="frame" aria-labelledby="timing-title">
@@ -343,7 +368,7 @@ target/debug/gpp verify \
               </tbody>
             </table>
             <p>Across these workloads the speedup was <strong>21.10×</strong> on this host. Individual changes ranged from 1.01× for an empty Go menu to 39.18× for FastLED’s distinguishing inputs. The sum of median CPU times fell from 26.21 to 1.27 seconds. Both debug builds returned identical menus and questions across all three repetitions.</p>
-            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/bench/expression/results/probe.md">Read per-workload timings</a>
+            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/d5ccb179cbde192a8fe8b65007b61776647e79f5/bench/expression/results/probe.md">Read per-workload timings</a>
           </div>
         </div>
       </article>
@@ -355,7 +380,7 @@ target/debug/gpp verify \
             <p>Each reference program made two million calls and produced the same checksum in every language. GPT++ and Rust ran as optimized native executables with checked arithmetic. Python ran under its interpreter.</p>
             <p>Elapsed time includes process startup. Peak resident memory and elapsed time are medians of three runs on the same Mac. Build time is one measurement per program and includes bytecode compilation for Python.</p>
             <p>GPT++ had the lowest observed runtime and peak memory on each loop. Rust built its native programs faster. Native runs took only 7–8 milliseconds, so startup and scheduling affect the ordering.</p>
-            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/bench/runtime/results.md">Read the runtime and memory measurements</a>
+            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/d5ccb179cbde192a8fe8b65007b61776647e79f5/bench/runtime/results.md">Read the runtime and memory measurements</a>
           </div>
           <div class="repair-evidence runtime-evidence">
             <table>
@@ -411,8 +436,8 @@ target/debug/gpp verify \
             </table>
             <p>Qwen2.5-Coder 7B and StarCoder2 3B each solved one of the three tasks. Both chose the same Redis edit, which passed all 14 withheld checks. Taking the first candidate also solved Redis.</p>
             <p>Both models abstained on FastLED. Of six edits that fit its public examples, one passed every withheld check. The Go search produced an empty menu. All three extracts had been used during development.</p>
-            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/bench/expression/results/repair.md">Read trial outcomes and costs</a>
-            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/bench/expression/repair-protocol.md">Read the study protocol</a>
+            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/245cb7ea99d834780a9838571d3f6e0af9a467e7/bench/expression/results/repair.md">Read trial outcomes and costs</a>
+            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/245cb7ea99d834780a9838571d3f6e0af9a467e7/bench/expression/repair-protocol.md">Read the study protocol</a>
           </div>
         </div>
         <div class="repair-result">
@@ -431,7 +456,7 @@ target/debug/gpp verify \
               </tbody>
             </table>
             <p>The remaining edit passed all 14 withheld FastLED checks. With the two extra answers, the tool solved <strong>2 of 3 tasks</strong> across 912 candidate executions and zero model calls. The two Redis edits agreed on all 24 probes and the first passed. Go still had no candidate.</p>
-            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/bench/expression/results/distinguish.md">Read the oracle-assisted results</a>
+            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/245cb7ea99d834780a9838571d3f6e0af9a467e7/bench/expression/results/distinguish.md">Read the oracle-assisted results</a>
           </div>
         </div>
       </article>
@@ -470,7 +495,7 @@ target/debug/gpp verify \
             <a href="/assets/benchmarks/token-cost.png" aria-label="Open full-size chart of tokens per accepted fix">
               <img src="/assets/benchmarks/token-cost.png" width="1254" height="1034" alt="With the site supplied, StarCoder2 spent 908 tokens per accepted GPT++ fix and 897 per Rust fix. GPT++ and Rust each accepted one of three fixes. Typed Python accepted zero fixes, so its cost per accepted fix was undefined." loading="lazy">
             </a>
-            <figcaption>StarCoder2 repaired the same Redis bug in GPT++ and Rust when given the site and one attempt per task. The observed GPT++ cost was 1.23% higher.</figcaption>
+            <figcaption>StarCoder2 repaired the same Redis bug in GPT++ and Rust when given the site and one attempt per task. GPT++ spent 11 more tokens than Rust across the three attempts. Typed Python had zero accepted fixes, so its tokens per accepted fix could not be calculated.</figcaption>
           </figure>
         </div>
 

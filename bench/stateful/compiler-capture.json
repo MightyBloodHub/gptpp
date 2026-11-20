@@ -1,0 +1,21 @@
+{
+  "parent_commit": "bd79507",
+  "compiler_binary_sha256": "6429e6e7316b46fe341f2a947b7a595ef478a2cd724ea5e6882cee677a476f74",
+  "source_snapshot_note": "Workspace source fingerprints associated with the development compiler copied before the first completion request. Later release changes may affect independent proof backends; replay checks actual behavior.",
+  "sources": {
+    "src/check.rs": "096f408053515a283e4c35e1f2378170cdb65d152a6ec88b06334d05925f624f",
+    "src/complete.rs": "a5203ff5f49bd3bb75758276bb6fb645763014a0c32f486a4d2fdae7f5309b90",
+    "src/edit.rs": "3ead5576f589650fe4b5d7580320c228cd2dbdc86b5275a5b22bfaea72b9e7ba",
+    "src/holes.rs": "720f216cee9d2f835b0c926cb3b3140222617ffd05a9425b8d555b3707571ead",
+    "src/interpreter.rs": "51b22fbc2037aabceaabc7aade33d7660ebef3f3a14f33b7e72dac215234d2c5",
+    "src/ir.rs": "7d53ee049c92bd1bb4e2e10e9c729a93001f17089ebe637450032597a3328f6f",
+    "src/library.rs": "7c5bdf794533b67985bc354ef67111d0df7df78ff1de2a36aae05d715120b446",
+    "src/main.rs": "16224d5c6668465cab64387e45f304973cc7fbdb5b4052fd494de93091f80860",
+    "src/native.rs": "fe9b1bbfc80c41f6b2e5758b7a9ffdd718bea54d968f40e910539dbe626c8995",
+    "src/probe.rs": "d424f5d4b73d0f6ce731f77c5ed1a64923f4627bf791f4a7c7a88094eb055e85",
+    "src/symbolic.rs": "2613532e6cf9f84455624518564bbc5534d50df3e2ccfd91d553d70c46cdca37",
+    "src/syntax.rs": "d4e567fecd2e08da61ace8c15c48ca364d6860d84b6d41d3ddb9ea0d561758d6",
+    "src/trace.rs": "51b5a6f61d309fdc6cc47fdc9bb61e5ea4e138a8b078cbdbd0e4595d9eee8252",
+    "src/verify.rs": "fb33cd2125d193c82ec7007121093b6ebf22da69cc3dc09728f49d387e404180"
+  }
+}

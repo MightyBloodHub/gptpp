@@ -1,0 +1,20 @@
+module study.transition;
+enum Event { Hit, Miss, Restart }
+record State { streak: I64, best: I64 }
+fn step(s: State, e: Event) -> State !{} {
+    if e == Event::Hit { return State(s.streak + 1, max(s.best, s.streak + 1)); }
+    if e == Event::Miss { return State(0, s.best); }
+    return State(0, 0);
+}
+pub fn main() -> I64 !{} { return 0; }
+contract visible_0() { step(State(0, 0), Event::Hit).streak == 1 && step(State(0, 0), Event::Hit).best == 1 }
+contract visible_1() { step(step(step(step(State(0, 0), Event::Hit), Event::Hit), Event::Miss), Event::Hit).streak == 1 && step(step(step(step(State(0, 0), Event::Hit), Event::Hit), Event::Miss), Event::Hit).best == 2 }
+contract visible_2() { step(step(State(0, 0), Event::Hit), Event::Restart).streak == 0 && step(step(State(0, 0), Event::Hit), Event::Restart).best == 0 }
+contract visible_3() { step(step(State(0, 0), Event::Miss), Event::Hit).streak == 1 && step(step(State(0, 0), Event::Miss), Event::Hit).best == 1 }
+
+// Scalar ABI added after scoring. Event codes are Hit (0), Miss (1) and Restart (2).
+pub fn next_field(streak: I64, best: I64, event_code: I64, want_best: Bool) -> I64 !{} {
+    let event = if event_code == 0 { Event::Hit } else { if event_code == 1 { Event::Miss } else { Event::Restart } };
+    let after = step(State(streak, best), event);
+    return if want_best { after.best } else { after.streak };
+}

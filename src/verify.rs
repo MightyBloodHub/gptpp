@@ -10,7 +10,7 @@ use std::path::PathBuf;
 const USAGE: &str = "gpp verify FILE [--contract NAME] [--budget N] [--format=json]";
 pub(crate) const DEFAULT_BUDGET: u64 = 10_000;
 
-enum Outcome {
+pub(crate) enum Outcome {
     Passed,
     Counterexample {
         args: Vec<Value>,
@@ -29,10 +29,10 @@ impl Outcome {
     }
 }
 
-struct Report<'a> {
+pub(crate) struct Report<'a> {
     contract: &'a Contract,
-    checked: u64,
-    outcome: Outcome,
+    pub(crate) checked: u64,
+    pub(crate) outcome: Outcome,
 }
 
 fn first(domain: Domain) -> Value {
@@ -45,12 +45,12 @@ fn first(domain: Domain) -> Value {
 /// Carry the rightmost binding first. No product or range length must fit a machine integer.
 fn advance(domains: &[Domain], values: &mut [Value]) -> bool {
     for (&domain, slot) in domains.iter().zip(values).rev() {
-        match (domain, *slot) {
+        match (domain, &*slot) {
             (Domain::Bool, Value::Bool(false)) => {
                 *slot = Value::Bool(true);
                 return true;
             }
-            (Domain::I64 { high, .. }, Value::Int(n)) if n < high => {
+            (Domain::I64 { high, .. }, Value::Int(n)) if *n < high => {
                 *slot = Value::Int(n + 1);
                 return true;
             }
@@ -60,7 +60,7 @@ fn advance(domains: &[Domain], values: &mut [Value]) -> bool {
     false
 }
 
-fn evaluate<'a>(
+pub(crate) fn evaluate<'a>(
     module: &'a Module,
     contract: &'a Contract,
     limit: u64,
@@ -120,14 +120,14 @@ fn write_report(out: &mut impl Write, row: &Report<'_>) -> io::Result<()> {
                     write!(out, ",")?;
                 }
                 write!(out, "{}:", json_string(&param.name))?;
-                trace::write_value(out, *value)?;
+                trace::write_value(out, value.clone())?;
             }
             write!(out, "}},\"args\":[")?;
             for (i, value) in args.iter().enumerate() {
                 if i > 0 {
                     write!(out, ",")?;
                 }
-                trace::write_value(out, *value)?;
+                trace::write_value(out, value.clone())?;
             }
             write!(out, "],")?;
             match fault {

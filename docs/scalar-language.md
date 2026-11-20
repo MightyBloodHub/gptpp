@@ -1,6 +1,37 @@
 # GPT++ scalar language reference
 
-This page describes the language implemented by the current `gpp` compiler. [Grammar](../spec/grammar.ebnf) · [Example program](../examples/add.gpp) · [Long-form design](design.md)
+This page describes the scalar and structured-value profile implemented by the current `gpp` compiler. [Grammar](../spec/grammar.ebnf) · [Example program](../examples/add.gpp) · [Long-form design](design.md)
+
+## Complete a state transition
+
+GPT++ supports named records, enums and typed expression holes. The reservation component uses a record to return the new seat count, the booking state and an explicit outcome. Records are flat and may contain scalar values or enum tags. Constructors take fields in declaration order. A record can be returned, passed to another function, projected with `.` or compared for equality with another value of the same named type. Enum tags use `Type::Variant`. [Complete application and both host clients](../examples/reservations/README.md)
+
+A function can leave an expression such as `?repeat: Outcome` unfinished. The compiler checks the surrounding function and reports which locals are in scope. Ordinary execution and native builds require a complete module. From the repository root, the following commands create the reservation sketch, inspect its hole and write a verified completion to a new file.
+
+```sh
+cargo build --locked --offline
+python3 examples/reservations/check.py --sketch > target/booking-sketch.gpp
+target/debug/gpp holes target/booking-sketch.gpp
+target/debug/gpp complete target/booking-sketch.gpp --hole repeat
+target/debug/gpp complete target/booking-sketch.gpp --hole repeat --stdout > target/completed-booking.gpp
+target/debug/gpp verify target/completed-booking.gpp
+```
+
+Use the hole name from the inspector. Automatic completion enumerates a bounded grammar drawn from lexical variables, record fields, enum tags, small integers, comparisons, arithmetic and conditionals. It checks each candidate in the whole program and reuses failing contract inputs to reject subsequent candidates. A completed module passes every declared finite contract within its assignment budget. Supply `--fill expression.txt` to check a model's own expression through the same entry point. The initial profile accepts exactly one hole per module. `--expect` can pin the input revision.
+
+The default search limit is 256 candidate expressions and 10,000 assignments per complete verification. When passing expressions give different results on a direct probe, the result includes the function, concrete input and two observed outcomes. The finite probe list can miss differences. A verified selection is the first passing candidate in grammar order among the candidates examined when the search found no such disagreement. The JSON includes the checked domain, candidate count, truncation flag and probe count. An ambiguous or incomplete search exits with status 3. A rejected expression exits with status 1. With `--stdout`, a successful command emits a complete module and failures leave stdout empty.
+
+## Prove a contract across a full integer range
+
+`gpp prove` translates checked expressions to Z3 bit vectors and nominal datatypes and asks whether the contract can return false or raise a semantic fault. Install Z3 on the command search path to use this optional command. Its supported fragment includes checked signed arithmetic, branches, immutable locals, records, enums and acyclic function calls. It models short-circuit evaluation, signed overflow, truncating division, signed remainder and faults in discarded eager arguments. It reports unsupported loops, writes or recursion explicitly. A proof covers the declared input range under the source semantics. Native ABI, host storage and interpreter resource limits have separate tests.
+
+```sh
+cat examples/reservations/booking.gpp examples/reservations/cancellation.proof.gpp.inc > target/booking-proofs.gpp
+target/debug/gpp prove target/booking-proofs.gpp --contract active_cancel_twice
+target/debug/gpp prove target/booking-proofs.gpp
+```
+
+The full-width cancellation property calls the production transition twice and compares its complete record with the expected count, state and outcome. An active booking owns one seat, so the initial number of available seats can range from zero through `I64::MAX - 1`. For an already cancelled or unseen booking, the properties also cover `I64::MAX`. A satisfiable solver result is reported as refuted only after the reference interpreter reproduces the failure on its model. Solver timeouts, unavailable models or unavailable Z3 yield `unknown`. `--timeout-ms N` sets the solver timeout per query. The solver and its translation are trusted for the `proved` outcome. [Executable proof obligations](../examples/reservations/cancellation.proof.gpp.inc)
 
 ## Language card
 
@@ -17,7 +48,7 @@ This page describes the language implemented by the current `gpp` compiler. [Gra
 | Arithmetic | Integer addition, subtraction, multiplication, and unary negation check for overflow. Division truncates toward zero. Division or remainder by zero faults. The minimum `I64` divided by −1 overflows. The corresponding remainder is zero. |
 | Limits | The parser bounds nesting and expression height at 64. The interpreter defaults to one million steps and bounds evaluation nesting at 128. Set the step budget with `--fuel N`. Native programs use the host's resources and should be trusted. |
 
-The compiler supports single-file scalar modules today. The [roadmap](../ROADMAP.md) tracks broader features such as imports, records, collections, recoverable errors, and capabilities.
+The compiler supports single-file scalar modules today. The [roadmap](../ROADMAP.md) tracks broader features such as imports, collections, payload-carrying variants, and capabilities.
 
 ## Inspect and diagnose
 

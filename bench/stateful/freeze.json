@@ -1,0 +1,12 @@
+{
+  "start_utc": "2026-11-20T22:46:16.519225+00:00",
+  "freeze_utc": "2026-11-20T22:49:10.282372+00:00",
+  "elapsed_seconds": 173.764,
+  "sources": {
+    "tasks.py": "4f194e80487ac5686e2825e977134b2c95eca8a316a1ff2f22ee6ecef135bcc6",
+    "protocol.md": "3f5597cc8b00a1620d4385757d6c5f08ee8d3339f02b3e3b08fa01267ddfbc77"
+  },
+  "tasks": 4,
+  "public_traces": 18,
+  "withheld_traces": 4350
+}

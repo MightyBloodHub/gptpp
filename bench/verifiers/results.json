@@ -1,0 +1,38 @@
+{
+  "properties": [
+    "active_cancel_twice",
+    "repeat_cancel",
+    "unknown_cancel"
+  ],
+  "source_sha256": {
+    "examples/reservations/booking.gpp": "89eab43f2a6db0de9c92cbc1f7b3506afa5163625164be19940438c0f62953be",
+    "examples/reservations/cancellation.proof.gpp.inc": "66ab17c3fcfa00ebf313bad76b62b1571783bfa8d00cab031818212b6e3b87f9",
+    "bench/verifiers/booking.rs": "2b29132013adeca3f46a89b1fdfb31a7e45408c576bb94e884a1530219387395",
+    "bench/verifiers/booking.py": "4a7d3b70d116b4aaec7ff639840306a4bb3ff90587e3cebe057bcf1aba8ff721"
+  },
+  "z3": "Z3 version 4.16.0 - 64 bit",
+  "gptpp": {
+    "baseline": "proved",
+    "double_release": {
+      "name": "repeat_cancel",
+      "status": "refuted",
+      "counterexample": {
+        "inputs": {
+          "available": 0
+        },
+        "result": false
+      }
+    }
+  },
+  "rust": {
+    "verifier": "Kani Rust Verifier 0.68.0 (standalone)",
+    "backend": "CBMC 6.11.0",
+    "baseline": "3 successfully verified harnesses",
+    "double_release": "repeat_cancel assertion failed"
+  },
+  "typed_python": {
+    "verifier": "0.0.114",
+    "baseline": "Confirmed over all paths.",
+    "double_release": "false when calling repeat_cancel(0) (which returns False)"
+  }
+}

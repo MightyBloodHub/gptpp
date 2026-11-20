@@ -1,0 +1,98 @@
+module reservations.booking;
+
+enum Booking { Unseen, Active, Cancelled, Invalid }
+enum Outcome { Ok, UnknownBooking, SoldOut, ClosedBooking, InvalidInput }
+record Change { available: I64, booking: Booking, outcome: Outcome }
+
+fn transition(available: I64, booking: Booking, reserve: Bool) -> Change !{} {
+    if available < 0 || booking == Booking::Invalid {
+        return Change(available, booking, Outcome::InvalidInput);
+    }
+    if reserve {
+        if booking == Booking::Active { return Change(available, booking, Outcome::Ok); }
+        if booking == Booking::Cancelled { return Change(available, booking, Outcome::ClosedBooking); }
+        if available == 0 { return Change(available, booking, Outcome::SoldOut); }
+        return Change(available - 1, Booking::Active, Outcome::Ok);
+    }
+    if booking == Booking::Unseen { return Change(available, booking, Outcome::UnknownBooking); }
+    if booking == Booking::Cancelled { return Change(available, booking, Outcome::Ok); }
+    return Change(available + 1, Booking::Cancelled, Outcome::Ok);
+}
+
+fn decode_booking(code: I64) -> Booking !{} {
+    return if code == 0 { Booking::Unseen } else if code == 1 { Booking::Active }
+        else if code == 2 { Booking::Cancelled } else { Booking::Invalid };
+}
+
+fn booking_code(booking: Booking) -> I64 !{} {
+    return if booking == Booking::Unseen { 0 } else if booking == Booking::Active { 1 }
+        else if booking == Booking::Cancelled { 2 } else { -1 };
+}
+
+fn outcome_code(outcome: Outcome) -> I64 !{} {
+    return if outcome == Outcome::Ok { 0 } else if outcome == Outcome::UnknownBooking { 1 }
+        else if outcome == Outcome::SoldOut { 2 } else if outcome == Outcome::ClosedBooking { 3 } else { 4 };
+}
+
+// Stable scalar facades for clients; the transition owns every domain decision.
+pub fn available_after(available: I64, state: I64, reserve: Bool) -> I64 !{} {
+    let change = transition(available, decode_booking(state), reserve);
+    return change.available;
+}
+
+pub fn booking_after(available: I64, state: I64, reserve: Bool) -> I64 !{} {
+    let change = transition(available, decode_booking(state), reserve);
+    return booking_code(change.booking);
+}
+
+pub fn booking_outcome(available: I64, state: I64, reserve: Bool) -> I64 !{} {
+    let change = transition(available, decode_booking(state), reserve);
+    return outcome_code(change.outcome);
+}
+
+// Verify all reserve A, cancel A, reserve B, cancel B histories through depth four.
+record Ledger { available: I64, a: Booking, b: Booking, last: Outcome }
+
+fn apply_action(ledger: Ledger, action: I64) -> Ledger !{} {
+    if action == 4 { return ledger; }
+    if action < 2 {
+        let change = transition(ledger.available, ledger.a, action == 0);
+        return Ledger(change.available, change.booking, ledger.b, change.outcome);
+    }
+    let change = transition(ledger.available, ledger.b, action == 2);
+    return Ledger(change.available, ledger.a, change.booking, change.outcome);
+}
+
+// An independent specification reads the history: a cancellation following a
+// reserve permanently closes its ID. The sentinel 4 pads shorter histories.
+fn history(reserve: I64, cancel: I64, w: I64, x: I64, y: I64, z: I64) -> Booking !{} {
+    let closed = (w == reserve && (x == cancel || y == cancel || z == cancel))
+        || (x == reserve && (y == cancel || z == cancel)) || (y == reserve && z == cancel);
+    let seen = w == reserve || x == reserve || y == reserve || z == reserve;
+    return if closed { Booking::Cancelled } else if seen { Booking::Active } else { Booking::Unseen };
+}
+
+fn correct_sequence(w: I64, x: I64, y: I64, z: I64) -> Bool !{} {
+    let empty = Ledger(2, Booking::Unseen, Booking::Unseen, Outcome::Ok);
+    let state = apply_action(apply_action(apply_action(apply_action(empty, w), x), y), z);
+    let a = history(0, 1, w, x, y, z);
+    let b = history(2, 3, w, x, y, z);
+    let before = if z < 2 { history(0, 1, 4, w, x, y) } else { history(2, 3, 4, w, x, y) };
+    let unknown = (z == 1 || z == 3) && before == Booking::Unseen;
+    let closed = (z == 0 || z == 2) && before == Booking::Cancelled;
+    let expected = if unknown { Outcome::UnknownBooking } else if closed { Outcome::ClosedBooking } else { Outcome::Ok };
+    return state.a == a && state.b == b && state.last == expected
+        && state.available == 2 - (a == Booking::Active) as I64 - (b == Booking::Active) as I64;
+}
+
+contract one_action(z: I64 in 0..=3) { correct_sequence(4, 4, 4, z) }
+contract two_actions(y: I64 in 0..=3, z: I64 in 0..=3) { correct_sequence(4, 4, y, z) }
+contract three_actions(x: I64 in 0..=3, y: I64 in 0..=3, z: I64 in 0..=3) { correct_sequence(4, x, y, z) }
+contract four_actions(w: I64 in 0..=3, x: I64 in 0..=3, y: I64 in 0..=3, z: I64 in 0..=3) {
+    correct_sequence(w, x, y, z)
+}
+contract sold_out() {
+    booking_outcome(0, 0, true) == 2 && available_after(0, 0, true) == 0 && booking_after(0, 0, true) == 0
+}
+
+pub fn main() -> I64 !{} { return 0; }

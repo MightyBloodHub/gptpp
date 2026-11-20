@@ -1,0 +1,22 @@
+{
+  "archive_sha256": "ece329cfcbd91768f7e4591105b8c4b5f1973fb89848b03487618fa77ce673ac",
+  "capture_compiler_sha256": "6429e6e7316b46fe341f2a947b7a595ef478a2cd724ea5e6882cee677a476f74",
+  "checked_release_compiler_sha256": "ecdabe3cc30cd9879f4a0239c50ffa777be1c5a3620cdbc343bde416c3620c63",
+  "release_complete_rs_sha256": "c6812c166b54eb1b8d74f805f582c4304c2427c1e1f53907f3e1faf63402382e",
+  "command": "python3 -B bench/stateful/compare.py --replay bench/stateful/results.jsonl",
+  "exit_code": 0,
+  "model_calls_reused": 42,
+  "matched_native_trials": 24,
+  "shared_grammar_controls": 12,
+  "native_automatic_controls": 4,
+  "result": "All original prompts, validation decisions, selected expressions, full withheld-outcome digests and automatic completion reports matched; no model inference.",
+  "worked_native_example": {
+    "command": "python3 -B examples/streak_counter/replay.py",
+    "model": "qwen2.5-coder:7b",
+    "task": "run_record",
+    "public_contracts": 4,
+    "withheld_end_states": 1088,
+    "interpreter": "pass",
+    "native_ctypes_library": "pass"
+  }
+}

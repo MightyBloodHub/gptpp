@@ -10,6 +10,10 @@ import { fileURLToPath } from "node:url";
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const binary = resolve(process.argv[2] ?? join(root, "target/debug/gpp"));
 const sample = readFileSync(join(root, "examples/capacity.gpp"), "utf8");
+const booking = readFileSync(join(root, "examples/reservations/booking.gpp"), "utf8");
+const repeat = "if booking == Booking::Cancelled { return Change(available, booking, Outcome::Ok); }";
+assert(booking.includes(repeat));
+const brokenLedger = booking.replace(repeat, repeat.replace("Change(available,", "Change(available + 1,"));
 const wasm = readFileSync(new URL("verify.wasm", import.meta.url));
 const { instance } = await WebAssembly.instantiate(wasm);
 const api = instance.exports;
@@ -29,6 +33,9 @@ function webVerify(source, budget) {
 
 const bare = "module demo; pub fn main() -> I64 !{} { return 0; }\n";
 const checks = [
+  [booking, 341, "passed"],
+  [booking, 340, "incomplete"],
+  [brokenLedger, 341, "counterexample"],
   [sample, 9, "passed"],
   [sample, 8, "incomplete"],
   [sample.replace("queued < 8", "queued <= 8"), 9, "counterexample"],

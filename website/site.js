@@ -93,7 +93,15 @@ function enableContractVerifier() {
   const title = result.querySelector("[data-result-title]");
   const detail = result.querySelector("[data-result-detail]");
   const reportBox = form.querySelector(".contract-json");
-  const example = source.defaultValue;
+  const preset = form.querySelector("#contract-example");
+  const bugButton = form.querySelector("[data-load-bug]");
+  const repeat = "if booking == Booking::Cancelled { return Change(available, booking, Outcome::Ok); }";
+  const booking = source.defaultValue;
+  const queue = form.querySelector("#queue-example").content.textContent;
+  const examples = {
+    booking: { source: booking, bug: booking.replace(repeat, repeat.replace("Change(available,", "Change(available + 1,")), button: "Introduce double release" },
+    queue: { source: queue, bug: queue.replace("return queued < 8;", "return queued <= 8;"), button: "Introduce off-by-one" },
+  };
   let worker = null;
   let deadline;
   let hasInteracted = false;
@@ -134,7 +142,12 @@ function enableContractVerifier() {
       const witness = row.counterexample;
       const inputs = Object.entries(witness.inputs).map(([name, value]) => name + " = " + value);
       const outcome = witness.fault ? " raised " + witness.fault : " returned false";
-      show("counterexample", "Counterexample", row.name + "(" + inputs.join(", ") + ")" + outcome + ". " + coverage, rawReport);
+      let description = row.name + "(" + inputs.join(", ") + ")" + outcome + ". " + coverage;
+      if (source.value === examples.booking.bug && row.name === "three_actions") {
+        const actions = ["reserve A", "cancel A", "reserve B", "cancel B"];
+        description = "First failing history · " + witness.args.map((index) => actions[index]).join(" → ") + ". The second cancellation releases an extra seat. " + coverage;
+      }
+      show("counterexample", "Counterexample", description, rawReport);
     } else if (report.status === "incomplete") {
       const reasons = {
         budget: "Assignment budget exhausted.",
@@ -194,15 +207,21 @@ function enableContractVerifier() {
     stopWorker();
     show("ready", "Ready to verify", "Run the verifier to check these changes.");
   });
-  form.querySelector("[data-load-bug]").addEventListener("click", () => {
-    source.value = example.replace("return queued < 8;", "return queued <= 8;");
-    verify();
-  });
-  form.querySelector("[data-reset-source]").addEventListener("click", () => {
-    source.value = example;
+  function loadExample(faulty) {
+    const example = examples[preset.value];
+    source.value = faulty ? example.bug : example.source;
+    bugButton.textContent = example.button;
     budget.value = budget.defaultValue;
+    source.scrollTop = 0;
+    if (faulty && preset.value === "booking") {
+      const line = source.value.split("Change(available + 1, booking")[0].split("\n").length;
+      source.scrollTop = Math.max(0, (line - 5) * parseFloat(getComputedStyle(source).lineHeight));
+    }
     verify();
-  });
+  }
+  preset.addEventListener("change", () => loadExample(false));
+  bugButton.addEventListener("click", () => loadExample(true));
+  form.querySelector("[data-reset-source]").addEventListener("click", () => loadExample(false));
 
   form.hidden = false;
   document.querySelector(".contract-terminal").open = false;

@@ -484,6 +484,118 @@ contract resource() {{ spins() }}
         self.assertNotEqual(invoke(GPP, "build", self.source, "-o", self.exe).returncode, 0)
         self.assertEqual(self.exe.read_bytes(), old)
 
+    def test_value_records_and_enum_tags(self):
+        helpers = """
+fn copy(s: State) -> State !{} { return State(s.n, s.tag, s.flag, ()); }
+record State { n: I64, tag: Tag, flag: Bool, empty: Unit }
+enum Tag { Old, New }
+record Empty {}
+"""
+        body = """
+    var s: State = State(-7, Tag::Old, true, ());
+    let old = s;
+    s = State(0, Tag::New, false, ());
+    let chosen = (if s != old { old } else { s }).n;
+    let equal = old == copy(old) && Empty() == Empty() && s.tag != old.tag;
+    return if equal { -copy(old).n + chosen } else { 99 };
+"""
+        self.assert_engines(module(body, helpers), "result", 0)
+        # A strict constructor evaluates discarded fields in source order.
+        self.assert_engines(module("State(1 / 0, Tag::Old, 1 + 9223372036854775807 > 1, ()); return 0;", helpers),
+                            "fault", "DivisionByZero")
+        self.source.write_text(module(body, helpers))
+        ast = invoke(GPP, "ast", self.source)
+        self.assert_ok(ast)
+        self.source.write_text(ast.stdout)
+        self.assertEqual(invoke(GPP, "ast", self.source).stdout, ast.stdout)
+        self.assert_ok(invoke(GPP, "check", self.source))
+        value = {"n": -9223372036854775808, "tag": "Tag::New", "flag": False, "empty": None}
+        traced = self.trace("copy", "copy", "State(-9223372036854775808, Tag::New, false, ())")
+        self.assertEqual(traced["args"], [value])
+        self.assertEqual(traced["result"], value)
+        row = next(r for r in traced["expressions"] if r["text"] == "s.tag")
+        self.assertEqual((row["type"], row["observations"][0]), ("Tag", {"locals": {"s": value}, "value": "Tag::New"}))
+        for invalid in ["State(0, Tag::Missing, false, ())", "State(0, Tag::New, 0, ())",
+                        "State(0, Tag::New, true, (), ())", "copy(State(0, Tag::New, false, ()))"]:
+            p = invoke(GPP, "trace", self.source, "--function", "copy", "--call", "copy", invalid)
+            self.assertNotEqual(p.returncode, 0)
+            self.assertIn("expected State", p.stderr)
+
+    def test_structured_body_edits_and_batch_probe(self):
+        source = module("return copy(R(1, E::A)).n;", """
+enum E { A, B }
+record R { n: I64, e: E }
+fn copy(r: R) -> R !{} { return R(r.n, r.e); }""")
+        self.source.write_text(source)
+        fragment = self.work / "new-body"
+        fragment.write_text("let value: R = R(r.n + 1, E::B); return value;")
+        p = invoke(GPP, "edit", self.source, "--function", "copy", "--body", fragment, "--stdout")
+        self.assert_ok(p)
+        self.assertIn("let value: R", p.stdout)
+        self.assertEqual(self.source.read_text(), source)
+        exprs = self.trace("copy", "main")
+        tag = next(r for r in exprs["expressions"] if r["text"] == "r.e")
+        cases = self.work / "calls.tsv"
+        cases.write_text("copy\tR(9, E::A)\tR(9, E::B)\n")
+        cmd = [GPP, "probe", self.source, "--function", "copy", "--expect",
+               exprs["revision"], "--cases", cases, "--filter"]
+        def frame(expr):
+            return f"{tag['start_byte']}:{tag['end_byte']} {len(expr)}\n{expr}"
+        p = subprocess.run(cmd, input=frame("E::B") + frame("r.e"), text=True,
+                           capture_output=True, timeout=10)
+        self.assert_ok(p)
+        rows = list(map(json.loads, p.stdout.splitlines()))
+        self.assertEqual([r["matches"] for r in rows[1:]], [True, False])
+        self.assertEqual(self.source.read_text(), source)
+
+    def test_nominal_types_and_typed_hole_context(self):
+        helpers = "record R { v: I64 } record S { v: I64 } enum E { X } enum F { X }"
+        for expr in ["R(1) == S(1)", "E::X == F::X", "R(true)", "E::Missing", "R(1).missing",
+                     "R(1, 2)", "E::X as I64", "R(1) as I64", "E::X < E::X"]:
+            with self.subTest(expr=expr):
+                self.source.write_text(module(f"{expr}; return 0;", helpers))
+                p = invoke(GPP, "check", "--format=json", self.source)
+                self.assertEqual(p.returncode, 1)
+                self.assertIn(json.loads(p.stderr)["code"], ["GPP-NAME-001", "GPP-TYPE-001", "GPP-CALL-001"])
+        for decl in ["record R { me: R }", "record R { x: I64, x: Bool }", "enum E { X, X }",
+                     "enum E {}", "record R {} enum R { X }", "enum I64 { E }"]:
+            self.source.write_text(module("return 0;", decl))
+            self.assertNotEqual(invoke(GPP, "check", self.source).returncode, 0)
+        source = module("return 0;", helpers + """
+// λ
+fn make(src: S, b: Bool) -> R !{} {
+    let n = src.v;
+    if b {
+        let n = true;
+        let r: R = ?create: R;
+        return r;
+    }
+    return R(?value: I64);
+}
+""")
+        self.source.write_text(source)
+        for cmd in [("check",), ("run", "--interpreter"), ("emit-llvm",), ("verify",)]:
+            p = invoke(GPP, *cmd, self.source)
+            self.assertNotEqual(p.returncode, 0)
+            self.assertIn("GPP-HOLE-001", p.stderr)
+        p = invoke(GPP, "holes", self.source, "--function", "make", "--format=json")
+        self.assert_ok(p)
+        catalog = json.loads(p.stdout)
+        self.assertEqual(catalog["schema"], "gpp.holes/1")
+        self.assertEqual(catalog["revision"], invoke(GPP, "revision", self.source).stdout.strip())
+        actual = []
+        for h in catalog["holes"]:
+            actual.append((h["name"], h["type"], source.encode()[h["start_byte"]:h["end_byte"]].decode(),
+                           {slot["name"]: slot["type"] for slot in h["locals"]}))
+        self.assertEqual(actual, [
+            ("create", "R", "?create: R", {"src": "S", "b": "Bool", "n": "Bool"}),
+            ("value", "I64", "?value: I64", {"src": "S", "b": "Bool", "n": "I64"}),
+        ])
+        for bad in [source.replace("?value: I64", "?value: Bool"),
+                    source.replace("?value: I64", "missing"), source + "contract weak() { ?spec: Bool }"]:
+            self.source.write_text(bad)
+            self.assertNotEqual(invoke(GPP, "holes", self.source).returncode, 0)
+
     def test_line_endings(self):
         for newline in ("\r", "\n", "\r\n"):
             with self.subTest(newline=newline):

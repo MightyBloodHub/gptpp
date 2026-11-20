@@ -1,5 +1,6 @@
 //! Derive an exact target result from a public mismatch in an unchanged scalar caller.
 //! Build and CLI examples are in caller_obligation.md. The checker supplies verified CFGs.
+#[allow(dead_code)]
 #[path = "../src/check.rs"]
 mod check;
 #[allow(dead_code)]
@@ -216,6 +217,12 @@ impl Execution {
             for instruction in &block.instructions {
                 self.step()?;
                 slots[instruction.dst] = match &instruction.op {
+                    Op::Record(..) | Op::Field(..) | Op::Variant(..) | Op::Hole(_) => {
+                        return Err(
+                            "structured values and holes are outside the caller analysis profile"
+                                .into(),
+                        );
+                    }
                     Op::Int(n) => Value::int(*n),
                     Op::Bool(b) => Value::Bool(*b),
                     Op::Unit => Value::Unit,
@@ -327,7 +334,9 @@ fn parse_args(function: &ir::Function, text: &[String]) -> Result<Vec<Value>, St
                 .parse::<i64>()
                 .map(Value::int)
                 .map_err(|_| format!("invalid I64 argument: {s}")),
-            Type::Unit => Err("only I64 and Bool caller arguments are supported".into()),
+            Type::Unit | Type::Named(_) => {
+                Err("only I64 and Bool caller arguments are supported".into())
+            }
         })
         .collect()
 }

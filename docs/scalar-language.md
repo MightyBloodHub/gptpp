@@ -25,6 +25,16 @@ The default limit is 256 complete candidate expressions and 10,000 assignments p
 
 When passing expressions disagree on a direct probe, the compiler returns two expressions, a concrete input and their observed outcomes. The `first_passing` field identifies the first expression that passed the public contracts in this ambiguous search. The finite probes can miss differences. A verified selection is the first passing candidate in search order when no inspected pair showed a disagreement. The JSON reports the checked domain, candidate count, truncation flag and probe count. An ambiguous or incomplete search exits with status 3. A rejected expression exits with status 1. With `--stdout`, a verified command emits a complete module and failures leave stdout empty.
 
+### Prefer the shortest passing expression
+
+Use `--search minimum` when the task calls for the shortest candidate the compiler finds. This mode groups intermediate expressions by their behavior on public examples and additional unlabeled inputs. It explores typed arithmetic, comparisons and conditional expressions. For integer rules it can infer coefficients, divisors, remainder periods and bounds. Public observations also guide threshold predicates. Every complete proposal still goes through the compiler and public contracts.
+
+Candidate cost is the number of syntax-tree nodes. A variable, a signed integer literal or an enum tag costs one. Each operator, projection, function call, conversion or conditional costs one plus its children. Grouping is free. The compiler checks a bounded batch ordered by cost. When equally cheap passing candidates disagree on a probe, it returns `ambiguous`. When a longer passing candidate disagrees, the result includes the input and both outcomes under `selection.longer_disagreement`. The checked public domain appears under `verification`. The cost applies only to the candidates tried. Probe agreement and low cost leave room for errors on unseen inputs.
+
+```sh
+target/debug/gpp complete examples/calibration/sketch.gpp --hole rule --limit 32 --search minimum
+```
+
 ## Prove a contract across a full integer range
 
 `gpp prove` translates checked expressions to Z3 bit vectors and nominal datatypes and asks whether the contract can return false or raise a semantic fault. Install Z3 on the command search path to use this optional command. Its supported fragment includes checked signed arithmetic, branches, immutable locals, records, enums and acyclic function calls. It models short-circuit evaluation, signed overflow, truncating division, signed remainder and faults in discarded eager arguments. It reports unsupported loops, writes or recursion explicitly. A proof covers the declared input range under the source semantics. Native ABI, host storage and interpreter resource limits have separate tests.

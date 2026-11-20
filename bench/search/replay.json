@@ -1,0 +1,12 @@
+{
+  "old_commit": "8359fc6",
+  "hybrid_commit": "d02eb773d6f11a64da0ebf79231199d2dc64df41",
+  "archive_sha256": "77aee0094703037018b44dc5e3ac73d8ded3f39728c3a22c2dca546f9fa6406e",
+  "preflight_sha256": "f4276f479026acb028ba672f1959d016fff91fce8d46aee68e479887f23de9e9",
+  "command": "python3 -B bench/search/study.py replay bench/search/results.jsonl --old <previous optimized binary> --new <pinned hybrid optimized binary>",
+  "exit_code": 0,
+  "model_calls_reused": 54,
+  "native_searches": 27,
+  "shared_searches": 9,
+  "preflights": 27
+}

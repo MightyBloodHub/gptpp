@@ -5,6 +5,9 @@ use crate::interpreter::{self, Fault, Observer, Scope, Value};
 use crate::syntax::{Domain, Expr, ExprKind, Module, Type};
 use std::collections::HashSet;
 
+#[path = "parameter_search.rs"]
+mod parameter_search;
+
 const MAX_ROWS: usize = 32;
 const MAX_RUNS: usize = 768;
 const SAMPLE_FUEL: u64 = 4096;
@@ -76,9 +79,9 @@ impl<'a> Observer<'a> for Experiment<'_> {
 }
 
 #[derive(PartialEq)]
-struct Example {
-    locals: Vec<Value>,
-    answer: i64,
+pub(crate) struct Example {
+    pub(crate) locals: Vec<Value>,
+    pub(crate) answer: i64,
 }
 
 fn assignments(domains: &[Domain]) -> Vec<Vec<Value>> {
@@ -592,9 +595,41 @@ pub fn suggest(module: &Module, hole: &Hole, budget: u64) -> Search {
         budget.min(MAX_RUNS as u64) as usize,
         &mut stats,
     );
+    solve(hole, module, &rows, &mut stats);
+    stats
+}
+
+/// Seed the minimum-cost engine and the hybrid synthesizer with the same
+/// contract observations. Only full candidate verification can accept a fill.
+pub fn minimum(module: &Module, hole: &Hole, budget: u64) -> (Search, usize, usize) {
+    let mut stats = Search::default();
+    if !matches!(hole.ty, Type::Bool | Type::I64) || hole.locals.len() > MAX_COLUMNS {
+        return (stats, 0, 0);
+    }
+    let rows = examples(
+        module,
+        hole,
+        budget.min(MAX_RUNS as u64) as usize,
+        &mut stats,
+    );
+    solve(hole, module, &rows, &mut stats);
+    let pool = crate::minimal_search::candidates(hole, &rows);
+    let (parameterized, numeric_tests) = parameter_search::candidates(module, hole, &rows);
+    let mut unique = HashSet::new();
+    stats.expressions = pool
+        .expressions
+        .into_iter()
+        .chain(parameterized)
+        .chain(stats.expressions)
+        .filter(|s| unique.insert(s.clone()))
+        .collect();
+    (stats, pool.vectors, numeric_tests)
+}
+
+fn solve(hole: &Hole, module: &Module, rows: &[Example], stats: &mut Search) {
     stats.rows = rows.len();
     if rows.len() < 2 {
-        return stats;
+        return;
     }
     let mut bank = Bank {
         target_bool: hole.ty == Type::Bool,
@@ -602,9 +637,9 @@ pub fn suggest(module: &Module, hole: &Hole, budget: u64) -> Search {
         terms: vec![],
         solutions: vec![],
         seen: HashSet::new(),
-        stats: &mut stats,
+        stats,
     };
-    seed(&mut bank, module, hole, &rows);
+    seed(&mut bank, module, hole, rows);
     let atoms = bank.terms.clone();
     for a in &atoms {
         if a.boolean {
@@ -660,5 +695,4 @@ pub fn suggest(module: &Module, hole: &Hole, budget: u64) -> Search {
         .take(16)
         .map(|(_, s)| s)
         .collect();
-    stats
 }

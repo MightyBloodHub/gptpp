@@ -14,8 +14,15 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
-const USAGE: &str = "gpp complete FILE --hole NAME [--fill EXPRESSION_FILE] [--search hybrid|grammar] [--limit N] [--budget N] [--expect REVISION] [--stdout]";
+const USAGE: &str = "gpp complete FILE --hole NAME [--fill EXPRESSION_FILE] [--search hybrid|grammar|minimum] [--limit N] [--budget N] [--expect REVISION] [--stdout]";
 const PROBE_LIMIT: usize = 64;
+
+#[derive(Clone, Copy, Eq, PartialEq)]
+enum SearchMode {
+    Hybrid,
+    Grammar,
+    Minimum,
+}
 
 struct Options {
     file: PathBuf,
@@ -25,7 +32,7 @@ struct Options {
     budget: u64,
     expected: Option<String>,
     stdout: bool,
-    guidance: bool,
+    mode: SearchMode,
 }
 
 impl Options {
@@ -64,9 +71,10 @@ impl Options {
                 }
                 Some("--search") if guidance.is_none() => {
                     guidance = Some(match args.next().as_deref().and_then(|s| s.to_str()) {
-                        Some("hybrid") => true,
-                        Some("grammar") => false,
-                        _ => return Err("--search requires hybrid or grammar".into()),
+                        Some("hybrid") => SearchMode::Hybrid,
+                        Some("grammar") => SearchMode::Grammar,
+                        Some("minimum") => SearchMode::Minimum,
+                        _ => return Err("--search requires hybrid, grammar or minimum".into()),
                     });
                 }
                 Some("--expect") if expected.is_none() => {
@@ -88,7 +96,7 @@ impl Options {
             budget: budget.unwrap_or(verify::DEFAULT_BUDGET),
             expected,
             stdout,
-            guidance: guidance.unwrap_or(true),
+            mode: guidance.unwrap_or(SearchMode::Hybrid),
         })
     }
 }
@@ -230,6 +238,20 @@ fn outcome(value: Result<Value, Fault>) -> Result<Option<String>, String> {
     Ok(Some(format!("{{{}}}", String::from_utf8(bytes).unwrap())))
 }
 
+// A signed literal costs one node in this ranking even when the syntax tree
+// represents its minus sign separately. Parentheses never affect the score.
+fn expression_cost(expr: &syntax::Expr) -> usize {
+    use syntax::ExprKind::*;
+    1 + match &expr.kind {
+        Unary(syntax::UnOp::Neg, e) if matches!(e.kind, Int(_)) => 0,
+        Field(e, _) | AsI64(e) | Unary(_, e) => expression_cost(e),
+        Binary(_, a, b) => expression_cost(a) + expression_cost(b),
+        If { cond, yes, no } => expression_cost(cond) + expression_cost(yes) + expression_cost(no),
+        Call(_, args) => args.iter().map(expression_cost).sum(),
+        _ => 0,
+    }
+}
+
 fn inputs_json(function: &Function, args: &[Value]) -> Result<String, String> {
     let mut input = Vec::new();
     for (i, (p, v)) in function.params.iter().zip(args).enumerate() {
@@ -292,9 +314,34 @@ pub fn run(args: impl Iterator<Item = OsString>) -> Result<u8, String> {
     let mut truncated = candidates.len() > opts.limit;
     let mut queue: VecDeque<_> = candidates.into();
     let mut attempted = HashSet::new();
-    let mut guide_after =
-        (opts.guidance && !manual && opts.limit >= 8).then_some((opts.limit / 2).min(queue.len()));
+    let minimum = opts.mode == SearchMode::Minimum && !manual;
+    let mut guide_after = (opts.mode == SearchMode::Hybrid && !manual && opts.limit >= 8)
+        .then_some((opts.limit / 2).min(queue.len()));
     let mut guidance = crate::guided_search::Search::default();
+    let mut minimum_vectors = 0;
+    let mut numeric_tests = 0;
+    let mut costs = HashMap::new();
+    if minimum && !module.contracts.is_empty() {
+        (guidance, minimum_vectors, numeric_tests) =
+            crate::guided_search::minimum(&module, hole, opts.budget);
+        let mut unique = HashSet::new();
+        let mut batch: Vec<_> = guidance
+            .expressions
+            .iter()
+            .cloned()
+            .chain(queue)
+            .filter(|s| unique.insert(s.clone()))
+            .collect();
+        truncated |= batch.len() > opts.limit;
+        batch.truncate(opts.limit);
+        for term in &batch {
+            if let Ok(parsed) = syntax::parse_expression(term) {
+                costs.insert(term.clone(), expression_cost(&parsed));
+            }
+        }
+        batch.sort_by_key(|e| costs.get(e).copied().unwrap_or(usize::MAX));
+        queue = batch.into();
+    }
     let calls = if manual || function.params.len() > 16 {
         vec![]
     } else {
@@ -317,6 +364,9 @@ pub fn run(args: impl Iterator<Item = OsString>) -> Result<u8, String> {
     let mut observations: Vec<Option<(String, String)>> = vec![None; calls.len()];
     let mut detail = String::new();
     let mut ambiguous = false;
+    let mut best_cost = None;
+    let mut longer_passing = 0;
+    let mut longer_question = None;
     if !incomplete {
         while tested < opts.limit {
             if guide_after == Some(tested) {
@@ -380,6 +430,12 @@ pub fn run(args: impl Iterator<Item = OsString>) -> Result<u8, String> {
                 continue;
             }
             survivors += 1;
+            let mut longer = false;
+            if minimum {
+                let cost = costs[&expr];
+                longer = cost > *best_cost.get_or_insert(cost);
+                longer_passing += usize::from(longer);
+            }
             for (args, previous) in calls.iter().zip(&mut observations) {
                 let Some(current) = outcome(interpreter::invoke(
                     &candidate,
@@ -393,17 +449,22 @@ pub fn run(args: impl Iterator<Item = OsString>) -> Result<u8, String> {
                 };
                 if let Some((first, prior)) = previous {
                     if *prior != current {
-                        detail = format!(
-                            ",\"question\":{{\"function\":{},\"inputs\":{},\"alternatives\":[{{\"expression\":{},\"outcome\":{prior}}},{{\"expression\":{},\"outcome\":{current}}}]}}",
+                        let witness = format!(
+                            "{{\"function\":{},\"inputs\":{},\"alternatives\":[{{\"expression\":{},\"outcome\":{prior}}},{{\"expression\":{},\"outcome\":{current}}}]}}",
                             json_string(&function.name),
                             inputs_json(function, args)?,
                             json_string(first),
                             json_string(&expr)
                         );
-                        ambiguous = true;
+                        if longer {
+                            longer_question.get_or_insert(witness);
+                        } else {
+                            detail = format!(",\"question\":{witness}");
+                            ambiguous = true;
+                        }
                         break;
                     }
-                } else {
+                } else if !longer {
                     *previous = Some((expr.clone(), current));
                 }
             }
@@ -446,6 +507,12 @@ pub fn run(args: impl Iterator<Item = OsString>) -> Result<u8, String> {
             ",\"first_passing\":{}",
             json_string(&w.expression)
         ));
+    }
+    if minimum {
+        let cost = best_cost
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "null".into());
+        detail.push_str(&format!(",\"selection\":{{\"policy\":\"minimum_ast_cost\",\"cost\":{cost},\"value_vectors\":{minimum_vectors},\"numeric_hypotheses\":{numeric_tests},\"longer_passing\":{longer_passing},\"longer_disagreement\":{}}}",longer_question.as_deref().unwrap_or("null")));
     }
     let report = format!(
         "{{\"schema\":\"gpp.complete/1\",\"revision\":{},\"hole\":{},\"status\":{},\"tested\":{tested},\"witnesses\":{},\"passing_candidates_seen\":{survivors},\"candidate_limit\":{},\"grammar_truncated\":{truncated},\"guidance\":{{\"contract_runs\":{},\"examples\":{},\"value_vectors\":{},\"branch_joins\":{},\"proposals\":{}}},\"probe_calls_per_passing_candidate\":{}{} }}",

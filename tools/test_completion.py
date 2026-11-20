@@ -98,6 +98,31 @@ contract incompatible(){adjust(40)==0}
         self.assertGreater(report["guidance"]["contract_runs"], 0)
         self.assertEqual(report["passing_candidates_seen"], 0)
 
+    def test_minimum_mode_reports_longer_disagreement_and_abstains_on_equal_cost(self):
+        self.module("""
+fn pick(x:I64,y:I64)->I64 !{} {return ?v:I64;}
+contract origin(){pick(0,0)==0}
+contract unit(){pick(1,1)==1}
+""")
+        p = self.gpp("complete", "--hole", "v", "--search", "minimum", "--limit", "48", "--stdout")
+        self.assertEqual(p.returncode, 3, p.stderr)
+        self.assertFalse(p.stdout)
+        row = json.loads(p.stderr)
+        self.assertEqual(row["selection"]["cost"], 1)
+        self.assertEqual(row["status"], "ambiguous")
+        self.assertEqual({a["expression"] for a in row["question"]["alternatives"]}, {"x", "y"})
+
+        with self.src.open("a") as out:
+            out.write("contract off_diagonal(){pick(1,2)==1}")
+        p = self.gpp("complete", "--hole", "v", "--search", "minimum", "--limit", "48")
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        row = json.loads(p.stdout)
+        self.assertEqual(row["selected"], "x")
+        self.assertEqual(row["selection"]["cost"], 1)
+        self.assertGreater(row["selection"]["longer_passing"], 0)
+        self.assertIsNotNone(row["selection"]["longer_disagreement"])
+        self.assertEqual(row["verification"]["checked"], 3)
+
     def test_no_contract_budget_and_multiple_holes(self):
         self.module("fn pick(x: I64) -> I64 !{} {return ?v: I64;}")
         p = self.gpp("complete", "--hole", "v")

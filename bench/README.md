@@ -2,6 +2,10 @@
 
 The benchmark suite measures how much model work GPT++, typed Python, and Rust require to produce an accepted change. An accepted change passes the language checker, public examples, and withheld cases. Tokens per accepted edit includes input and output tokens from every attempt, including failures and retries. Reports include acceptance counts, timings, and paired uncertainty where available.
 
+## Contract-gated edits
+
+On six fresh GPT++ assignments, both compiler-only search and the opt-in workflow delivered three independently correct changes. The workflow used three trial model calls. Direct Qwen delivered one correct change in six calls. The sample leaves the 20% token-saving target unresolved at the prespecified correctness margin. [Results and costs](checked_edits/results.md) · [Replay and comparison commands](checked_edits/README.md)
+
 ## Built-in completion search
 
 On the final eleven-exercise confirmation, the compiler’s piecewise search solved four tasks and the strongest portable minimum-cost search solved two in each language. Both portable successes were also solved by the compiler. GPT++ published three incorrect edits. Qwen solved seven exercises in each language with one model call per task. The first two automatic-search experiments are reported below. [Final results](search-confirmation/results.md) · [Proofs for both additional wins](search-confirmation/proofs.md)

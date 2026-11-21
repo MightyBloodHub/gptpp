@@ -1,0 +1,1307 @@
+{
+  "trial_kind": "newly executed development repair of an archived regression",
+  "task": "posNeg",
+  "captured_at": "2026-11-21T00:01:53.925466+00:00",
+  "model_digest": "dae161e27b0e90dd1856c8bb3209201fd6736d8eb66298e75ed87571486f4364",
+  "public_rule_source": "bench/search-confirmation/corpus.py, posNeg request from CodingBat p159227",
+  "specification_charge": {
+    "new_finite_contracts": 1,
+    "supplied_examples": 24,
+    "external_labels": 0,
+    "historical_model_calls_reused": 1
+  },
+  "replayed_qwen": {
+    "schema": "gpp.acceptance/1",
+    "source": "archived Qwen GPT++ reply",
+    "expression": "(negative && (a < 0) && (b < 0)) || (!negative && ((a > 0) && (b < 0)))",
+    "sketch_revision": "sha256:645e4395b603c2470e4d06df6eb231d243fcda3078e989f864e9611211a334b1",
+    "decision": "reject",
+    "public_examples": {
+      "schema": "gpp.verify/1",
+      "revision": "sha256:f657b325e9fee44c6fbcf2b8b8e7b144e707eb990c51c0d449f6327927ab95c2",
+      "status": "counterexample",
+      "checked": 2,
+      "budget": 10000,
+      "contracts": [
+        {
+          "name": "sample_0",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_1",
+          "status": "counterexample",
+          "checked": 1,
+          "counterexample": {
+            "inputs": {},
+            "args": [],
+            "result": false
+          }
+        }
+      ]
+    },
+    "feedback": {
+      "contract": "sample_1",
+      "rule": "contract sample_1() { transition(-1, 1, false) == true }",
+      "inputs": {},
+      "args": [],
+      "contract_result": {
+        "result": false
+      },
+      "observed": [
+        {
+          "locals": {
+            "a": -1,
+            "b": 1,
+            "negative": false
+          },
+          "value": false
+        }
+      ],
+      "edit_site": {
+        "name": "change",
+        "function": "transition",
+        "type": "Bool",
+        "start_byte": 92,
+        "end_byte": 105,
+        "locals": [
+          {
+            "name": "a",
+            "type": "I64"
+          },
+          {
+            "name": "b",
+            "type": "I64"
+          },
+          {
+            "name": "negative",
+            "type": "Bool"
+          }
+        ],
+        "revision": "sha256:645e4395b603c2470e4d06df6eb231d243fcda3078e989f864e9611211a334b1",
+        "previous": "(negative && (a < 0) && (b < 0)) || (!negative && ((a > 0) && (b < 0)))"
+      },
+      "replay": {
+        "source_revision": "sha256:f657b325e9fee44c6fbcf2b8b8e7b144e707eb990c51c0d449f6327927ab95c2",
+        "probe": {
+          "result": false
+        },
+        "command": [
+          "trace",
+          "CANDIDATE.gpp",
+          "--function",
+          "transition",
+          "--contract",
+          "sample_1"
+        ]
+      }
+    },
+    "edit_site": {
+      "name": "change",
+      "function": "transition",
+      "type": "Bool",
+      "start_byte": 92,
+      "end_byte": 105,
+      "locals": [
+        {
+          "name": "a",
+          "type": "I64"
+        },
+        {
+          "name": "b",
+          "type": "I64"
+        },
+        {
+          "name": "negative",
+          "type": "Bool"
+        }
+      ],
+      "revision": "sha256:645e4395b603c2470e4d06df6eb231d243fcda3078e989f864e9611211a334b1"
+    },
+    "budget_per_finite_verification": 10000,
+    "proof_timeout_ms": 5000,
+    "obligations": [
+      {
+        "name": "public_sign_rule",
+        "mode": "finite",
+        "rule": "Normally require one strictly positive integer and one strictly negative integer. In negative mode require both integers to be negative. Zero has neither sign.",
+        "declaration": "contract public_sign_rule(a: I64 in -8..=8, b: I64 in -8..=8, negative: Bool) {\n    transition(a, b, negative) == (if negative { max(a, b) < 0 }\n        else { a != 0 && b != 0 && ((a < 0) != (b < 0)) })\n}",
+        "domain": "a: I64 in -8..=8, b: I64 in -8..=8, negative: Bool",
+        "status": "not_run"
+      }
+    ],
+    "candidate_revision": "sha256:f657b325e9fee44c6fbcf2b8b8e7b144e707eb990c51c0d449f6327927ab95c2",
+    "reason": "public_example",
+    "tool_seconds": 0.04199433303438127
+  },
+  "reference_validation": {
+    "schema": "gpp.acceptance/1",
+    "source": "independent reference expression",
+    "expression": "if negative { a < 0 && b < 0 } else { (a < 0 && b > 0) || (b < 0 && a > 0) }",
+    "sketch_revision": "sha256:645e4395b603c2470e4d06df6eb231d243fcda3078e989f864e9611211a334b1",
+    "decision": "accept",
+    "public_examples": {
+      "schema": "gpp.verify/1",
+      "revision": "sha256:b54f234ae335f112c8343d35558d149f1c8d09df0dfeaf0e8c483826bb0a8120",
+      "status": "passed",
+      "checked": 24,
+      "budget": 10000,
+      "contracts": [
+        {
+          "name": "sample_0",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_1",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_2",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_3",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_4",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_5",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_6",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_7",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_8",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_9",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_10",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_11",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_12",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_13",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_14",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_15",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_16",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_17",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_18",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_19",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_20",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_21",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_22",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_23",
+          "status": "passed",
+          "checked": 1
+        }
+      ]
+    },
+    "feedback": null,
+    "edit_site": {
+      "name": "change",
+      "function": "transition",
+      "type": "Bool",
+      "start_byte": 92,
+      "end_byte": 105,
+      "locals": [
+        {
+          "name": "a",
+          "type": "I64"
+        },
+        {
+          "name": "b",
+          "type": "I64"
+        },
+        {
+          "name": "negative",
+          "type": "Bool"
+        }
+      ],
+      "revision": "sha256:645e4395b603c2470e4d06df6eb231d243fcda3078e989f864e9611211a334b1"
+    },
+    "budget_per_finite_verification": 10000,
+    "proof_timeout_ms": 5000,
+    "obligations": [
+      {
+        "name": "public_sign_rule",
+        "mode": "finite",
+        "rule": "Normally require one strictly positive integer and one strictly negative integer. In negative mode require both integers to be negative. Zero has neither sign.",
+        "declaration": "contract public_sign_rule(a: I64 in -8..=8, b: I64 in -8..=8, negative: Bool) {\n    transition(a, b, negative) == (if negative { max(a, b) < 0 }\n        else { a != 0 && b != 0 && ((a < 0) != (b < 0)) })\n}",
+        "domain": "a: I64 in -8..=8, b: I64 in -8..=8, negative: Bool",
+        "status": "passed",
+        "checked": 578
+      }
+    ],
+    "candidate_revision": "sha256:b54f234ae335f112c8343d35558d149f1c8d09df0dfeaf0e8c483826bb0a8120",
+    "verification_revision": "sha256:a52113a4a981fbcafadb66df5c2ca52c7a2dbf2379988a943f908f7b79939f0b",
+    "reason": "declared_contracts_discharged",
+    "tool_seconds": 0.03449183399789035
+  },
+  "workflow": {
+    "schema": "gpp.acceptance-workflow/1",
+    "decision": "abstain",
+    "selected": null,
+    "first_pass": false,
+    "model_calls": 1,
+    "candidates": [
+      {
+        "schema": "gpp.acceptance/1",
+        "source": "compiler:complete/piecewise",
+        "expression": "if negative { (a <= 0) } else { ((b * a) <= -1) }",
+        "sketch_revision": "sha256:645e4395b603c2470e4d06df6eb231d243fcda3078e989f864e9611211a334b1",
+        "decision": "reject",
+        "public_examples": {
+          "schema": "gpp.verify/1",
+          "revision": "sha256:a960d6c1aa6081e348ea457f4944414d63bee960a09204cecac8b13f3e4bce69",
+          "status": "passed",
+          "checked": 24,
+          "budget": 10000,
+          "contracts": [
+            {
+              "name": "sample_0",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_1",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_2",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_3",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_4",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_5",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_6",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_7",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_8",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_9",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_10",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_11",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_12",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_13",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_14",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_15",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_16",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_17",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_18",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_19",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_20",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_21",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_22",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_23",
+              "status": "passed",
+              "checked": 1
+            }
+          ]
+        },
+        "feedback": {
+          "contract": "public_sign_rule",
+          "rule": "Normally require one strictly positive integer and one strictly negative integer. In negative mode require both integers to be negative. Zero has neither sign.",
+          "inputs": {
+            "a": -8,
+            "b": 0,
+            "negative": true
+          },
+          "args": [
+            -8,
+            0,
+            true
+          ],
+          "contract_result": {
+            "result": false
+          },
+          "observed": [
+            {
+              "locals": {
+                "a": -8,
+                "b": 0,
+                "negative": true
+              },
+              "value": true
+            }
+          ],
+          "edit_site": {
+            "name": "change",
+            "function": "transition",
+            "type": "Bool",
+            "start_byte": 92,
+            "end_byte": 105,
+            "locals": [
+              {
+                "name": "a",
+                "type": "I64"
+              },
+              {
+                "name": "b",
+                "type": "I64"
+              },
+              {
+                "name": "negative",
+                "type": "Bool"
+              }
+            ],
+            "revision": "sha256:645e4395b603c2470e4d06df6eb231d243fcda3078e989f864e9611211a334b1",
+            "previous": "if negative { (a <= 0) } else { ((b * a) <= -1) }"
+          },
+          "replay": {
+            "source_revision": "sha256:c352a99180dd8f26185a3d04061046a4c2440a5d2aafb7006152da7da5f3dd0d",
+            "probe": {
+              "result": false
+            },
+            "command": [
+              "trace",
+              "CANDIDATE.gpp",
+              "--function",
+              "transition",
+              "--contract",
+              "public_sign_rule",
+              "-8",
+              "0",
+              "true"
+            ]
+          }
+        },
+        "edit_site": {
+          "name": "change",
+          "function": "transition",
+          "type": "Bool",
+          "start_byte": 92,
+          "end_byte": 105,
+          "locals": [
+            {
+              "name": "a",
+              "type": "I64"
+            },
+            {
+              "name": "b",
+              "type": "I64"
+            },
+            {
+              "name": "negative",
+              "type": "Bool"
+            }
+          ],
+          "revision": "sha256:645e4395b603c2470e4d06df6eb231d243fcda3078e989f864e9611211a334b1"
+        },
+        "budget_per_finite_verification": 10000,
+        "proof_timeout_ms": 5000,
+        "obligations": [
+          {
+            "name": "public_sign_rule",
+            "mode": "finite",
+            "rule": "Normally require one strictly positive integer and one strictly negative integer. In negative mode require both integers to be negative. Zero has neither sign.",
+            "declaration": "contract public_sign_rule(a: I64 in -8..=8, b: I64 in -8..=8, negative: Bool) {\n    transition(a, b, negative) == (if negative { max(a, b) < 0 }\n        else { a != 0 && b != 0 && ((a < 0) != (b < 0)) })\n}",
+            "domain": "a: I64 in -8..=8, b: I64 in -8..=8, negative: Bool",
+            "status": "counterexample",
+            "checked": 18,
+            "counterexample": {
+              "inputs": {
+                "a": -8,
+                "b": 0,
+                "negative": true
+              },
+              "args": [
+                -8,
+                0,
+                true
+              ],
+              "result": false
+            }
+          }
+        ],
+        "candidate_revision": "sha256:a960d6c1aa6081e348ea457f4944414d63bee960a09204cecac8b13f3e4bce69",
+        "verification_revision": "sha256:c352a99180dd8f26185a3d04061046a4c2440a5d2aafb7006152da7da5f3dd0d",
+        "reason": "contract_counterexample",
+        "tool_seconds": 0.04945691698230803
+      },
+      {
+        "schema": "gpp.acceptance/1",
+        "source": "compiler:complete/piecewise",
+        "expression": "if (b < 0) { ((a < 0) == negative) } else { (a < 0) }",
+        "sketch_revision": "sha256:645e4395b603c2470e4d06df6eb231d243fcda3078e989f864e9611211a334b1",
+        "decision": "reject",
+        "public_examples": {
+          "schema": "gpp.verify/1",
+          "revision": "sha256:e10c27f40e74e4c5e32bdf202822d8512d3a6a2089ef9b668d67d953becb1658",
+          "status": "passed",
+          "checked": 24,
+          "budget": 10000,
+          "contracts": [
+            {
+              "name": "sample_0",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_1",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_2",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_3",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_4",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_5",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_6",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_7",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_8",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_9",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_10",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_11",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_12",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_13",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_14",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_15",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_16",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_17",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_18",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_19",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_20",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_21",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_22",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_23",
+              "status": "passed",
+              "checked": 1
+            }
+          ]
+        },
+        "feedback": {
+          "contract": "public_sign_rule",
+          "rule": "Normally require one strictly positive integer and one strictly negative integer. In negative mode require both integers to be negative. Zero has neither sign.",
+          "inputs": {
+            "a": -8,
+            "b": 0,
+            "negative": false
+          },
+          "args": [
+            -8,
+            0,
+            false
+          ],
+          "contract_result": {
+            "result": false
+          },
+          "observed": [
+            {
+              "locals": {
+                "a": -8,
+                "b": 0,
+                "negative": false
+              },
+              "value": true
+            }
+          ],
+          "edit_site": {
+            "name": "change",
+            "function": "transition",
+            "type": "Bool",
+            "start_byte": 92,
+            "end_byte": 105,
+            "locals": [
+              {
+                "name": "a",
+                "type": "I64"
+              },
+              {
+                "name": "b",
+                "type": "I64"
+              },
+              {
+                "name": "negative",
+                "type": "Bool"
+              }
+            ],
+            "revision": "sha256:645e4395b603c2470e4d06df6eb231d243fcda3078e989f864e9611211a334b1",
+            "previous": "if (b < 0) { ((a < 0) == negative) } else { (a < 0) }"
+          },
+          "replay": {
+            "source_revision": "sha256:fa998fc412003417429e41bd7168844c38ffb6df52ae0807dd039144c9775e48",
+            "probe": {
+              "result": false
+            },
+            "command": [
+              "trace",
+              "CANDIDATE.gpp",
+              "--function",
+              "transition",
+              "--contract",
+              "public_sign_rule",
+              "-8",
+              "0",
+              "false"
+            ]
+          }
+        },
+        "edit_site": {
+          "name": "change",
+          "function": "transition",
+          "type": "Bool",
+          "start_byte": 92,
+          "end_byte": 105,
+          "locals": [
+            {
+              "name": "a",
+              "type": "I64"
+            },
+            {
+              "name": "b",
+              "type": "I64"
+            },
+            {
+              "name": "negative",
+              "type": "Bool"
+            }
+          ],
+          "revision": "sha256:645e4395b603c2470e4d06df6eb231d243fcda3078e989f864e9611211a334b1"
+        },
+        "budget_per_finite_verification": 10000,
+        "proof_timeout_ms": 5000,
+        "obligations": [
+          {
+            "name": "public_sign_rule",
+            "mode": "finite",
+            "rule": "Normally require one strictly positive integer and one strictly negative integer. In negative mode require both integers to be negative. Zero has neither sign.",
+            "declaration": "contract public_sign_rule(a: I64 in -8..=8, b: I64 in -8..=8, negative: Bool) {\n    transition(a, b, negative) == (if negative { max(a, b) < 0 }\n        else { a != 0 && b != 0 && ((a < 0) != (b < 0)) })\n}",
+            "domain": "a: I64 in -8..=8, b: I64 in -8..=8, negative: Bool",
+            "status": "counterexample",
+            "checked": 17,
+            "counterexample": {
+              "inputs": {
+                "a": -8,
+                "b": 0,
+                "negative": false
+              },
+              "args": [
+                -8,
+                0,
+                false
+              ],
+              "result": false
+            }
+          }
+        ],
+        "candidate_revision": "sha256:e10c27f40e74e4c5e32bdf202822d8512d3a6a2089ef9b668d67d953becb1658",
+        "verification_revision": "sha256:fa998fc412003417429e41bd7168844c38ffb6df52ae0807dd039144c9775e48",
+        "reason": "contract_counterexample",
+        "tool_seconds": 0.04982979199849069
+      },
+      {
+        "schema": "gpp.acceptance/1",
+        "source": "model:repair",
+        "expression": "if negative { (a < 0) } else { ((b * a) <= -1) }",
+        "sketch_revision": "sha256:645e4395b603c2470e4d06df6eb231d243fcda3078e989f864e9611211a334b1",
+        "decision": "reject",
+        "public_examples": {
+          "schema": "gpp.verify/1",
+          "revision": "sha256:e01df7e136a6976d6268633c211f36fdd9c15f89a93e42a39da5dac1e000ec72",
+          "status": "passed",
+          "checked": 24,
+          "budget": 10000,
+          "contracts": [
+            {
+              "name": "sample_0",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_1",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_2",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_3",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_4",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_5",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_6",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_7",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_8",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_9",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_10",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_11",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_12",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_13",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_14",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_15",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_16",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_17",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_18",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_19",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_20",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_21",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_22",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_23",
+              "status": "passed",
+              "checked": 1
+            }
+          ]
+        },
+        "feedback": {
+          "contract": "public_sign_rule",
+          "rule": "Normally require one strictly positive integer and one strictly negative integer. In negative mode require both integers to be negative. Zero has neither sign.",
+          "inputs": {
+            "a": -8,
+            "b": 0,
+            "negative": true
+          },
+          "args": [
+            -8,
+            0,
+            true
+          ],
+          "contract_result": {
+            "result": false
+          },
+          "observed": [
+            {
+              "locals": {
+                "a": -8,
+                "b": 0,
+                "negative": true
+              },
+              "value": true
+            }
+          ],
+          "edit_site": {
+            "name": "change",
+            "function": "transition",
+            "type": "Bool",
+            "start_byte": 92,
+            "end_byte": 105,
+            "locals": [
+              {
+                "name": "a",
+                "type": "I64"
+              },
+              {
+                "name": "b",
+                "type": "I64"
+              },
+              {
+                "name": "negative",
+                "type": "Bool"
+              }
+            ],
+            "revision": "sha256:645e4395b603c2470e4d06df6eb231d243fcda3078e989f864e9611211a334b1",
+            "previous": "if negative { (a < 0) } else { ((b * a) <= -1) }"
+          },
+          "replay": {
+            "source_revision": "sha256:fca7f1b922344b5b65e62131671409522e7967b1b60a7bd12649c02307805268",
+            "probe": {
+              "result": false
+            },
+            "command": [
+              "trace",
+              "CANDIDATE.gpp",
+              "--function",
+              "transition",
+              "--contract",
+              "public_sign_rule",
+              "-8",
+              "0",
+              "true"
+            ]
+          }
+        },
+        "edit_site": {
+          "name": "change",
+          "function": "transition",
+          "type": "Bool",
+          "start_byte": 92,
+          "end_byte": 105,
+          "locals": [
+            {
+              "name": "a",
+              "type": "I64"
+            },
+            {
+              "name": "b",
+              "type": "I64"
+            },
+            {
+              "name": "negative",
+              "type": "Bool"
+            }
+          ],
+          "revision": "sha256:645e4395b603c2470e4d06df6eb231d243fcda3078e989f864e9611211a334b1"
+        },
+        "budget_per_finite_verification": 10000,
+        "proof_timeout_ms": 5000,
+        "obligations": [
+          {
+            "name": "public_sign_rule",
+            "mode": "finite",
+            "rule": "Normally require one strictly positive integer and one strictly negative integer. In negative mode require both integers to be negative. Zero has neither sign.",
+            "declaration": "contract public_sign_rule(a: I64 in -8..=8, b: I64 in -8..=8, negative: Bool) {\n    transition(a, b, negative) == (if negative { max(a, b) < 0 }\n        else { a != 0 && b != 0 && ((a < 0) != (b < 0)) })\n}",
+            "domain": "a: I64 in -8..=8, b: I64 in -8..=8, negative: Bool",
+            "status": "counterexample",
+            "checked": 18,
+            "counterexample": {
+              "inputs": {
+                "a": -8,
+                "b": 0,
+                "negative": true
+              },
+              "args": [
+                -8,
+                0,
+                true
+              ],
+              "result": false
+            }
+          }
+        ],
+        "candidate_revision": "sha256:e01df7e136a6976d6268633c211f36fdd9c15f89a93e42a39da5dac1e000ec72",
+        "verification_revision": "sha256:fca7f1b922344b5b65e62131671409522e7967b1b60a7bd12649c02307805268",
+        "reason": "contract_counterexample",
+        "tool_seconds": 0.11837683292105794
+      }
+    ],
+    "search": {
+      "schema": "gpp.complete/1",
+      "revision": "sha256:645e4395b603c2470e4d06df6eb231d243fcda3078e989f864e9611211a334b1",
+      "hole": "change",
+      "status": "verified",
+      "tested": 256,
+      "witnesses": 5,
+      "passing_candidates_seen": 29,
+      "candidate_limit": 256,
+      "grammar_truncated": true,
+      "guidance": {
+        "contract_runs": 48,
+        "examples": 24,
+        "value_vectors": 10884,
+        "branch_joins": 53,
+        "proposals": 29
+      },
+      "probe_calls_per_passing_candidate": 64,
+      "selected": "if negative { (a <= 0) } else { ((b * a) <= -1) }",
+      "verification": {
+        "schema": "gpp.verify/1",
+        "revision": "sha256:a960d6c1aa6081e348ea457f4944414d63bee960a09204cecac8b13f3e4bce69",
+        "status": "passed",
+        "checked": 24,
+        "budget": 10000,
+        "contracts": [
+          {
+            "name": "sample_0",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_1",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_2",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_3",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_4",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_5",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_6",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_7",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_8",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_9",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_10",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_11",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_12",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_13",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_14",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_15",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_16",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_17",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_18",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_19",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_20",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_21",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_22",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_23",
+            "status": "passed",
+            "checked": 1
+          }
+        ]
+      },
+      "selection": {
+        "policy": "minimum_ast_cost",
+        "cost": 10,
+        "value_vectors": 95472,
+        "numeric_hypotheses": 109,
+        "longer_passing": 25,
+        "longer_disagreement": {
+          "function": "transition",
+          "inputs": {
+            "a": 9223372036854775807,
+            "b": 4,
+            "negative": false
+          },
+          "alternatives": [
+            {
+              "expression": "if negative { (a <= 0) } else { ((b * a) <= -1) }",
+              "outcome": {
+                "fault": "IntegerOverflow"
+              }
+            },
+            {
+              "expression": "if (b < 0) { ((a < 0) == negative) } else { (a < 0) }",
+              "outcome": {
+                "result": false
+              }
+            }
+          ]
+        }
+      },
+      "piecewise": {
+        "subset_operations": 110000,
+        "residual_operations": 8318
+      },
+      "source": "compiler:complete/piecewise",
+      "tool_seconds": 0.05753591691609472
+    },
+    "question": null,
+    "reason": "contract_counterexample"
+  },
+  "model_calls": [
+    {
+      "request": {
+        "model": "qwen2.5-coder:7b",
+        "prompt": "Repair the single Bool expression in transition(a: I64, b: I64, negative: Bool) -> Bool in GPT++.\nPublic rule: Normally require one strictly positive integer and one strictly negative integer. In negative mode require both integers to be negative. Zero has neither sign.\nEditable expression (change: Bool): if negative { (a <= 0) } else { ((b * a) <= -1) }\nThe compiler replayed this failing input: {\"a\": -8, \"b\": 0, \"negative\": true}\nObserved result: true. The Boolean result violates the public rule.\nGPT++ supports if condition { yes } else { no }, comparisons, &&, || and !.\nReturn a JSON object with the replacement expression in its \"expression\" field.",
+        "stream": false,
+        "keep_alive": "3m",
+        "format": {
+          "type": "object",
+          "properties": {
+            "expression": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "expression"
+          ],
+          "additionalProperties": false
+        },
+        "options": {
+          "temperature": 0,
+          "num_predict": 200,
+          "num_ctx": 4096,
+          "seed": 43
+        }
+      },
+      "response": "{\n  \"expression\": \"if negative { (a < 0) } else { ((b * a) <= -1) }\"\n}",
+      "stop_reason": "stop",
+      "input_tokens": 193,
+      "output_tokens": 31,
+      "wall_seconds": 2.7909399999771267
+    }
+  ],
+  "wall_seconds_including_preflight": 3.16600437508896
+}

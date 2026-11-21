@@ -4,6 +4,10 @@
 
 GPT++ is an experimental programming language designed for coding agents. Programs can leave an expression open with a name and a type. An agent can ask which values are in scope, search for expressions that satisfy the callers’ contracts, and get a concrete input when two passing completions disagree. Completed programs run independently of a model.
 
+## Contract-gated edits
+
+An opt-in driver can publish a typed edit after its declared contract passes, send a replayed public counterexample for one model repair, or abstain when the evidence is incomplete. Its JSON report records the expression, exact domain, check results and model costs. [Run the workflow and replay the baseline](bench/checked_edits/README.md) · [Results and limits](bench/checked_edits/results.md)
+
 ## Piecewise search on eleven external exercises
 
 The opt-in `--search piecewise` mode partitions public observations by a condition and searches for a rule within each group. In the final frozen comparison, it solved **4/11** CodingBat exercises, compared with **1/11** for the preceding native minimum-cost mode and **2/11** for the largest portable minimum-cost search in each of GPT++, typed Python and Rust. Compared with that portable control, piecewise had two paired wins and zero losses. It published seven programs, including three that failed withheld checks. [Complete comparison](bench/search-confirmation/results.md) · [Frozen protocol](bench/search-confirmation/protocol.md)

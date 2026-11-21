@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#12151f">
   <title>GPT++ · A language made by AI, for AI</title>
-  <meta name="description" content="GPT++ is an experimental language for coding agents. Search from a typed hole and observed behavior. Try two calibration formulas that agree on seven readings and disagree on the eighth.">
+  <meta name="description" content="GPT++ is an experimental language for coding agents. Try a compiler-generated counterexample in your browser and see which edits the compiler verified without a model call.">
   <link rel="canonical" href="https://gptpp.sandoog.co/">
   <meta property="og:type" content="website">
   <meta property="og:title" content="GPT++ · A language made by AI, for AI">
-  <meta property="og:description" content="A programming language for coding agents. Search for expressions from observed behavior and inspect a concrete input that distinguishes two answers.">
+  <meta property="og:description" content="Try the symmetry check that caught a faulty edit after 24 examples passed. Explore a six-task pilot of compiler-verified edits and model repairs.">
   <meta property="og:url" content="https://gptpp.sandoog.co/">
   <meta property="og:image" content="https://gptpp.sandoog.co/assets/social-card.png">
   <meta property="og:image:alt" content="GPT++ logo and the words A language made by AI, for AI.">
@@ -42,10 +42,10 @@
       <div class="hero-copy">
         <p class="eyebrow"><span class="status-block" aria-hidden="true"></span> Free and open project</p>
         <h1 id="hero-title">A language<br>made by AI,<br><em>for AI.</em></h1>
-        <p class="hero-description">GPT++ is an experimental programming language designed for coding agents. Leave a typed hole and give the compiler examples. It can use the observed values to build candidate expressions, check them against the program’s contracts and show a concrete input where two passing answers disagree.</p>
+        <p class="hero-description">GPT++ is an experimental programming language for coding agents. Leave a typed hole and tell the compiler what the code must do. It can search for an expression, verify it over a declared domain, and show the input that breaks a proposed edit.</p>
         <div class="actions">
-          <a class="button button-primary" href="#finite-contracts">Compare two formulas</a>
-          <a class="button button-outline" href="#piecewise-results">See the 11-task comparison</a>
+          <a class="button button-primary" href="?example=makes10#finite-contracts">Try the symmetry check</a>
+          <a class="button button-outline" href="#checked-edits">See the six-task results</a>
         </div>
       </div>
       <div class="hero-visual" aria-hidden="true">
@@ -59,10 +59,10 @@
       </div>
     </section>
 
-    <nav class="frame study-summary" aria-label="Automatic search results">
-      <a href="#piecewise-results"><strong>Final confirmation · 11 exercises</strong><span>Piecewise 4/11 · prior minimum 1/11 · portable minimum 2/11</span></a>
-      <a href="#minimum-results"><strong>Earlier · 12 exercises</strong><span>Native and portable search both 0/12</span></a>
-      <a href="#search-results"><strong>Earlier · 9 families</strong><span>Hybrid and previous GPT++ both 1/9</span></a>
+    <nav class="frame study-summary" aria-label="Edit verification and research">
+      <a href="#checked-edits"><strong>Fresh pilot · Six task families</strong><span>Three correct GPT++ edits with compiler search, one with direct Qwen.</span></a>
+      <a href="#piecewise-results"><strong>Historical replay · 11 exercises</strong><span>Accepting every piecewise selection cost two correct Qwen answers.</span></a>
+      <a href="#reopen-witness"><strong>Reservation demo · Two clients</strong><span>Four operations expose a double booking in a one-seat ledger.</span></a>
     </nav>
 
     <section id="finite-contracts" class="contracts" aria-labelledby="contracts-title">
@@ -78,11 +78,13 @@
               <label for="contract-example">Module</label>
               <select id="contract-example">
                 <option value="calibration">Calibration curve</option>
+                <option value="makes10">makes10 symmetry</option>
                 <option value="booking">Reservation ledger</option>
                 <option value="queue">Eight-slot queue</option>
               </select>
               <div class="contract-presets">
                 <button type="button" data-load-bug>Try competing formula</button>
+                <button type="button" data-makes10-weak hidden>Try weaker rule</button>
                 <button type="button" data-reset-source>Reset</button>
               </div>
             </div>
@@ -91,6 +93,7 @@
             <template id="queue-example">GPP_QUEUE_SOURCE</template>
             <template id="calibration-sketch">GPP_CALIBRATION_SKETCH</template>
             <template id="calibration-report">GPP_CALIBRATION_REPORT</template>
+            <template id="makes10-demo">GPP_MAKES10_DEMO</template>
           </div>
           <div class="contract-console">
             <label class="calibration-check" data-calibration-control hidden>
@@ -121,6 +124,14 @@ target/debug/gpp complete examples/calibration/sketch.gpp --hole rule --search m
           <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/examples/calibration/sketch.gpp">Read the seven observations</a>
           <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/examples/calibration/completion.json">Default search report</a>
           <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/examples/calibration/minimum.json">Minimum-cost report</a>
+        </details>
+        <details class="contract-terminal" data-terminal="makes10" hidden>
+          <summary>Replay the makes10 development case locally</summary>
+          <pre class="replay-code"><code>cargo build --release --locked --offline
+python3 -B examples/makes10/demo.py</code></pre>
+          <p>The browser checks 24 public examples and the selected finite rule. The local replay also uses Z3 to check the exact rule over the same integer bounds and rechecks the saved model repair.</p>
+          <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/examples/makes10/README.md">Read the development case</a>
+          <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/examples/makes10/development.json">Inspect the compiler and model records</a>
         </details>
         <details class="contract-terminal" data-terminal="queue" hidden>
           <summary>Check the queue locally</summary>
@@ -241,6 +252,7 @@ target/debug/gpp prove target/booking-proof.gpp</code></pre>
           <p>Every result starts with a behavioral check. We track how many changes pass, what the model read and wrote, how long the tools ran, and whether anyone supplied extra answers.</p>
         </div>
         <div class="research-links">
+          <a class="research-link" href="#checked-edits"><span>Contract-gated edits on six fresh tasks</span><span aria-hidden="true">+</span></a>
           <a class="research-link" href="#piecewise-results"><span>Final comparison of piecewise search</span><span aria-hidden="true">+</span></a>
           <a class="research-link" href="#minimum-results"><span>Minimum-cost search on external exercises</span><span aria-hidden="true">+</span></a>
           <a class="research-link" href="#search-results"><span>Behavior-guided search on nine new tasks</span><span aria-hidden="true">+</span></a>
@@ -254,6 +266,46 @@ target/debug/gpp prove target/booking-proof.gpp</code></pre>
           <a class="research-link" href="#benchmarks"><span>Earlier expression benchmarks</span><span aria-hidden="true">+</span></a>
         </div>
       </div>
+      <article id="checked-edits" class="frame" aria-labelledby="checked-edits-title">
+        <div class="repair-result">
+          <div class="repair-copy">
+            <p class="eyebrow">Contract-gated edits · Fresh pilot</p>
+            <h3 id="checked-edits-title">When can the compiler skip a model call?</h3>
+            <p>On six fresh GPT++ changes, compiler search and the opt-in workflow both solved three. Signed net weight, proof-sheet padding and the mirror carriage each passed its declared contract and independent scoring without a model call. Direct Qwen solved net weight.</p>
+            <p>For each of the other three tasks, the workflow sent Qwen the failing expression, the input, the observed value and the violated rule. All three repair attempts failed the public checks, so the workflow withheld those edits.</p>
+            <details class="contract-terminal checked-replay">
+              <summary>Run the six-task comparison</summary>
+              <pre class="replay-code"><code>python3 -B bench/checked_edits/compare.py \
+  target/new-checked-edits</code></pre>
+              <p>Use a new output directory and the pinned local Qwen model. The runner closes the decision log before scoring the published edits.</p>
+              <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/bench/checked_edits/README.md#run-the-comparison">Setup and offline replay commands</a>
+            </details>
+            <aside class="checked-witness" id="reopen-witness" aria-labelledby="reopen-title">
+              <h4 id="reopen-title">A counterexample both clients can replay</h4>
+              <p>Start with one seat. Reserve A, cancel A, reserve B, then reopen A. The defective component returned success with both bookings active. The corrected library returned “sold out” and kept B’s reservation in both the Python and Rust clients.</p>
+              <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/examples/reservations/reopen-witness.json">Inspect the state at step four</a>
+            </aside>
+          </div>
+          <div class="repair-evidence checked-evidence">
+            <table>
+              <caption>Six fresh GPT++ assignments per method</caption>
+              <thead><tr><th scope="col">Method</th><th scope="col">Correct</th><th scope="col">Trial calls</th><th scope="col">Tokens per correct edit</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Direct Qwen</th><td>1/6</td><td>6</td><td>2,962</td></tr>
+                <tr><th scope="row">Direct + blind retry</th><td>1/6</td><td>11</td><td>4,307</td></tr>
+                <tr><th scope="row">Direct + counterexample</th><td>1/6</td><td>11</td><td>4,396</td></tr>
+                <tr><th scope="row">Compiler only</th><td>3/6</td><td>0</td><td>517</td></tr>
+                <tr class="checked-total"><th scope="row">Opt-in workflow</th><td>3/6</td><td>3</td><td>857</td></tr>
+              </tbody>
+            </table>
+            <p>All published edits passed independent scoring. The remaining assignments ended in abstentions. Token costs include failed attempts and six shared model calls to audit the contracts. Contract-authoring tokens were unmetered.</p>
+            <p>The workflow used <strong>71.1% fewer metered tokens per correct edit</strong> than direct Qwen. The prespecified goal was 20% fewer with at most a two-point drop in correctness. The 95% interval for the correctness difference ran from −48.8 to +81.6 percentage points, and the cost ratio had no finite upper bound at 95%. Six families leave the target unresolved. The workflow stays opt-in.</p>
+            <p>Counterexamples did help on <code>service_gap</code> in typed Python and Rust. Qwen repaired a candidate that accepted coincident anchors, and both repairs passed all 420 independent inputs. A separate replay supplied an <code>abs</code> helper missing from the GPT++ sketch and reproduced all 90 scored outcomes.</p>
+            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/bench/checked_edits/results.md">Read the study report</a>
+            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/bench/checked_edits/run/results.md">Compare all three languages</a>
+          </div>
+        </div>
+      </article>
       <article id="piecewise-results" class="frame" aria-labelledby="piecewise-title">
         <div class="repair-result">
           <div class="repair-copy">
@@ -264,8 +316,8 @@ target/debug/gpp prove target/booking-proof.gpp</code></pre>
             <pre class="replay-code"><code>target/debug/gpp complete \
   examples/special_eleven.gpp --hole change \
   --search piecewise --limit 256</code></pre>
-            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/examples/special_eleven.gpp">Run the exact benchmark sketch</a>
-            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/bench/search-confirmation/protocol.md">Read the frozen protocol</a>
+            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/0ad5a404b0f9108a3a5786325782eee663c57f43/examples/special_eleven.gpp">Run the exact benchmark sketch</a>
+            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/0ad5a404b0f9108a3a5786325782eee663c57f43/bench/search-confirmation/protocol.md">Read the frozen protocol</a>
           </div>
           <div class="repair-evidence">
             <table>
@@ -282,10 +334,11 @@ target/debug/gpp prove target/booking-proof.gpp</code></pre>
             <p>Compared with the largest portable minimum-cost search, piecewise alone solved two exercises, both solved two, and both missed seven. There were zero paired losses. The portable control allowed 302,192 intermediate operations per task. All search arms had a 256-candidate ceiling and 30-second deadline.</p>
             <p>Three of the seven piecewise selections were wrong on withheld inputs. Two other searches reported ambiguities, one exhausted its search allowance and one rejected every candidate. The study used 264 public examples and 2,342 withheld inputs across the eleven exercises.</p>
             <p><strong>Separate model trial.</strong> With one model call per task and language, Qwen solved 7 of 11 in GPT++, 7 in typed Python and 7 in Rust. StarCoder2 solved none. Those 66 calls measure model generation. The public exercises may have appeared in model training.</p>
+            <p><strong>Historical decision replay.</strong> Accepting every piecewise selection and falling back to the archived Qwen answer solved 5 of 11. Fallback recovered <code>more20</code>. The selector replaced Qwen’s correct <code>makes10</code> and <code>nearHundred</code> answers and published a wrong <code>posNeg</code> where Qwen had abstained. <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/bench/checked_edits/README.md#historical-baseline-and-development">Replay all eleven decisions offline</a></p>
             <p>After scoring, Z3 proved the two additional wins against wider contracts. <code>specialEleven</code> held for every nonnegative I64, and <code>sumDouble</code> held for every signed I64 pair whose specified result fits in I64. Both faulty starters produced counterexamples.</p>
-            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/bench/search-confirmation/proofs.md">Replay the post-scoring proofs</a>
-            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/bench/search-confirmation/results.md">All tasks, paired outcomes and costs</a>
-            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/master/bench/search-confirmation/results.jsonl">Raw trial archive</a>
+            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/0ad5a404b0f9108a3a5786325782eee663c57f43/bench/search-confirmation/proofs.md">Replay the post-scoring proofs</a>
+            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/0ad5a404b0f9108a3a5786325782eee663c57f43/bench/search-confirmation/results.md">All tasks, paired outcomes and costs</a>
+            <a class="text-link" href="https://github.com/MightyBloodHub/gptpp/blob/0ad5a404b0f9108a3a5786325782eee663c57f43/bench/search-confirmation/results.jsonl">Raw trial archive</a>
           </div>
         </div>
       </article>

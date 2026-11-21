@@ -605,6 +605,28 @@ section[id] { scroll-margin-block-start: 1.5rem; }
 .repair-evidence p { margin-block: 1rem .6rem; }
 .repair-evidence .text-link { margin-inline-end: .75rem; }
 
+.checked-evidence table { font-variant-numeric: tabular-nums; }
+.checked-evidence thead th:not(:first-child),
+.checked-evidence td { text-align: end; }
+.checked-evidence th:last-child,
+.checked-evidence td:last-child { padding-inline-end: 0; }
+.checked-evidence .checked-total > * {
+  padding-block: .8rem;
+  border-block: 1px solid var(--gpp-signal);
+  color: var(--gpp-signal);
+  font-weight: 650;
+}
+.checked-replay { margin-block: 1.25rem; }
+.checked-witness {
+  margin-top: 1.6rem;
+  padding-inline-start: 1rem;
+  border-inline-start: 2px solid var(--gpp-lavender);
+  scroll-margin-block-start: 1rem;
+}
+.checked-witness h4 { margin: 0 0 .4rem; font-size: 1.075rem; }
+.checked-witness p { color: var(--gpp-mist); }
+.checked-witness .text-link { margin-top: .55rem; }
+
 .comparison-intro {
   padding-block-start: clamp(2rem, 4vw, 4rem);
   border-top: 1px solid var(--dark-rule);

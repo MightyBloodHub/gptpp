@@ -5,7 +5,7 @@ repo_dir=$(CDPATH= cd "$(dirname "$0")/.." && pwd)
 source_dir="$repo_dir/website"
 brand_dir="$repo_dir/brand"
 benchmark_dir="$repo_dir/bench/expression/community"
-output_dir="$repo_dir/target/website"
+output_dir=${1:-"$repo_dir/target/website"}
 revision=${GPP_SITE_REVISION:-}
 
 if [ -n "$revision" ]; then
@@ -36,15 +36,35 @@ install -m 644 "$source_dir/playground/verify.wasm" "$output_dir/playground/"
 install -m 644 "$source_dir/styles.css" "$source_dir/site.js" "$output_dir/"
 python3 - "$repo_dir" "$output_dir/index.html" "$revision" <<'PYTHON'
 from html import escape
+import json
 from pathlib import Path
 import sys
 
 root, target, revision = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3]
 page = (root / "website/index.html").read_text()
-for marker, name in (("GPP_BOOKING_SOURCE", "reservations/booking.gpp"), ("GPP_CALIBRATION_SKETCH", "calibration/sketch.gpp"), ("GPP_CALIBRATION_REPORT", "calibration/completion.json"), ("GPP_QUEUE_SOURCE", "capacity.gpp")):
+def embed(marker, content):
+    global page
     if page.count(marker) != 1:
         raise SystemExit(f"expected one {marker} in the playground")
-    page = page.replace(marker, escape((root / "examples" / name).read_text(), quote=False))
+    page = page.replace(marker, escape(content, quote=False))
+
+for marker, name in (("GPP_BOOKING_SOURCE", "reservations/booking.gpp"), ("GPP_CALIBRATION_SKETCH", "calibration/sketch.gpp"), ("GPP_CALIBRATION_REPORT", "calibration/completion.json"), ("GPP_QUEUE_SOURCE", "capacity.gpp")):
+    embed(marker, (root / "examples" / name).read_text())
+
+example = root / "examples/makes10"
+sketch = (example / "public.gpp").read_text()
+capture = json.loads((example / "development.json").read_text())
+symmetry, = (rule for rule in json.loads((example / "contracts.json").read_text()) if rule["mode"] == "finite")
+weak, = json.loads((example / "weak.json").read_text())
+def makes10_module(candidate, rule):
+    return sketch.replace("?change: Bool", capture[candidate]["expression"]) + "\n" + rule["declaration"] + "\n"
+
+embed("GPP_MAKES10_DEMO", json.dumps({
+    "source": makes10_module("negative_control", symmetry),
+    "alternative": makes10_module("reference", symmetry),
+    "weak": makes10_module("negative_control", weak),
+    "observed": capture["negative_control"]["feedback"]["observed"],
+}, separators=(",", ":")))
 if revision:
     for kind in ("blob", "tree"):
         prefix = f"MightyBloodHub/gptpp/{kind}/"

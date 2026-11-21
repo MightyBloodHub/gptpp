@@ -56,6 +56,26 @@ const checks = [
 ];
 const work = mkdtempSync(join(tmpdir(), "gpp-playground-"));
 try {
+  const webRoot = join(work, "site");
+  const build = spawnSync("sh", [join(root, "website/build.sh"), webRoot], { encoding: "utf8" });
+  assert.equal(build.status, 0, build.stderr);
+  const html = readFileSync(join(webRoot, "index.html"), "utf8");
+  const template = html.match(/<template id="makes10-demo">([^<]+)<\/template>/);
+  assert(template, "expected the makes10 fixture in the published HTML");
+  const makes10 = JSON.parse(template[1].replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("&amp;", "&"));
+  const capture = JSON.parse(readFileSync(join(root, "examples/makes10/development.json"), "utf8"));
+  const publicSource = readFileSync(join(root, "examples/makes10/public.gpp"), "utf8");
+  assert.deepEqual(makes10.observed, capture.negative_control.feedback.observed);
+  for (const [variant, record] of [["source", capture.negative_control], ["alternative", capture.reference], ["weak", capture.weak_contract]]) {
+    const obligation = record.obligations[0];
+    assert.equal(makes10[variant], publicSource.replace("?change: Bool", record.expression) + "\n" + obligation.declaration + "\n");
+    const budget = record.public_examples.checked + obligation.checked;
+    checks.push([makes10[variant], budget, obligation.status]);
+    const report = JSON.parse(webVerify(makes10[variant], budget));
+    assert.equal(report.checked, budget);
+    assert.deepEqual(report.contracts.slice(0, -1), record.public_examples.contracts);
+    assert.deepEqual(report.contracts.at(-1).counterexample, obligation.counterexample);
+  }
   writeFileSync(join(work, "sketch.gpp"), sketch);
   const search = spawnSync(binary, ["complete", "sketch.gpp", "--hole", "rule", "--search", "hybrid", "--limit", "32"], {
     cwd: work, encoding: "utf8", timeout: 10_000,

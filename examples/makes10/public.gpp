@@ -1,0 +1,29 @@
+module study.search;
+fn transition(a: I64, b: I64) -> Bool !{} {
+    return ?change: Bool;
+}
+pub fn main() -> I64 !{} { return 0; }
+contract sample_0() { transition(9, 10) == true }
+contract sample_1() { transition(9, 9) == false }
+contract sample_2() { transition(1, 9) == true }
+contract sample_3() { transition(-5, -5) == false }
+contract sample_4() { transition(18, 18) == false }
+contract sample_5() { transition(6, -5) == false }
+contract sample_6() { transition(1, 2) == false }
+contract sample_7() { transition(13, 9) == false }
+contract sample_8() { transition(7, -2) == false }
+contract sample_9() { transition(8, -2) == false }
+contract sample_10() { transition(-3, 10) == true }
+contract sample_11() { transition(3, 10) == true }
+contract sample_12() { transition(10, 0) == true }
+contract sample_13() { transition(-5, 10) == true }
+contract sample_14() { transition(7, 3) == true }
+contract sample_15() { transition(12, 15) == false }
+contract sample_16() { transition(15, 12) == false }
+contract sample_17() { transition(0, 12) == false }
+contract sample_18() { transition(16, 15) == false }
+contract sample_19() { transition(2, 16) == false }
+contract sample_20() { transition(4, -5) == false }
+contract sample_21() { transition(1, 5) == false }
+contract sample_22() { transition(2, -5) == false }
+contract sample_23() { transition(4, -3) == false }

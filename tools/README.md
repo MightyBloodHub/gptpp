@@ -23,6 +23,10 @@ target/debug/gpp run --interpreter target/larger-preview.gpp
 
 Compiler validation covers parsing, types and checked IR. Run your behavioral tests against the proposed module. An edit using an outdated base revision fails if the source changed during generation or after review.
 
+## Gate a typed edit on a public contract
+
+Use `python3 -B tools/acceptance.py` to evaluate a typed-hole completion against predeclared finite or symbolic obligations. Each candidate’s JSON receipt identifies the revision, public examples, contract domain and verification outcome. A failing public rule can supply a concrete input for one model repair. The driver can accept a verified compiler edit with zero model calls. [Command and example receipts](../examples/makes10/README.md#use-the-opt-in-gate-on-a-public-sketch)
+
 ## Repair an expression against source contracts
 
 The offline contract repair tool takes a module with finite contracts and a target function. It searches for a single-expression edit and checks candidates against the module’s contracts. A failing input comes from executing the source predicate. An agent can use it even when nobody has supplied a list of expected return values.

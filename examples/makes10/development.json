@@ -1,0 +1,1484 @@
+{
+  "dataset": "development (historical makes10)",
+  "model_source": "newly executed",
+  "reference": {
+    "schema": "gpp.acceptance/1",
+    "source": "reference:public rule",
+    "expression": "a == 10 || b == 10 || a+b == 10",
+    "sketch_revision": "sha256:f605141786efa9ff02371798da7a6a3e698d49f112d05801811757e58e203e00",
+    "decision": "accept",
+    "public_examples": {
+      "schema": "gpp.verify/1",
+      "revision": "sha256:fedc678ca125c30e2afcfe30d8fa98490bd8400510323a23e5b8ed585d08a4ef",
+      "status": "passed",
+      "checked": 24,
+      "budget": 10000,
+      "contracts": [
+        {
+          "name": "sample_0",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_1",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_2",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_3",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_4",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_5",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_6",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_7",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_8",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_9",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_10",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_11",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_12",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_13",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_14",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_15",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_16",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_17",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_18",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_19",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_20",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_21",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_22",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_23",
+          "status": "passed",
+          "checked": 1
+        }
+      ]
+    },
+    "feedback": null,
+    "edit_site": {
+      "name": "change",
+      "function": "transition",
+      "type": "Bool",
+      "start_byte": 76,
+      "end_byte": 89,
+      "locals": [
+        {
+          "name": "a",
+          "type": "I64"
+        },
+        {
+          "name": "b",
+          "type": "I64"
+        }
+      ],
+      "revision": "sha256:f605141786efa9ff02371798da7a6a3e698d49f112d05801811757e58e203e00"
+    },
+    "budget_per_finite_verification": 10000,
+    "proof_timeout_ms": 5000,
+    "obligations": [
+      {
+        "name": "interchangeable",
+        "mode": "finite",
+        "rule": "Interchanging the arguments must preserve the answer.",
+        "declaration": "contract interchangeable(a: I64 in -5..=18, b: I64 in -5..=18) { transition(a,b) == transition(b,a) }",
+        "limitation": "Symmetry alone does not determine which pairs should be accepted.",
+        "domain": "a: I64 in -5..=18, b: I64 in -5..=18",
+        "status": "passed",
+        "checked": 576
+      },
+      {
+        "name": "makes_ten",
+        "mode": "prove",
+        "rule": "Accept exactly when an argument is ten or the sum is ten.",
+        "declaration": "contract makes_ten(a: I64 in -5..=18, b: I64 in -5..=18) { transition(a,b) == (min(a,b) == 10 || max(a,b) == 10 || a+b == 10) }",
+        "limitation": "Both arguments are restricted to signed integers from -5 through 18.",
+        "domain": "a: I64 in -5..=18, b: I64 in -5..=18",
+        "status": "proved"
+      }
+    ],
+    "candidate_revision": "sha256:fedc678ca125c30e2afcfe30d8fa98490bd8400510323a23e5b8ed585d08a4ef",
+    "verification_revision": "sha256:cf5ec8e1bb617e5ab6ee7d297730ba2db62db66158625620def9925dc4a7ffcf",
+    "reason": "declared_contracts_discharged",
+    "tool_seconds": 0.07631641591433436
+  },
+  "negative_control": {
+    "schema": "gpp.acceptance/1",
+    "source": "regression:archived piecewise",
+    "expression": "(((b + a) == 10) || (b == 10))",
+    "sketch_revision": "sha256:f605141786efa9ff02371798da7a6a3e698d49f112d05801811757e58e203e00",
+    "decision": "reject",
+    "public_examples": {
+      "schema": "gpp.verify/1",
+      "revision": "sha256:6122cad5ec3f5a9f3637a124167b48d61858f012f22b2f96e3a4270756aec30e",
+      "status": "passed",
+      "checked": 24,
+      "budget": 10000,
+      "contracts": [
+        {
+          "name": "sample_0",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_1",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_2",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_3",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_4",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_5",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_6",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_7",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_8",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_9",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_10",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_11",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_12",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_13",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_14",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_15",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_16",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_17",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_18",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_19",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_20",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_21",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_22",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_23",
+          "status": "passed",
+          "checked": 1
+        }
+      ]
+    },
+    "feedback": {
+      "contract": "interchangeable",
+      "rule": "Interchanging the arguments must preserve the answer.",
+      "inputs": {
+        "a": -5,
+        "b": 10
+      },
+      "args": [
+        -5,
+        10
+      ],
+      "contract_result": {
+        "result": false
+      },
+      "observed": [
+        {
+          "locals": {
+            "a": -5,
+            "b": 10
+          },
+          "value": true
+        },
+        {
+          "locals": {
+            "a": 10,
+            "b": -5
+          },
+          "value": false
+        }
+      ],
+      "edit_site": {
+        "name": "change",
+        "function": "transition",
+        "type": "Bool",
+        "start_byte": 76,
+        "end_byte": 89,
+        "locals": [
+          {
+            "name": "a",
+            "type": "I64"
+          },
+          {
+            "name": "b",
+            "type": "I64"
+          }
+        ],
+        "revision": "sha256:f605141786efa9ff02371798da7a6a3e698d49f112d05801811757e58e203e00",
+        "previous": "(((b + a) == 10) || (b == 10))"
+      },
+      "replay": {
+        "source_revision": "sha256:762c324b79b8427c4380c4fff2eb413cc7ba55fac40303905a8d9a58d19a22de",
+        "probe": {
+          "result": false
+        },
+        "command": [
+          "trace",
+          "CANDIDATE.gpp",
+          "--function",
+          "transition",
+          "--contract",
+          "interchangeable",
+          "-5",
+          "10"
+        ]
+      }
+    },
+    "edit_site": {
+      "name": "change",
+      "function": "transition",
+      "type": "Bool",
+      "start_byte": 76,
+      "end_byte": 89,
+      "locals": [
+        {
+          "name": "a",
+          "type": "I64"
+        },
+        {
+          "name": "b",
+          "type": "I64"
+        }
+      ],
+      "revision": "sha256:f605141786efa9ff02371798da7a6a3e698d49f112d05801811757e58e203e00"
+    },
+    "budget_per_finite_verification": 10000,
+    "proof_timeout_ms": 5000,
+    "obligations": [
+      {
+        "name": "interchangeable",
+        "mode": "finite",
+        "rule": "Interchanging the arguments must preserve the answer.",
+        "declaration": "contract interchangeable(a: I64 in -5..=18, b: I64 in -5..=18) { transition(a,b) == transition(b,a) }",
+        "limitation": "Symmetry alone does not determine which pairs should be accepted.",
+        "domain": "a: I64 in -5..=18, b: I64 in -5..=18",
+        "status": "counterexample",
+        "checked": 16,
+        "counterexample": {
+          "inputs": {
+            "a": -5,
+            "b": 10
+          },
+          "args": [
+            -5,
+            10
+          ],
+          "result": false
+        }
+      },
+      {
+        "name": "makes_ten",
+        "mode": "prove",
+        "rule": "Accept exactly when an argument is ten or the sum is ten.",
+        "declaration": "contract makes_ten(a: I64 in -5..=18, b: I64 in -5..=18) { transition(a,b) == (min(a,b) == 10 || max(a,b) == 10 || a+b == 10) }",
+        "limitation": "Both arguments are restricted to signed integers from -5 through 18.",
+        "domain": "a: I64 in -5..=18, b: I64 in -5..=18",
+        "status": "not_run"
+      }
+    ],
+    "candidate_revision": "sha256:6122cad5ec3f5a9f3637a124167b48d61858f012f22b2f96e3a4270756aec30e",
+    "verification_revision": "sha256:762c324b79b8427c4380c4fff2eb413cc7ba55fac40303905a8d9a58d19a22de",
+    "reason": "contract_counterexample",
+    "tool_seconds": 0.042933791992254555
+  },
+  "weak_contract": {
+    "schema": "gpp.acceptance/1",
+    "source": "regression:archived piecewise",
+    "expression": "(((b + a) == 10) || (b == 10))",
+    "sketch_revision": "sha256:f605141786efa9ff02371798da7a6a3e698d49f112d05801811757e58e203e00",
+    "decision": "accept",
+    "public_examples": {
+      "schema": "gpp.verify/1",
+      "revision": "sha256:6122cad5ec3f5a9f3637a124167b48d61858f012f22b2f96e3a4270756aec30e",
+      "status": "passed",
+      "checked": 24,
+      "budget": 10000,
+      "contracts": [
+        {
+          "name": "sample_0",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_1",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_2",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_3",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_4",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_5",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_6",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_7",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_8",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_9",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_10",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_11",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_12",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_13",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_14",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_15",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_16",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_17",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_18",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_19",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_20",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_21",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_22",
+          "status": "passed",
+          "checked": 1
+        },
+        {
+          "name": "sample_23",
+          "status": "passed",
+          "checked": 1
+        }
+      ]
+    },
+    "feedback": null,
+    "edit_site": {
+      "name": "change",
+      "function": "transition",
+      "type": "Bool",
+      "start_byte": 76,
+      "end_byte": 89,
+      "locals": [
+        {
+          "name": "a",
+          "type": "I64"
+        },
+        {
+          "name": "b",
+          "type": "I64"
+        }
+      ],
+      "revision": "sha256:f605141786efa9ff02371798da7a6a3e698d49f112d05801811757e58e203e00"
+    },
+    "budget_per_finite_verification": 10000,
+    "proof_timeout_ms": 5000,
+    "obligations": [
+      {
+        "name": "right_ten",
+        "mode": "finite",
+        "rule": "Accept every pair whose second argument is ten.",
+        "declaration": "contract right_ten(a: I64 in -5..=18) { transition(a,10) }",
+        "limitation": "This rule leaves inputs with a different second argument unconstrained except for the public examples. A candidate can miss a == 10.",
+        "domain": "a: I64 in -5..=18",
+        "status": "passed",
+        "checked": 24
+      }
+    ],
+    "candidate_revision": "sha256:6122cad5ec3f5a9f3637a124167b48d61858f012f22b2f96e3a4270756aec30e",
+    "verification_revision": "sha256:099e660c70d12acee88b53c11f613cacc8eb44b5ccae7dd521756de4208fe87f",
+    "reason": "declared_contracts_discharged",
+    "tool_seconds": 0.027917917002923787
+  },
+  "workflow": {
+    "schema": "gpp.acceptance-workflow/1",
+    "decision": "abstain",
+    "selected": null,
+    "first_pass": false,
+    "model_calls": 1,
+    "candidates": [
+      {
+        "schema": "gpp.acceptance/1",
+        "source": "compiler:complete/piecewise",
+        "expression": "(((b + a) == 10) || (b == 10))",
+        "sketch_revision": "sha256:f605141786efa9ff02371798da7a6a3e698d49f112d05801811757e58e203e00",
+        "decision": "reject",
+        "public_examples": {
+          "schema": "gpp.verify/1",
+          "revision": "sha256:6122cad5ec3f5a9f3637a124167b48d61858f012f22b2f96e3a4270756aec30e",
+          "status": "passed",
+          "checked": 24,
+          "budget": 10000,
+          "contracts": [
+            {
+              "name": "sample_0",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_1",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_2",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_3",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_4",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_5",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_6",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_7",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_8",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_9",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_10",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_11",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_12",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_13",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_14",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_15",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_16",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_17",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_18",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_19",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_20",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_21",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_22",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_23",
+              "status": "passed",
+              "checked": 1
+            }
+          ]
+        },
+        "feedback": {
+          "contract": "interchangeable",
+          "rule": "Interchanging the arguments must preserve the answer.",
+          "inputs": {
+            "a": -5,
+            "b": 10
+          },
+          "args": [
+            -5,
+            10
+          ],
+          "contract_result": {
+            "result": false
+          },
+          "observed": [
+            {
+              "locals": {
+                "a": -5,
+                "b": 10
+              },
+              "value": true
+            },
+            {
+              "locals": {
+                "a": 10,
+                "b": -5
+              },
+              "value": false
+            }
+          ],
+          "edit_site": {
+            "name": "change",
+            "function": "transition",
+            "type": "Bool",
+            "start_byte": 76,
+            "end_byte": 89,
+            "locals": [
+              {
+                "name": "a",
+                "type": "I64"
+              },
+              {
+                "name": "b",
+                "type": "I64"
+              }
+            ],
+            "revision": "sha256:f605141786efa9ff02371798da7a6a3e698d49f112d05801811757e58e203e00",
+            "previous": "(((b + a) == 10) || (b == 10))"
+          },
+          "replay": {
+            "source_revision": "sha256:762c324b79b8427c4380c4fff2eb413cc7ba55fac40303905a8d9a58d19a22de",
+            "probe": {
+              "result": false
+            },
+            "command": [
+              "trace",
+              "CANDIDATE.gpp",
+              "--function",
+              "transition",
+              "--contract",
+              "interchangeable",
+              "-5",
+              "10"
+            ]
+          }
+        },
+        "edit_site": {
+          "name": "change",
+          "function": "transition",
+          "type": "Bool",
+          "start_byte": 76,
+          "end_byte": 89,
+          "locals": [
+            {
+              "name": "a",
+              "type": "I64"
+            },
+            {
+              "name": "b",
+              "type": "I64"
+            }
+          ],
+          "revision": "sha256:f605141786efa9ff02371798da7a6a3e698d49f112d05801811757e58e203e00"
+        },
+        "budget_per_finite_verification": 10000,
+        "proof_timeout_ms": 5000,
+        "obligations": [
+          {
+            "name": "interchangeable",
+            "mode": "finite",
+            "rule": "Interchanging the arguments must preserve the answer.",
+            "declaration": "contract interchangeable(a: I64 in -5..=18, b: I64 in -5..=18) { transition(a,b) == transition(b,a) }",
+            "limitation": "Symmetry alone does not determine which pairs should be accepted.",
+            "domain": "a: I64 in -5..=18, b: I64 in -5..=18",
+            "status": "counterexample",
+            "checked": 16,
+            "counterexample": {
+              "inputs": {
+                "a": -5,
+                "b": 10
+              },
+              "args": [
+                -5,
+                10
+              ],
+              "result": false
+            }
+          },
+          {
+            "name": "makes_ten",
+            "mode": "prove",
+            "rule": "Accept exactly when an argument is ten or the sum is ten.",
+            "declaration": "contract makes_ten(a: I64 in -5..=18, b: I64 in -5..=18) { transition(a,b) == (min(a,b) == 10 || max(a,b) == 10 || a+b == 10) }",
+            "limitation": "Both arguments are restricted to signed integers from -5 through 18.",
+            "domain": "a: I64 in -5..=18, b: I64 in -5..=18",
+            "status": "not_run"
+          }
+        ],
+        "candidate_revision": "sha256:6122cad5ec3f5a9f3637a124167b48d61858f012f22b2f96e3a4270756aec30e",
+        "verification_revision": "sha256:762c324b79b8427c4380c4fff2eb413cc7ba55fac40303905a8d9a58d19a22de",
+        "reason": "contract_counterexample",
+        "tool_seconds": 0.04787766607478261
+      },
+      {
+        "schema": "gpp.acceptance/1",
+        "source": "compiler:complete/piecewise",
+        "expression": "(((b % 9) != 1) != ((b + a) != 10))",
+        "sketch_revision": "sha256:f605141786efa9ff02371798da7a6a3e698d49f112d05801811757e58e203e00",
+        "decision": "reject",
+        "public_examples": {
+          "schema": "gpp.verify/1",
+          "revision": "sha256:5d41d86624e47d96c81f92fca9ea81115711ddb9f14687387d679bd396ffb6ca",
+          "status": "passed",
+          "checked": 24,
+          "budget": 10000,
+          "contracts": [
+            {
+              "name": "sample_0",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_1",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_2",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_3",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_4",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_5",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_6",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_7",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_8",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_9",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_10",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_11",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_12",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_13",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_14",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_15",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_16",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_17",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_18",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_19",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_20",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_21",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_22",
+              "status": "passed",
+              "checked": 1
+            },
+            {
+              "name": "sample_23",
+              "status": "passed",
+              "checked": 1
+            }
+          ]
+        },
+        "feedback": {
+          "contract": "interchangeable",
+          "rule": "Interchanging the arguments must preserve the answer.",
+          "inputs": {
+            "a": -5,
+            "b": 1
+          },
+          "args": [
+            -5,
+            1
+          ],
+          "contract_result": {
+            "result": false
+          },
+          "observed": [
+            {
+              "locals": {
+                "a": -5,
+                "b": 1
+              },
+              "value": true
+            },
+            {
+              "locals": {
+                "a": 1,
+                "b": -5
+              },
+              "value": false
+            }
+          ],
+          "edit_site": {
+            "name": "change",
+            "function": "transition",
+            "type": "Bool",
+            "start_byte": 76,
+            "end_byte": 89,
+            "locals": [
+              {
+                "name": "a",
+                "type": "I64"
+              },
+              {
+                "name": "b",
+                "type": "I64"
+              }
+            ],
+            "revision": "sha256:f605141786efa9ff02371798da7a6a3e698d49f112d05801811757e58e203e00",
+            "previous": "(((b % 9) != 1) != ((b + a) != 10))"
+          },
+          "replay": {
+            "source_revision": "sha256:069bad0b479db6be4aaf7b2c2793885f13e45456f16e33bb03bf2b882d66f223",
+            "probe": {
+              "result": false
+            },
+            "command": [
+              "trace",
+              "CANDIDATE.gpp",
+              "--function",
+              "transition",
+              "--contract",
+              "interchangeable",
+              "-5",
+              "1"
+            ]
+          }
+        },
+        "edit_site": {
+          "name": "change",
+          "function": "transition",
+          "type": "Bool",
+          "start_byte": 76,
+          "end_byte": 89,
+          "locals": [
+            {
+              "name": "a",
+              "type": "I64"
+            },
+            {
+              "name": "b",
+              "type": "I64"
+            }
+          ],
+          "revision": "sha256:f605141786efa9ff02371798da7a6a3e698d49f112d05801811757e58e203e00"
+        },
+        "budget_per_finite_verification": 10000,
+        "proof_timeout_ms": 5000,
+        "obligations": [
+          {
+            "name": "interchangeable",
+            "mode": "finite",
+            "rule": "Interchanging the arguments must preserve the answer.",
+            "declaration": "contract interchangeable(a: I64 in -5..=18, b: I64 in -5..=18) { transition(a,b) == transition(b,a) }",
+            "limitation": "Symmetry alone does not determine which pairs should be accepted.",
+            "domain": "a: I64 in -5..=18, b: I64 in -5..=18",
+            "status": "counterexample",
+            "checked": 7,
+            "counterexample": {
+              "inputs": {
+                "a": -5,
+                "b": 1
+              },
+              "args": [
+                -5,
+                1
+              ],
+              "result": false
+            }
+          },
+          {
+            "name": "makes_ten",
+            "mode": "prove",
+            "rule": "Accept exactly when an argument is ten or the sum is ten.",
+            "declaration": "contract makes_ten(a: I64 in -5..=18, b: I64 in -5..=18) { transition(a,b) == (min(a,b) == 10 || max(a,b) == 10 || a+b == 10) }",
+            "limitation": "Both arguments are restricted to signed integers from -5 through 18.",
+            "domain": "a: I64 in -5..=18, b: I64 in -5..=18",
+            "status": "not_run"
+          }
+        ],
+        "candidate_revision": "sha256:5d41d86624e47d96c81f92fca9ea81115711ddb9f14687387d679bd396ffb6ca",
+        "verification_revision": "sha256:069bad0b479db6be4aaf7b2c2793885f13e45456f16e33bb03bf2b882d66f223",
+        "reason": "contract_counterexample",
+        "tool_seconds": 0.04204662493430078
+      },
+      {
+        "schema": "gpp.acceptance/1",
+        "source": "model:repair",
+        "expression": "(a + b == 10) || (a == 10)",
+        "sketch_revision": "sha256:f605141786efa9ff02371798da7a6a3e698d49f112d05801811757e58e203e00",
+        "decision": "reject",
+        "public_examples": {
+          "schema": "gpp.verify/1",
+          "revision": "sha256:dddf5a929a1ba2c60b5e21a6b9e13e9d6e1db93eeed6a261ca8c5f96d5f424a3",
+          "status": "counterexample",
+          "checked": 1,
+          "budget": 10000,
+          "contracts": [
+            {
+              "name": "sample_0",
+              "status": "counterexample",
+              "checked": 1,
+              "counterexample": {
+                "inputs": {},
+                "args": [],
+                "result": false
+              }
+            }
+          ]
+        },
+        "feedback": {
+          "contract": "sample_0",
+          "rule": "contract sample_0() { transition(9, 10) == true }",
+          "inputs": {},
+          "args": [],
+          "contract_result": {
+            "result": false
+          },
+          "observed": [
+            {
+              "locals": {
+                "a": 9,
+                "b": 10
+              },
+              "value": false
+            }
+          ],
+          "edit_site": {
+            "name": "change",
+            "function": "transition",
+            "type": "Bool",
+            "start_byte": 76,
+            "end_byte": 89,
+            "locals": [
+              {
+                "name": "a",
+                "type": "I64"
+              },
+              {
+                "name": "b",
+                "type": "I64"
+              }
+            ],
+            "revision": "sha256:f605141786efa9ff02371798da7a6a3e698d49f112d05801811757e58e203e00",
+            "previous": "(a + b == 10) || (a == 10)"
+          },
+          "replay": {
+            "source_revision": "sha256:dddf5a929a1ba2c60b5e21a6b9e13e9d6e1db93eeed6a261ca8c5f96d5f424a3",
+            "probe": {
+              "result": false
+            },
+            "command": [
+              "trace",
+              "CANDIDATE.gpp",
+              "--function",
+              "transition",
+              "--contract",
+              "sample_0"
+            ]
+          }
+        },
+        "edit_site": {
+          "name": "change",
+          "function": "transition",
+          "type": "Bool",
+          "start_byte": 76,
+          "end_byte": 89,
+          "locals": [
+            {
+              "name": "a",
+              "type": "I64"
+            },
+            {
+              "name": "b",
+              "type": "I64"
+            }
+          ],
+          "revision": "sha256:f605141786efa9ff02371798da7a6a3e698d49f112d05801811757e58e203e00"
+        },
+        "budget_per_finite_verification": 10000,
+        "proof_timeout_ms": 5000,
+        "obligations": [
+          {
+            "name": "interchangeable",
+            "mode": "finite",
+            "rule": "Interchanging the arguments must preserve the answer.",
+            "declaration": "contract interchangeable(a: I64 in -5..=18, b: I64 in -5..=18) { transition(a,b) == transition(b,a) }",
+            "limitation": "Symmetry alone does not determine which pairs should be accepted.",
+            "domain": "a: I64 in -5..=18, b: I64 in -5..=18",
+            "status": "not_run"
+          },
+          {
+            "name": "makes_ten",
+            "mode": "prove",
+            "rule": "Accept exactly when an argument is ten or the sum is ten.",
+            "declaration": "contract makes_ten(a: I64 in -5..=18, b: I64 in -5..=18) { transition(a,b) == (min(a,b) == 10 || max(a,b) == 10 || a+b == 10) }",
+            "limitation": "Both arguments are restricted to signed integers from -5 through 18.",
+            "domain": "a: I64 in -5..=18, b: I64 in -5..=18",
+            "status": "not_run"
+          }
+        ],
+        "candidate_revision": "sha256:dddf5a929a1ba2c60b5e21a6b9e13e9d6e1db93eeed6a261ca8c5f96d5f424a3",
+        "reason": "public_example",
+        "tool_seconds": 0.05128249991685152
+      }
+    ],
+    "search": {
+      "schema": "gpp.complete/1",
+      "revision": "sha256:f605141786efa9ff02371798da7a6a3e698d49f112d05801811757e58e203e00",
+      "hole": "change",
+      "status": "verified",
+      "tested": 256,
+      "witnesses": 4,
+      "passing_candidates_seen": 24,
+      "candidate_limit": 256,
+      "grammar_truncated": true,
+      "guidance": {
+        "contract_runs": 48,
+        "examples": 24,
+        "value_vectors": 9878,
+        "branch_joins": 0,
+        "proposals": 24
+      },
+      "probe_calls_per_passing_candidate": 64,
+      "selected": "(((b + a) == 10) || (b == 10))",
+      "verification": {
+        "schema": "gpp.verify/1",
+        "revision": "sha256:6122cad5ec3f5a9f3637a124167b48d61858f012f22b2f96e3a4270756aec30e",
+        "status": "passed",
+        "checked": 24,
+        "budget": 10000,
+        "contracts": [
+          {
+            "name": "sample_0",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_1",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_2",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_3",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_4",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_5",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_6",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_7",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_8",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_9",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_10",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_11",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_12",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_13",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_14",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_15",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_16",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_17",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_18",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_19",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_20",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_21",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_22",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "sample_23",
+            "status": "passed",
+            "checked": 1
+          }
+        ]
+      },
+      "selection": {
+        "policy": "minimum_ast_cost",
+        "cost": 9,
+        "value_vectors": 95270,
+        "numeric_hypotheses": 92,
+        "longer_passing": 18,
+        "longer_disagreement": {
+          "function": "transition",
+          "inputs": {
+            "a": 1,
+            "b": 1
+          },
+          "alternatives": [
+            {
+              "expression": "(((b + a) == 10) || (b == 10))",
+              "outcome": {
+                "result": false
+              }
+            },
+            {
+              "expression": "(((b % 9) != 1) != ((b + a) != 10))",
+              "outcome": {
+                "result": true
+              }
+            }
+          ]
+        }
+      },
+      "piecewise": {
+        "subset_operations": 110000,
+        "residual_operations": 11846
+      },
+      "source": "compiler:complete/piecewise",
+      "tool_seconds": 0.055317790945991874
+    },
+    "question": null,
+    "reason": "public_example"
+  },
+  "model_usage": [
+    {
+      "request": {
+        "model": "qwen2.5-coder:7b",
+        "prompt": "Fill one typed GPT++ expression. Return a JSON object containing only expression.\nAccept when either argument is ten or their sum is ten.\nFunction transition. Result type Bool.\nIn scope: a: I64, b: I64\nReplace this expression: (((b + a) == 10) || (b == 10))\nInterchanging the arguments must preserve the answer.\nFailing public contract input: {\"a\": -5, \"b\": 10}\nObserved expression evaluations: [{\"locals\": {\"a\": -5, \"b\": 10}, \"value\": true}, {\"locals\": {\"a\": 10, \"b\": -5}, \"value\": false}]\nPublic contract outcome: {\"result\": false}",
+        "stream": false,
+        "keep_alive": "3m",
+        "format": {
+          "type": "object",
+          "properties": {
+            "expression": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "expression"
+          ],
+          "additionalProperties": false
+        },
+        "options": {
+          "temperature": 0,
+          "seed": 42,
+          "num_ctx": 4096,
+          "num_predict": 160
+        }
+      },
+      "reply": {
+        "response": "{\n  \"expression\": \"(a + b == 10) || (a == 10)\"\n}",
+        "done": true,
+        "done_reason": "stop",
+        "prompt_eval_count": 185,
+        "eval_count": 24
+      },
+      "digest": "dae161e27b0e90dd1856c8bb3209201fd6736d8eb66298e75ed87571486f4364",
+      "elapsed_seconds": 7.687427791999653
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+[
+  {
+    "name": "interchangeable",
+    "mode": "finite",
+    "rule": "Interchanging the arguments must preserve the answer.",
+    "declaration": "contract interchangeable(a: I64 in -5..=18, b: I64 in -5..=18) { transition(a,b) == transition(b,a) }",
+    "limitation": "Symmetry alone does not determine which pairs should be accepted."
+  },
+  {
+    "name": "makes_ten",
+    "mode": "prove",
+    "rule": "Accept exactly when an argument is ten or the sum is ten.",
+    "declaration": "contract makes_ten(a: I64 in -5..=18, b: I64 in -5..=18) { transition(a,b) == (min(a,b) == 10 || max(a,b) == 10 || a+b == 10) }",
+    "limitation": "Both arguments are restricted to signed integers from -5 through 18."
+  }
+]

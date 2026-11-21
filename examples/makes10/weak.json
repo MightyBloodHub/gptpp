@@ -1,0 +1,9 @@
+[
+  {
+    "name": "right_ten",
+    "mode": "finite",
+    "rule": "Accept every pair whose second argument is ten.",
+    "declaration": "contract right_ten(a: I64 in -5..=18) { transition(a,10) }",
+    "limitation": "This rule leaves inputs with a different second argument unconstrained except for the public examples. A candidate can miss a == 10."
+  }
+]

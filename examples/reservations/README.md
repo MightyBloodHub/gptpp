@@ -76,6 +76,24 @@ The four history contracts check every ordering of reserve A, cancel A, reserve 
 
 The integration test introduces a double-release defect. The verifier returns the three-step witness reserve A, cancel A, cancel A. Both clients reproduce a separate four-call scenario with B still active and two seats reported free. The test rebuilds the completed library at the same path and runs both unchanged clients again. They report one free seat and preserve B. Six concurrent Python processes also compete for a single seat, and exactly one succeeds. [Integration runner](check.py)
 
+## Reopen a cancelled booking
+
+In the maintenance variant, a cancelled ID can book again when a seat is free. The local example reserves, cancels and reopens A. A second caller matters. Start with one seat, reserve A, cancel A, reserve B and attempt to reopen A. Both unchanged clients observe the following at the fourth operation.
+
+| Component | Outcome | A | B | Seats free |
+|---|---|---|---|---:|
+| Defective rebooking rule | ok | active | active | 0 |
+| Corrected rule and public ticket specification | sold_out | cancelled | active | 0 |
+
+The compiler exhausts all 252 shorter histories across capacities zero through two before reporting that four-operation counterexample. The corrected component passes all 1,020 histories of lengths one through four, the local reopen example and the sold-out check. The SQLite client opens the real shared library. The Rust binary is linked once and rerun after replacing the library at the same path. [Witness and client snapshots](reopen-witness.json)
+
+```sh
+cargo build --release --locked --offline
+python3 -B examples/reservations/reopen_demo.py --gpp target/release/gpp --output-dir target/reopening
+```
+
+The new directory contains `corrected.gpp`, the checked library, the Rust client, and the SQLite development databases. Omit `--output-dir` to run entirely in a temporary directory.
+
 ## C ABI
 
 `gpp library FILE --header` emits C declarations for the module’s public functions with scalar signatures, excluding the bootstrap entry. To generate this module’s header, run the following command.

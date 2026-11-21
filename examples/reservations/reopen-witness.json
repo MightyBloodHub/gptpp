@@ -1,0 +1,274 @@
+{
+  "schema": "gpp.reservation-reopen-demo/1",
+  "trial_kind": "executed development demonstration",
+  "domain": {
+    "capacities": [
+      0,
+      1,
+      2
+    ],
+    "actions": [
+      [
+        "reserve",
+        "A"
+      ],
+      [
+        "cancel",
+        "A"
+      ],
+      [
+        "reserve",
+        "B"
+      ],
+      [
+        "cancel",
+        "B"
+      ]
+    ],
+    "lengths": [
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "local_example": {
+    "capacity": 1,
+    "steps": [
+      [
+        "reserve",
+        "A"
+      ],
+      [
+        "cancel",
+        "A"
+      ],
+      [
+        "reserve",
+        "A"
+      ]
+    ],
+    "expected": {
+      "capacity": 1,
+      "available": 0,
+      "bookings": {
+        "A": "active"
+      },
+      "outcome": "ok"
+    }
+  },
+  "counterexample": {
+    "capacity": 1,
+    "steps": [
+      [
+        "reserve",
+        "A"
+      ],
+      [
+        "cancel",
+        "A"
+      ],
+      [
+        "reserve",
+        "B"
+      ],
+      [
+        "reserve",
+        "A"
+      ]
+    ],
+    "first_divergence": 4,
+    "previous": {
+      "capacity": 1,
+      "available": 0,
+      "bookings": {
+        "A": "cancelled",
+        "B": "active"
+      },
+      "outcome": "ok"
+    },
+    "expected": {
+      "capacity": 1,
+      "available": 0,
+      "bookings": {
+        "A": "cancelled",
+        "B": "active"
+      },
+      "outcome": "sold_out"
+    },
+    "actual": {
+      "available": 0,
+      "bookings": {
+        "A": "active",
+        "B": "active"
+      },
+      "capacity": 1,
+      "outcome": "ok"
+    },
+    "rule": "Active bookings own exactly one seat each. Reopening requires a free seat."
+  },
+  "sketch_revision": "sha256:1dc6524f436f1aede9c333c2b68e82a959901a5ae538078b3307766cc3b08cff",
+  "edit_site": {
+    "name": "full",
+    "function": "transition",
+    "type": "Change",
+    "start_byte": 573,
+    "end_byte": 586,
+    "locals": [
+      {
+        "name": "available",
+        "type": "I64"
+      },
+      {
+        "name": "booking",
+        "type": "Booking"
+      },
+      {
+        "name": "reserve",
+        "type": "Bool"
+      }
+    ]
+  },
+  "candidates": [
+    {
+      "source": "hand-authored development fixture",
+      "expression": "if booking == Booking::Cancelled { Change(available, Booking::Active, Outcome::Ok) } else { Change(available, booking, Outcome::SoldOut) }",
+      "verification": {
+        "schema": "gpp.verify/1",
+        "revision": "sha256:4e1e5d3bc36808be5ccf2568c1791849949f41cea0e3e48887cc21fcf94363a4",
+        "status": "counterexample",
+        "checked": 534,
+        "budget": 10000,
+        "contracts": [
+          {
+            "name": "local_reopen",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "one_step",
+            "status": "passed",
+            "checked": 12
+          },
+          {
+            "name": "two_steps",
+            "status": "passed",
+            "checked": 48
+          },
+          {
+            "name": "three_steps",
+            "status": "passed",
+            "checked": 192
+          },
+          {
+            "name": "four_steps",
+            "status": "counterexample",
+            "checked": 281,
+            "counterexample": {
+              "inputs": {
+                "capacity": 1,
+                "w": 0,
+                "x": 1,
+                "y": 2,
+                "z": 0
+              },
+              "args": [
+                1,
+                0,
+                1,
+                2,
+                0
+              ],
+              "result": false
+            }
+          }
+        ]
+      },
+      "local_client_agreement": true,
+      "witness_client_snapshots": {
+        "python": {
+          "available": 0,
+          "bookings": {
+            "A": "active",
+            "B": "active"
+          },
+          "capacity": 1,
+          "outcome": "ok"
+        },
+        "rust": {
+          "capacity": 1,
+          "available": 0,
+          "bookings": {
+            "A": "active",
+            "B": "active"
+          },
+          "outcome": "ok"
+        }
+      }
+    },
+    {
+      "source": "hand-authored development fixture",
+      "expression": "Change(available, booking, Outcome::SoldOut)",
+      "verification": {
+        "schema": "gpp.verify/1",
+        "revision": "sha256:aca5b9d3fa4cccddae5038250b17dcf35b7e394b931fa68e02480b986fefa3eb",
+        "status": "passed",
+        "checked": 1022,
+        "budget": 10000,
+        "contracts": [
+          {
+            "name": "local_reopen",
+            "status": "passed",
+            "checked": 1
+          },
+          {
+            "name": "one_step",
+            "status": "passed",
+            "checked": 12
+          },
+          {
+            "name": "two_steps",
+            "status": "passed",
+            "checked": 48
+          },
+          {
+            "name": "three_steps",
+            "status": "passed",
+            "checked": 192
+          },
+          {
+            "name": "four_steps",
+            "status": "passed",
+            "checked": 768
+          },
+          {
+            "name": "sold_out",
+            "status": "passed",
+            "checked": 1
+          }
+        ]
+      },
+      "local_client_agreement": true,
+      "witness_client_snapshots": {
+        "python": {
+          "available": 0,
+          "bookings": {
+            "A": "cancelled",
+            "B": "active"
+          },
+          "capacity": 1,
+          "outcome": "sold_out"
+        },
+        "rust": {
+          "capacity": 1,
+          "available": 0,
+          "bookings": {
+            "A": "cancelled",
+            "B": "active"
+          },
+          "outcome": "sold_out"
+        }
+      }
+    }
+  ]
+}
